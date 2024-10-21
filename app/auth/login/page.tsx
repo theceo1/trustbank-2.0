@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -78,9 +79,27 @@ export default function LoginPage() {
     }
   }
 
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push("/");
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account.",
+      });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Sign out failed",
+        description: "An error occurred while signing out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-3xl font-bold mb-8">Login to CryptoExchange</h1>
+      <h1 className="text-3xl font-bold mb-8">Login</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-full max-w-md">
           <FormField
@@ -114,10 +133,16 @@ export default function LoginPage() {
           </Button>
         </form>
       </Form>
-      <div className="mt-4">
-        <Button onClick={signInWithGoogle} variant="outline" className="w-full">
-          Sign in with Google
-        </Button>
+      <div className="mt-4 text-center">
+        <Link href="/auth/forgot-password" className="text-sm text-green-600 hover:underline">
+          Forgot your password?
+        </Link>
+      </div>
+      <div className="mt-2 text-center">
+        <span className="text-sm">Don&apos;t have an account? </span>
+        <Link href="/auth/signup" className="text-sm text-green-600 hover:underline">
+          Register
+        </Link>
       </div>
     </div>
   );

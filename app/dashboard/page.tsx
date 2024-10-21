@@ -30,17 +30,17 @@ export default function DashboardPage() {
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <motion.h1
         initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-3xl font-bold mb-8"
+        animate={{ opacity: 2, y: 0 }}
+        transition={{ duration: 1.5 }}
+        className="text-lg text-green-600 font-bold mb-4 pt-12"
       >
         Dashboard
       </motion.h1>
       <motion.p
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="text-lg text-gray-600 mb-8 mt-2"
+        animate={{ opacity: 2 }}
+        transition={{ delay: 0.2, duration: 1.5 }}
+        className="text-lg text-gray-600 mb-4 mt-2"
       >
         Welcome, {user?.name || user?.email}
       </motion.p>
@@ -48,14 +48,14 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
+          transition={{ delay: 0.3, duration: 1.5 }}
           className="lg:col-span-1"
         >
           <AccountBalance />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+            transition={{ delay: 0.4, duration: 1.5 }}
             className="mt-8"
           >
             <CryptoPriceTracker />
@@ -63,7 +63,7 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
+            transition={{ delay: 2.5, duration: 1.5 }}
             className="mt-8"
           >
             <RecentTransactions />
@@ -72,14 +72,14 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
+          transition={{ delay: 0.4, duration: 1.5 }}
           className="lg:col-span-2"
         >
           <MarketOverview itemsPerPage={3} />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
+            transition={{ delay: 0.6, duration: 1.5 }}
             className="mt-8"
           >
             <Trade />
