@@ -13,6 +13,7 @@ export default function VisionPage() {
   const [email, setEmail] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const controls = useAnimation();
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function VisionPage() {
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsSubmitting(true);
 
     try {
       const { data, error } = await supabase
@@ -43,38 +45,40 @@ export default function VisionPage() {
       }
     } catch (error: any) {
       setError('An error occurred while subscribing. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const closeModal = () => setIsModalOpen(false);
 
   return (
-    <div className="container mx-auto py-12 px-2 sm:px-6 lg:px-8">
+    <div className="container mx-auto py-6 px-2 sm:px-6 lg:px-8">
       <motion.h1
         initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{ opacity: 2, y: 0 }}
         transition={{ duration: 1.5 }}
-        className="text-xl font-semibold mb-4"
+        className="text-lg font-semibold mb-4 text-green-600 pt-12"
       >
         Our Vision
       </motion.h1>
       <motion.div
         initial={{ opacity: 0 }}
         animate={controls}
-        className="space-y-6"
+        className="space-y-8 text-lg leading-relaxed mb-4"
       >
         <Card className="mb-12 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl">Unlock a Brighter Financial Future</CardTitle>
+            <CardTitle className="text-lg">Unlock a Brighter Financial Future</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <motion.p custom={0} animate={controls} initial={{ opacity: 0, y: 20 }} className="text-lg leading-relaxed">
+          <CardContent className="space-y-6 text-sm">
+            <motion.p custom={0} animate={controls} initial={{ opacity: 0, y: 50 }}>
               At trustBank, our vision is to transform the financial landscape, empowering individuals to thrive in a secure, transparent, and innovative ecosystem.
             </motion.p>
             
-            <motion.div custom={1} animate={controls} initial={{ opacity: 0, y: 20 }}>
-              <h2 className="text-2xl font-semibold mb-4">Future of Payment</h2>
-              <div className="relative w-full h-[300px] mb-6">
+            <motion.div custom={1} animate={controls} initial={{ opacity: 0, y: 50 }}>
+              <h2 className="text-lg font-semibold mb-4">Future of Payment</h2>
+              <div className="relative w-full h-[200px] mb-6">
                 <Image 
                   src="/images/debit-card2.svg" 
                   fill 
@@ -83,15 +87,15 @@ export default function VisionPage() {
                   priority
                 />
               </div>
-              <p className="text-lg leading-relaxed">
+              <p className="text-sm leading-relaxed">
                 Introducing the trustBank Debit Card - a game-changing tool that combines style, security, and convenience. With our iconic logo, this card symbolizes our dedication to empowering your financial ecosystem.
               </p>
             </motion.div>
 
             <motion.div custom={2} animate={controls} initial={{ opacity: 0, y: 20 }}>
-              <h2 className="text-2xl font-semibold mb-4">Empowering Individuals</h2>
-              <p className="text-lg mb-4">Our platform is designed to unleash your financial potential, providing:</p>
-              <ul className="list-disc list-inside space-y-2 text-lg">
+              <h2 className="text-lg font-semibold mb-4">Empowering Individuals</h2>
+              <p className="text-sm mb-4">Our platform is designed to unleash your financial potential, providing:</p>
+              <ul className="list-disc list-inside space-y-2">
                 <li>Intuitive tools for effortless money management.</li>
                 <li>Invest and grow your wealth with confidence.</li>
                 <li>Access to emerging asset classes and digital economy opportunities.</li>
@@ -99,12 +103,12 @@ export default function VisionPage() {
             </motion.div>
 
             <motion.div custom={3} animate={controls} initial={{ opacity: 0, y: 20 }}>
-              <h2 className="text-2xl font-semibold mb-4">Innovation, Amplified</h2>
-              <p className="text-lg mb-4">
+              <h2 className="text-lg font-semibold mb-4">Innovation, Amplified</h2>
+              <p className="text-sm mb-4">
                 We took a responsible approach to innovation, taking into consideration the unique attributes of blockchain technology. 
                 We harness the power of blockchain technology, balancing innovation with regulatory compliance. Our solutions:
               </p>
-              <ul className="list-disc list-inside space-y-2 text-lg">
+              <ul className="list-disc list-inside space-y-2">
                 <li>Foster financial inclusion and accessibility.</li>
                 <li>Drive transparency and security.</li>
                 <li>Unlock new possibilities for individuals and communities.</li>
@@ -112,27 +116,27 @@ export default function VisionPage() {
             </motion.div>
 
             <motion.div custom={4} animate={controls} initial={{ opacity: 0, y: 20 }}>
-              <h2 className="text-2xl font-semibold mb-4">Built on Trust</h2>
-              <p className="text-lg mb-4">
+              <h2 className="text-lg font-semibold mb-4">Built on Trust</h2>
+              <p className="text-sm mb-4">
                 At the heart of our vision is a commitment to building trust with our users. We believe that transparency, security, and ethical practices are essential for creating a financial ecosystem that truly serves the needs of individuals and communities, globally.
               </p>
-              <p className="text-lg mb-4">Transparency, security, and ethics are the foundation of our vision. We&apos;re committed to:</p>
-              <ul className="list-disc list-inside space-y-2 text-lg">
+              <p className="text-sm text-gray-500 mb-4"><i>Transparency, security, and ethics are the foundation of our vision. We&apos;re committed to;</i></p>
+              <ul className="list-disc list-inside space-y-2 text-sm">
                 <li>Protecting your assets and data.</li>
                 <li>Delivering exceptional user experiences.</li>
                 <li>Fostering a community of trust and empowerment.</li>
               </ul>
             </motion.div>
 
-            <motion.div custom={5} animate={controls} initial={{ opacity: 0, y: 20 }}>
-              <h2 className="text-2xl font-semibold mb-4">Join the Movement</h2>
-              <p className="text-lg mb-6">
+            <motion.div custom={5} animate={controls} initial={{ opacity: 0, y: 50 }}>
+              <h2 className="text-lg font-semibold mb-4">Join the Movement</h2>
+              <p className="text-sm mb-6">
                 Be part of the financial ecosystem that puts you first. Experience the future of finance with trustBank.
               </p>
             </motion.div>
 
-            <motion.div custom={6} animate={controls} initial={{ opacity: 0, y: 20 }} className="bg-gray-100 p-8 rounded-lg shadow-inner">
-              <h3 className="text-2xl font-bold mb-6 text-black">Subscribe to Our Waitlist</h3>
+            <motion.div custom={6} animate={controls} initial={{ opacity: 0, y: 50 }} className="bg-gray-100 p-8 rounded-lg shadow-inner">
+              <h3 className="text-sm font-bold mb-6 text-black">Subscribe to Our Waitlist</h3>
               <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4">
                 <Input
                   type="email"
@@ -140,10 +144,10 @@ export default function VisionPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="flex-grow text-lg py-3"
+                  className="flex-grow text-sm py-3"
                 />
-                <Button type="submit" className="bg-green-600 hover:bg-green-700 text-lg py-3 px-6">
-                  Subscribe
+                <Button type="submit" className="bg-green-600 hover:bg-green-700 text-sm py-3 px-6" disabled={isSubmitting}>
+                  {isSubmitting ? 'Subscribing...' : 'Subscribe to the Waitlist'}
                 </Button>
               </form>
               {error && <p className="text-red-500 mt-4">{error}</p>}
@@ -153,7 +157,7 @@ export default function VisionPage() {
       </motion.div>
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <h2 className="text-2xl font-bold mb-4 text-black">Subscribed</h2>
+        <h2 className="text-xl font-bold mb-4 text-black">Subscribed</h2>
         <p className="text-green-600">Welcome to the <span className="font-bold text-green-600">TRUSTED</span> community.🤝</p>
         <p className="text-green-600">We will reach out to you soon.</p>
         <p className="mt-6 bg-gray-300 p-2 rounded-lg text-black"> <span className="font-bold text-green-600">Signed:</span> Tony from trustBank</p>

@@ -75,7 +75,7 @@ export default function BlogPage() {
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 2, y: 0 }}
         transition={{ duration: 1.5 }}
-        className="text-lg font-semibold mb-4 text-green-600"
+        className="text-lg font-semibold mb-4 text-green-600 pt-12"
       >
         Blog
       </motion.h1>

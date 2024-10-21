@@ -58,7 +58,7 @@ export default function Header() {
   ];
 
   return (
-    <header className="bg-background border-b">
+    <header className="bg-background border-b fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto flex justify-between items-center py-4 px-4 md:px-0">
         <Link href="/" className="text-xl md:text-2xl font-bold">
           trustBank

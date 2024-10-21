@@ -109,17 +109,17 @@ export default function CalculatorPage() {
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <motion.h1
         initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-2xl font-bold mb-4"
+        animate={{ opacity: 2, y: 0 }}
+        transition={{ duration: 1.5 }}
+        className="text-lg font-bold mb-4 pt-12 text-green-600"
       >
         Rate Calculator
       </motion.h1>
-      <h2 className="text-2lg font-semibold mb-8 text-gray-700">Market rates you can trust</h2>
+      <i><h2 className="text-sm mb-4 text-gray-700">Market rates you can trust</h2></i>
 
       <motion.div
         initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{ opacity: 2, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5 }}
         className="max-w-2xl mx-auto"
       >
@@ -208,7 +208,7 @@ export default function CalculatorPage() {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <h2 className="text-2xl font-bold mb-4 text-black">Subscribed</h2>
+        <h2 className="text-lg font-bold mb-4 text-black">Subscribed</h2>
         <p className="text-green-600">Welcome to the <span className="font-bold text-green-600">TRUSTED</span> community.🤝</p>
         <p className="text-green-600">We will reach out to you soon.</p>
         <p className="mt-6 bg-gray-300 p-2 rounded-lg text-black"> <span className="font-bold text-green-600">Signed:</span> Tony from trustBank</p>
