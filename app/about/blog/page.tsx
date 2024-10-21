@@ -75,20 +75,20 @@ export default function BlogPage() {
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 2, y: 0 }}
         transition={{ duration: 1.5 }}
-        className="text-xl font-semibold mb-4"
+        className="text-lg font-semibold mb-4 text-green-600"
       >
         Blog
       </motion.h1>
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity:2 }}
-        transition={{ delay: 0.2, duration: 1.5 }}
-        className="text-xl leading-relaxe mb-4"
+        transition={{ delay: 0.5, duration: 1.5 }}
+        className="text-sm mb-4"
       >
         Welcome to the trustBank blog! Your destination for expert insights, market trends, and company news. Empowering your financial journey, one post at a time.
       </motion.p>
 
-      <div className="space-y-8">
+      <div className="space-y-8 text-sm leading-relaxed mb-4">
         {blogPosts.map((post, index) => (
           <motion.div
             key={index}
@@ -98,10 +98,10 @@ export default function BlogPage() {
           >
             <Card>
               <CardHeader>
-                <CardTitle>{post.title}</CardTitle>
+                <CardTitle className="text-lg">{post.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="list-disc list-inside space-y-2">
+                <ul className="list-disc list-inside space-y-2 text-sm">
                   {post.content.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -154,7 +154,7 @@ export default function BlogPage() {
       </motion.div>
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <h2 className="text-2xl font-bold mb-4 text-black">Subscribed</h2>
+        <h2 className="text-xl font-bold mb-4 text-black">Subscribed</h2>
         <p className="text-green-600">Welcome to the <span className="font-bold text-green-600">TRUSTED</span> community.🤝</p>
         <p className="text-green-600">We will reach out to you soon.</p>
         <p className="mt-6 bg-gray-300 p-2 rounded-lg text-black"> <span className="font-bold text-green-600">Signed:</span> Tony from trustBank</p>
