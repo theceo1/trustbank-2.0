@@ -163,10 +163,10 @@ export default function CalculatorPage() {
             {calculatedValue !== null && (
               <div className="mt-4">
                 <p className="text-2xl font-bold">{formatNaira(calculatedValue)}</p>
-                <p className="text-sm text-muted-foreground ">
+                <p className="text-sm text-muted-foreground text-green-600">
                   {walletAction === 'BUY' 
-                    ? `You need to pay ${formatNaira(calculatedValue)} NGN to buy $${amount} USD worth of ${selectedCurrency}` 
-                    : `You'll get ${formatNaira(calculatedValue)} NGN for selling $${amount} USD worth of ${selectedCurrency}`}
+                    ? <> <span className="text-green-600 font-bold">You need to pay {formatNaira(calculatedValue)} NGN to buy ${amount} USD worth of {selectedCurrency}</span></>
+                    : <> <span className="text-green-600 font-bold">You&apos;ll get {formatNaira(calculatedValue)} NGN for selling ${amount} USD worth of {selectedCurrency}</span></>}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 text-green-600">NOTE: This is an estimated rate. Actual rate may differ</p>
               </div>
