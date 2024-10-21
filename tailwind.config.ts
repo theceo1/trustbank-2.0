@@ -85,10 +85,11 @@ const config: Config = {
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
       fontFamily: {
-        sans: ['var(--font-sans)', 'sans-serif'],
+        sans: ['var(--font-poppins)', 'var(--font-sans)', 'sans-serif'],
       },
     },
   },
   plugins: [require('tailwindcss-animate')],
 };
+
 export default config;
