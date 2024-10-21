@@ -25,7 +25,7 @@ export default function MissionPage() {
           </CardHeader>
           <CardContent>
             <p className="text-lg">
-              trustBank's mission is to demystify cryptocurrency trading and make it accessible to everyone. We are committed to providing a user-friendly platform that prioritizes security, speed, and simplicity. Our goal is to educate and empower individuals to participate in the digital economy confidently, fostering a community of informed and successful cryptocurrency traders.
+              trustBank&apos;s mission is to demystify cryptocurrency trading and make it accessible to everyone. We are committed to providing a user-friendly platform that prioritizes security, speed, and simplicity. Our goal is to educate and empower individuals to participate in the digital economy confidently, fostering a community of informed and successful cryptocurrency traders.
             </p>
           </CardContent>
         </Card>

@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -31,6 +31,7 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const supabase = createClientComponentClient();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
