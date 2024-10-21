@@ -1,19 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { motion } from "framer-motion";
+import { ArrowPathIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import AccountBalance from '@/components/dashboard/AccountBalance';
+import RecentTransactions from '@/components/dashboard/RecentTransactions';
+import MarketOverview from '@/components/dashboard/MarketOverview';
+import Trade from '@/components/dashboard/Trade';
+import CryptoPriceTracker from '@/components/common/CryptoPriceTracker';
+import { useAuth } from '@/context/AuthContext';
 
 export default function DashboardPage() {
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Simulating portfolio value fetch
     setPortfolioValue(15000);
-
-    // Simulating chart data fetch
     const dummyData = Array.from({ length: 30 }, (_, i) => ({
       date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString(),
       value: 10000 + Math.random() * 10000,
@@ -22,7 +27,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <motion.h1
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -31,43 +36,54 @@ export default function DashboardPage() {
       >
         Dashboard
       </motion.h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="text-lg text-gray-600 mb-8 mt-2"
+      >
+        Welcome, {user?.name || user?.email}
+      </motion.p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="lg:col-span-1"
         >
-          <Card>
-            <CardHeader>
-              <CardTitle>Portfolio Value</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">${portfolioValue.toLocaleString()}</p>
-            </CardContent>
-          </Card>
+          <AccountBalance />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mt-8"
+          >
+            <CryptoPriceTracker />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="mt-8"
+          >
+            <RecentTransactions />
+          </motion.div>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4, duration: 0.5 }}
+          className="lg:col-span-2"
         >
-          <Card>
-            <CardHeader>
-              <CardTitle>Portfolio Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="value" stroke="#8884d8" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <MarketOverview itemsPerPage={3} />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="mt-8"
+          >
+            <Trade />
+          </motion.div>
         </motion.div>
       </div>
     </div>
