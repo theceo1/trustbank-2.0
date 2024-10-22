@@ -42,7 +42,7 @@ export default function DashboardPage() {
         transition={{ delay: 0.2, duration: 1.5 }}
         className="text-lg text-gray-600 mb-4 mt-2"
       >
-        Welcome, {user?.name || user?.email}
+        Welcome, {user?.name || user?.email}.
       </motion.p>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <motion.div
