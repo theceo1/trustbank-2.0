@@ -1,28 +1,24 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
 
-const cryptos = ["BTC", "ETH", "ADA"];
+interface CoinPrice {
+  usd: number;
+}
 
-interface PriceData {
-  [key: string]: number;
+interface Prices {
+  [key: string]: CoinPrice;
 }
 
 export default function CryptoPriceTracker() {
-  const [prices, setPrices] = useState<PriceData>({});
+  const [prices, setPrices] = useState<Prices>({});
 
   useEffect(() => {
     const fetchPrices = async () => {
       try {
         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,cardano&vs_currencies=usd');
         const data = await response.json();
-        setPrices({
-          BTC: data.bitcoin.usd,
-          ETH: data.ethereum.usd,
-          ADA: data.cardano.usd
-        });
+        setPrices(data);
       } catch (error) {
         console.error("Error fetching crypto prices:", error);
       }
@@ -46,10 +42,10 @@ export default function CryptoPriceTracker() {
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
-            {cryptos.map((crypto) => (
-              <li key={crypto} className="flex justify-between items-center">
-                <span>{crypto}</span>
-                <span>${prices[crypto]?.toFixed(2) || "Loading..."}</span>
+            {Object.entries(prices).map(([coin, price]) => (
+              <li key={coin} className="flex justify-between items-center">
+                <span className="capitalize">{coin}</span>
+                <span>${price.usd.toFixed(2)}</span>
               </li>
             ))}
           </ul>
