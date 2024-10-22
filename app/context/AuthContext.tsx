@@ -1,25 +1,36 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClientComponentClient, User } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 
 export interface AuthContextType {
-  user: any | null;
+  user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const supabase = createClientComponentClient();
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -35,24 +46,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast({
         title: "Login failed",
         description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.push("/");
-      toast({
-        title: "Signed out successfully",
-        description: "You have been logged out of your account.",
-      });
-    } catch (error) {
-      console.error("Error signing out:", error);
-      toast({
-        title: "Sign out failed",
-        description: "An error occurred while signing out. Please try again.",
         variant: "destructive",
       });
     }
@@ -96,8 +89,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push("/");
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account.",
+      });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Sign out failed",
+        description: "An error occurred while signing out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, signUp, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, loading, login, signUp, signInWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -12,6 +12,10 @@ interface ModalProps {
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
 
+  const handleClose = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Implementation for handle close event
+  };
+
   return (
     <AnimatePresence>
       <motion.div

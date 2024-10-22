@@ -17,6 +17,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Header() {
   const pathname = usePathname();
@@ -107,7 +108,7 @@ export default function Header() {
                   <Link href="/auth/login">Login</Link>
                 </Button>
               )}
-              <ModeToggle />
+              <ThemeToggle />
             </>
           )}
         </nav>
@@ -191,7 +192,7 @@ export default function Header() {
               </>
             )}
             <div className="mt-4">
-              <ModeToggle />
+              <ThemeToggle />
             </div>
           </nav>
         </div>

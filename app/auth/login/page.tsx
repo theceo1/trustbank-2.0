@@ -1,149 +1,134 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
-import Link from "next/link";
+import { Label } from "@/components/ui/label";
+import { useAuth, AuthContextType } from '@/context/AuthContext';
+import Link from 'next/link';
+import { FcGoogle } from 'react-icons/fc';
+import { ThemeToggle } from "@/components/theme-toggle";
 
-const formSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
-
-export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const router = useRouter();
-  const supabase = createClientComponentClient();
-  const { toast } = useToast();
+  const { login, signInWithGoogle } = useAuth() as AuthContextType;
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const { error } = await supabase.auth.signInWithPassword(values);
-      if (error) throw error;
-      router.push("/profile");
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
+      await login(email, password);
+      router.push('/dashboard');
     } catch (error) {
-      console.error("Login error:", error);
-      toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      setError('Failed to log in');
+      console.error(error);
     }
-  }
+  };
 
-  async function signInWithGoogle() {
+  const handleGoogleSignIn = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) throw error;
+      await signInWithGoogle();
+      router.push('/dashboard');
     } catch (error) {
-      console.error("Google sign-in error:", error);
-      toast({
-        title: "Google sign-in failed",
-        description: "An error occurred during sign-in. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.push("/");
-      toast({
-        title: "Signed out successfully",
-        description: "You have been logged out of your account.",
-      });
-    } catch (error) {
-      console.error("Error signing out:", error);
-      toast({
-        title: "Sign out failed",
-        description: "An error occurred while signing out. Please try again.",
-        variant: "destructive",
-      });
+      setError('Failed to sign in with Google');
+      console.error(error);
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-3xl font-bold mb-8">Login</h1>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-full max-w-md">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="your@email.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Logging in..." : "Login"}
-          </Button>
+    <div className="flex items-center justify-center min-h-screen bg-background px-4 sm:px-6 lg:px-8">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md space-y-8 bg-white p-6 rounded-xl shadow-md"
+      >
+        <div>
+          <h2 className="mt-6 text-center text-lg font-extrabold text-gray-900">Log in</h2>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-lg shadow-sm -space-y-px">
+            <div>
+              <Label htmlFor="email-address" className="sr-only">
+                Email address
+              </Label>
+              <Input
+                id="email-address"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="password" className="sr-only">
+                Password
+              </Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+
+          <div>
+            <Button
+              type="submit"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Log in
+            </Button>
+          </div>
         </form>
-      </Form>
-      <div className="mt-4 text-center">
-        <Link href="/auth/forgot-password" className="text-sm text-green-600 hover:underline">
-          Forgot your password?
-        </Link>
-      </div>
-      <div className="mt-2 text-center">
-        <span className="text-sm">Don&apos;t have an account? </span>
-        <Link href="/auth/signup" className="text-sm text-green-600 hover:underline">
-          Register
-        </Link>
-      </div>
+
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <Button
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <FcGoogle className="h-5 w-5 mr-2" />
+              Sign in with Google
+            </Button>
+          </div>
+        </div>
+
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Don&apos;t have an account?{' '}
+          <Link href="/auth/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Sign up
+          </Link>
+        </p>
+      </motion.div>
     </div>
   );
 }

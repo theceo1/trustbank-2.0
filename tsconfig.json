@@ -27,7 +27,8 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "types": ["d3-path"]
   },
   "include": [
     "next-env.d.ts",

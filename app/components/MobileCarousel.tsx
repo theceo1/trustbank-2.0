@@ -47,7 +47,7 @@ const MobileCarousel: React.FC<MobileCarouselProps> = ({ items, className, autoS
           initial={{ opacity: 0, x: 300 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -300 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
           className={`p-6 rounded-lg shadow-md text-center ${isVisionBoard ? 'bg-green-600' : 'bg-gray-100'}`}
         >
           <h3 className={`text-sm font-semibold mb-4 ${isVisionBoard ? 'text-white' : 'text-black'}`}>{items[currentIndex].title}</h3>
