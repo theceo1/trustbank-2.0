@@ -46,7 +46,7 @@ export default function Footer() {
           </div>
         </div>
         <div>
-            <h4 className="font-semibold mt-2">Connect With Us</h4>
+            <h4 className="font-semibold mt-2 mb-2">Connect With Us</h4>
             <div className="flex space-x-6">
               <SocialIcon href="https://www.facebook.com/trustbanktech" icon={FaFacebook} />
               <SocialIcon href="https://www.instagram.com/trustbanktech" icon={FaInstagram} />

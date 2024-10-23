@@ -16,17 +16,17 @@ export default function Home() {
         <meta name="description" content="Begin your cryptocurrency journey with us" />
       </Head>
       <div className="container mx-auto px-4 py-20 pt-32 md:pt-20">
-        <AnimatedSection delay={0.2}>
+        <AnimatedSection delay={0.3}>
           <motion.section
             className="text-center mb-16 md:mb-32 min-h-[calc(100vh-20rem)] flex flex-col justify-center"
           >
             <motion.h1 
-              className="text-6xl font-bold mb-2"
+              className="text-6xl font-bold"
             >
               trustBank
             </motion.h1>
             <motion.p 
-              className="text-xl mb-8"
+              className="text-lg mb-40"
             >
               TRADE | SPEND | <span className="text-green-600">EARN</span>
             </motion.p>
@@ -45,13 +45,13 @@ export default function Home() {
         </AnimatedSection>
 
         <div className="mt-16">
-          <AnimatedSection delay={0.2}>
+          <AnimatedSection delay={0.3}>
             <CoreFeatures />
           </AnimatedSection>
-          <AnimatedSection delay={0.4}>
+          <AnimatedSection delay={0.5}>
             <VisionBoard />
           </AnimatedSection>
-          <AnimatedSection delay={0.6}>
+          <AnimatedSection delay={0.7}>
             <UserFeedback />
           </AnimatedSection>
         </div>
@@ -166,7 +166,7 @@ function FeedbackCard({ name, content }: { name: string; content: string }) {
 function ScrollIndicator() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 2, duration: 0.7, repeat: Infinity, repeatType: "reverse" }}
       className="text-center mt-50"
