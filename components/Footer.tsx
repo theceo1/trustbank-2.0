@@ -16,10 +16,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="font-bold text-lg mb-4">trustBank</h3>
-            <p className="text-sm">Your trusted platform for simple, secure, and fast cryptocurrency trading.</p>
+            <p className="text-sm">We are <span className="text-green-600">Crypto | Simplified</span>. The trusted exchange for simple, secure, and swift cryptocurrency trading.</p>
           </div>
           <div>
-            <h4 className="font-semibold mb-4">Quick Links</h4>
+            <h4 className="font-semibold mb-2">Quick Links</h4>
             <ul className="space-y-2 text-sm">
               <li><Link href="/market" className="hover:text-green-600 transition-colors">Market</Link></li>
               <li><Link href="/trade" className="hover:text-green-600 transition-colors">Trade</Link></li>
@@ -27,26 +27,16 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold mb-4">About</h4>
+            <h4 className="font-semibold mb-2">About</h4>
             <ul className="space-y-2 text-sm">
               <li><Link href="/about/vision" className="hover:text-green-600 transition-colors">Vision</Link></li>
               <li><Link href="/about/mission" className="hover:text-green-600 transition-colors">Mission</Link></li>
               <li><Link href="/about/blog" className="hover:text-green-600 transition-colors">Blog</Link></li>
             </ul>
           </div>
+          
           <div>
-            <h4 className="font-semibold mb-4">Connect With Us</h4>
-            <div className="flex space-x-4">
-              <SocialIcon href="https://www.facebook.com/trustbanktech" icon={FaFacebook} />
-              <SocialIcon href="https://www.instagram.com/trustbanktech" icon={FaInstagram} />
-              <SocialIcon href="https://www.twitter.com/trustbanktech" icon={FaTwitter} />
-              <SocialIcon href="https://www.threads.net/trustbanktech" icon={FaAt} />
-              <SocialIcon href="https://www.snapchat.com/add/trustbanktech" icon={FaSnapchat} />
-              <SocialIcon href="https://www.tiktok.com/@trustbanktech" icon={FaTiktok} />
-            </div>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Support</h4>
+            <h4 className="font-semibold mb-2">Support</h4>
             <ul className="space-y-2 text-sm">
               <li><Link href="/about/faq" className="hover:text-green-600 transition-colors">FAQ</Link></li>
               <li><Link href="/about/contact" className="hover:text-green-600 transition-colors">Contact Us</Link></li>
@@ -55,6 +45,17 @@ export default function Footer() {
             </ul>
           </div>
         </div>
+        <div>
+            <h4 className="font-semibold mt-2">Connect With Us</h4>
+            <div className="flex space-x-6">
+              <SocialIcon href="https://www.facebook.com/trustbanktech" icon={FaFacebook} />
+              <SocialIcon href="https://www.instagram.com/trustbanktech" icon={FaInstagram} />
+              <SocialIcon href="https://www.twitter.com/trustbanktech" icon={FaTwitter} />
+              <SocialIcon href="https://www.threads.net/trustbanktech" icon={FaAt} />
+              <SocialIcon href="https://www.snapchat.com/add/trustbanktech" icon={FaSnapchat} />
+              <SocialIcon href="https://www.tiktok.com/@trustbanktech" icon={FaTiktok} />
+            </div>
+          </div>
         <div className="mt-8 pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
           © {new Date().getFullYear()} trustBank. All rights reserved.
         </div>

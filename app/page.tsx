@@ -169,7 +169,7 @@ function ScrollIndicator() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 2, duration: 0.7, repeat: Infinity, repeatType: "reverse" }}
-      className="text-center mt-80"
+      className="text-center mt-60"
     >
       <FaChevronDown className="text-green-600 text-3xl mx-auto" />
       {/* <p className="text-sm mt-2">Scroll for more</p> */}
