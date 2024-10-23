@@ -166,12 +166,12 @@ function FeedbackCard({ name, content }: { name: string; content: string }) {
 function ScrollIndicator() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 2, duration: 0.7, repeat: Infinity, repeatType: "reverse" }}
-      className="text-center mt-60"
+      className="text-center mt-50"
     >
-      <FaChevronDown className="text-green-600 text-3xl mx-auto" />
+      <FaChevronDown className="text-green-600 text-lg mx-auto" />
       {/* <p className="text-sm mt-2">Scroll for more</p> */}
     </motion.div>
   );
@@ -201,7 +201,7 @@ function AnimatedSection({ children, delay = 0 }: { children: ReactNode; delay?:
         visible: { opacity: 1, y: 0 },
         hidden: { opacity: 0, y: 50 }
       }}
-      transition={{ duration: 1.2, delay: delay * 1.5 }}
+      transition={{ duration: 1.2, delay: delay * 0.5 }}
     >
       {children}
     </motion.div>
