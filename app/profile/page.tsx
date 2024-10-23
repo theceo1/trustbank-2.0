@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { User, Settings, CreditCard, LogOut } from "lucide-react";
+import { User, Settings, CreditCard, LogOut, Shield, History } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface UserProfile {
   id: string;
@@ -62,9 +63,9 @@ export default function ProfilePage() {
       transition={{ duration: 0.5 }}
       className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4"
     >
-      <Card className="w-full max-w-3xl overflow-hidden shadow-xl">
-        <CardHeader className="bg-green-600 text-white p-6">
-          <CardTitle className="text-2xl font-bold">User Profile</CardTitle>
+      <Card className="w-full max-w-2xl overflow-hidden shadow-xl pt-20">
+        <CardHeader className="bg-green-600 text-white p-2">
+          <CardTitle className="text-lg font-bold">User Profile</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
@@ -82,17 +83,34 @@ export default function ProfilePage() {
               />
             </motion.div>
             <div className="flex-grow">
-              <h2 className="text-2xl font-semibold">{user.name || 'User'}</h2>
+              <h2 className="text-lg font-semibold">{user.name || 'User'}</h2>
               <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Member since {new Date(user.created_at).toLocaleDateString()}
               </p>
+              <div className="mt-4">
+                <span className="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
+                  Verified
+                </span>
+              </div>
             </div>
           </div>
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ProfileCard icon={<User className="w-6 h-6" />} title="Personal Info" description="Update your personal information" />
-            <ProfileCard icon={<Settings className="w-6 h-6" />} title="Account Settings" description="Manage your account settings" />
-            <ProfileCard icon={<CreditCard className="w-6 h-6" />} title="Billing" description="View and manage your billing information" />
+          <div className="mt-8 grid grid-cols-1 gap-4">
+            <Link href="/profile/personal-info">
+              <ProfileCard icon={<User className="w-6 h-6" />} title="Personal Info" description="Update your personal information" />
+            </Link>
+            <Link href="/profile/account-settings">
+              <ProfileCard icon={<Settings className="w-6 h-6" />} title="Account Settings" description="Manage your account settings" />
+            </Link>
+            <Link href="/profile/billing">
+              <ProfileCard icon={<CreditCard className="w-6 h-6" />} title="Billing" description="View and manage your billing information" />
+            </Link>
+            <Link href="/profile/verification">
+              <ProfileCard icon={<Shield className="w-6 h-6" />} title="Verification Status" description="Check your account verification status" />
+            </Link>
+            <Link href="/profile/transaction-history">
+              <ProfileCard icon={<History className="w-6 h-6" />} title="Transaction History" description="View your complete transaction history" />
+            </Link>
           </div>
         </CardContent>
       </Card>

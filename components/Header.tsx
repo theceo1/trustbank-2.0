@@ -81,13 +81,13 @@ export default function Header() {
                   <NavigationMenuItem>
                     <NavigationMenuTrigger className="text-sm">About</NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <ul className="grid w-[200px] gap-3 p-4 md:w-[400px] md:grid-cols-2">
+                      <ul className="grid w-[100px] gap-3 p-4 md:w-[400px] md:grid-cols-2">
                         {aboutItems.map((item) => (
                           <li key={item.href}>
                             <NavigationMenuLink asChild>
                               <Link
                                 href={item.href}
-                                className="block select-none space-y-1 rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                className="block select-none space-y-1 rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-green-600 hover:text-green-600 focus:bg-green-600 focus:text-green-600"
                               >
                                 {item.label}
                               </Link>

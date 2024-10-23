@@ -15,10 +15,10 @@ export default function Home() {
         <title>trustBank - Cryptocurrency Exchange you can trust</title>
         <meta name="description" content="Begin your cryptocurrency journey with us" />
       </Head>
-      <div className="container mx-auto px-4 py-20 pt-24 md:pt-20">
+      <div className="container mx-auto px-4 py-20 pt-32 md:pt-20">
         <AnimatedSection delay={0.2}>
           <motion.section
-            className="text-center mb-16 md:mb-32 min-h-[calc(100vh-2rem)] flex flex-col justify-center"
+            className="text-center mb-16 md:mb-32 min-h-[calc(100vh-20rem)] flex flex-col justify-center"
           >
             <motion.h1 
               className="text-6xl font-bold mb-2"

@@ -3,87 +3,85 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ArrowPathIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import AccountBalance from '@/components/dashboard/AccountBalance';
 import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import MarketOverview from '@/components/dashboard/MarketOverview';
 import Trade from '@/components/dashboard/Trade';
 import CryptoPriceTracker from '@/components/common/CryptoPriceTracker';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function DashboardPage() {
-  const [portfolioValue, setPortfolioValue] = useState(0);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    setPortfolioValue(15000);
-    const dummyData = Array.from({ length: 30 }, (_, i) => ({
-      date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      value: 10000 + Math.random() * 10000,
-    }));
-    setChartData(dummyData);
-  }, []);
+    if (!isLoading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <motion.h1
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 2, y: 0 }}
-        transition={{ duration: 1.5 }}
-        className="text-lg text-green-600 font-bold mb-4 pt-12"
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
       >
-        Dashboard
-      </motion.h1>
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 2 }}
-        transition={{ delay: 0.2, duration: 1.5 }}
-        className="text-lg text-gray-600 mb-4 mt-2"
-      >
-        Welcome, {user?.name || user?.email}.
-      </motion.p>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+          Welcome back, {user.user_metadata?.name || user.email}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-2">
+          Here&apos;s an overview of your financial activities.
+        </p>
+      </motion.div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, duration: 1.5 }}
-          className="lg:col-span-1"
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="lg:col-span-1 space-y-8"
         >
           <AccountBalance />
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 1.5 }}
-            className="mt-8"
-          >
-            <CryptoPriceTracker />
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 2.5, duration: 1.5 }}
-            className="mt-8"
-          >
-            <RecentTransactions />
-          </motion.div>
+          <CryptoPriceTracker />
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Link href="/trade" className="block">
+                <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
+                  Trade Now
+                </button>
+              </Link>
+              <Link href="/profile" className="block">
+                <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                  View Profile
+                </button>
+              </Link>
+            </CardContent>
+          </Card>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4, duration: 1.5 }}
-          className="lg:col-span-2"
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="lg:col-span-2 space-y-8"
         >
-          <MarketOverview itemsPerPage={3} />
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 1.5 }}
-            className="mt-8"
-          >
-            <Trade />
-          </motion.div>
+          <MarketOverview itemsPerPage={5} />
+          <Trade />
+          <RecentTransactions />
         </motion.div>
       </div>
     </div>
