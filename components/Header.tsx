@@ -87,7 +87,7 @@ export default function Header() {
                             <NavigationMenuLink asChild>
                               <Link
                                 href={item.href}
-                                className="block select-none space-y-1 rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-green-600 hover:text-green-600 focus:bg-green-600 focus:text-green-600"
+                                className="block select-none space-y-1 rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:text-green-600 focus:text-green-600"
                               >
                                 {item.label}
                               </Link>

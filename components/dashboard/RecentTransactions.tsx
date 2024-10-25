@@ -48,7 +48,7 @@ export default function RecentTransactions() {
               <li key={tx.id} className="flex justify-between items-center">
                 <span>{tx.type} {tx.amount} {tx.crypto}</span>
                 <span className={tx.type === "Buy" ? "text-green-500" : "text-red-500"}>
-                  ${tx.value.toLocaleString()}
+                  {tx.value ? `$${tx.value.toLocaleString()}` : 'N/A'}
                 </span>
               </li>
             ))}

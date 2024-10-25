@@ -76,10 +76,12 @@ export default function ProfilePage() {
               className="relative w-32 h-32 rounded-full overflow-hidden"
             >
               <Image
-                src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.name || user.email}`}
+                src={`https://api.dicebear.com/6.x/initials/svg?seed=${user?.email}`}
                 alt="Profile"
-                layout="fill"
-                objectFit="cover"
+                width={100}
+                height={100}
+                className="rounded-full"
+                style={{ objectFit: 'cover' }}
               />
             </motion.div>
             <div className="flex-grow">

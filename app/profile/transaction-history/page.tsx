@@ -1,3 +1,4 @@
+// app/profile/transaction-history/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -27,22 +28,32 @@ export default function TransactionHistoryPage() {
   const { user } = useAuth();
 
   useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!user) return; // Ensure user is not null
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('Error fetching transactions:', error);
+          setTransactions([]);
+        } else {
+          setTransactions(data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        setTransactions([]);
+      }
+    };
+
     if (user) {
       fetchTransactions();
     } else {
       router.push('/auth/login');
     }
-  }, [user, router]);
-
-  const fetchTransactions = async () => {
-    // Replace this with actual API call to fetch transactions
-    const mockTransactions: Transaction[] = [
-      { id: 1, type: "Buy", crypto: "BTC", amount: 0.5, value: 15000, date: "2023-06-01" },
-      { id: 2, type: "Sell", crypto: "ETH", amount: 2, value: 4000, date: "2023-06-02" },
-      { id: 3, type: "Buy", crypto: "ADA", amount: 100, value: 150, date: "2023-06-03" },
-    ];
-    setTransactions(mockTransactions);
-  };
+  }, [user, router, supabase]);
 
   const exportToCSV = () => {
     const csvContent = "data:text/csv;charset=utf-8," 
@@ -82,7 +93,7 @@ export default function TransactionHistoryPage() {
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-500">
-            <thead className="text-xs text-gray-700 uppercase bg-green-600 text-white">
+              <thead className="text-xs text-gray-700 uppercase bg-green-600 text-white">
                 <tr>
                   <th scope="col" className="px-6 py-3">Date</th>
                   <th scope="col" className="px-6 py-3">Type</th>
@@ -92,15 +103,21 @@ export default function TransactionHistoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((tx) => (
-                  <tr key={tx.id} className="bg-gray-200 border-b text-black">
-                    <td className="px-6 py-4">{tx.date}</td>
-                    <td className="px-6 py-4">{tx.type}</td>
-                    <td className="px-6 py-4">{tx.crypto}</td>
-                    <td className="px-6 py-4">{tx.amount}</td>
-                    <td className="px-6 py-4">${tx.value.toLocaleString()}</td>
+                {transactions.length > 0 ? (
+                  transactions.map((tx) => (
+                    <tr key={tx.id} className="bg-gray-200 border-b text-black">
+                      <td className="px-6 py-4">{tx.date}</td>
+                      <td className="px-6 py-4">{tx.type}</td>
+                      <td className="px-6 py-4">{tx.crypto}</td>
+                      <td className="px-6 py-4">{tx.amount}</td>
+                      <td className="px-6 py-4">${tx.value.toLocaleString()}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr className="bg-gray-200 border-b text-black">
+                    <td colSpan={5} className="px-6 py-4 text-center">No transactions available</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
