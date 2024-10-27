@@ -7,39 +7,36 @@ export async function GET() {
     const cookieStore = cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    const { data: wallet, error } = await supabase
       .from('wallets')
-      .select('*')
+      .select('balance, currency')
       .eq('user_id', user.id)
       .single();
 
     if (error) {
-      // If no wallet exists, create one
       if (error.code === 'PGRST116') {
+        // Wallet doesn't exist, create one
         const { data: newWallet, error: createError } = await supabase
           .from('wallets')
-          .insert([
-            { user_id: user.id }
-          ])
+          .insert([{ user_id: user.id, balance: 0, currency: 'NGN' }])
           .select()
           .single();
 
         if (createError) {
           throw createError;
         }
-
         return NextResponse.json(newWallet);
       }
       throw error;
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(wallet);
   } catch (error) {
     console.error('Balance fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch balance' }, { status: 500 });
