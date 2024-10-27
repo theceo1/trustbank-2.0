@@ -4,14 +4,20 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { createClientComponentClient, User } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
+import { Session } from "@supabase/auth-helpers-nextjs";
 
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, metadata?: {
+    name?: string;
+    referralCode?: string;
+    referredBy?: string | null;
+  }) => Promise<{ user: User | null; session: Session | null; } | undefined>;
   signInWithGoogle: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,25 +75,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, metadata?: {
+    name?: string;
+    referralCode?: string;
+    referredBy?: string | null;
+  }) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: metadata?.name,
+            referral_code: metadata?.referralCode,
+            referred_by: metadata?.referredBy,
+            is_verified: false
+          }
+        }
       });
-      if (error) throw error;
-      router.push("/dashboard");
-      toast({
-        title: "Sign up successful",
-        description: "Welcome to TrustBank!",
-      });
-    } catch (error) {
-      console.error("Sign up error:", error);
-      toast({
-        title: "Sign up failed",
-        description: "An error occurred during sign up. Please try again.",
-        variant: "destructive",
-      });
+
+      if (error) {
+        console.error('Signup error:', error);
+        throw error;
+      }
+
+      if (data?.user) {
+        // Create a profile record in the profiles table
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: data.user.id,
+              email: email,
+              name: metadata?.name,
+              referral_code: metadata?.referralCode,
+              referred_by: metadata?.referredBy
+            }
+          ]);
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw new Error('Failed to create user profile');
+        }
+
+        toast({
+          title: "Account created successfully",
+          description: "Please check your email for verification.",
+        });
+        return data;
+      }
+    } catch (error: any) {
+      console.error('Detailed signup error:', error);
+      throw new Error(error.message || 'An error occurred during sign up');
     }
   };
 
@@ -110,11 +149,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ user, isLoading, login, signUp, signInWithGoogle, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const value = {
+    user,
+    isLoading,
+    login,
+    logout,
+    signUp,
+    signInWithGoogle,
+    signIn,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

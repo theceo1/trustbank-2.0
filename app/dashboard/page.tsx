@@ -80,12 +80,12 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Link href="/trade" className="block">
-                <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-400 transition-colors">
+                <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-400 transition-colors hover:text-black">
                   Trade Now
                 </button>
               </Link>
               <Link href="/profile" className="block">
-                <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-400 transition-colors">
+                <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-400 transition-colors hover:text-black">
                   View Profile
                 </button>
               </Link>

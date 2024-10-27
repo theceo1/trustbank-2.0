@@ -2,124 +2,137 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Download } from "lucide-react";
-import { useAuth } from '@/context/AuthContext';
+import BackButton from '@/components/ui/back-button';
+import { ArrowUpRight, ArrowDownLeft, Search, Filter } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Transaction {
-  id: number;
-  type: string;
-  crypto: string;
+  id: string;
+  type: 'deposit' | 'withdrawal' | 'swap';
   amount: number;
-  value: number;
+  currency: string;
+  status: 'completed' | 'pending' | 'failed';
   date: string;
 }
 
 export default function TransactionHistoryPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const router = useRouter();
-  const supabase = createClientComponentClient();
-  const { toast } = useToast();
+  const [filter, setFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!user) return; // Ensure user is not null
-      try {
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('user_id', user.id);
-
-        if (error) {
-          console.error('Error fetching transactions:', error);
-          setTransactions([]);
-        } else {
-          setTransactions(data || []);
-        }
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-        setTransactions([]);
-      }
-    };
-
-    if (user) {
-      fetchTransactions();
-    } else {
-      router.push('/auth/login');
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
     }
-  }, [user, router, supabase]);
-
-  const exportToCSV = () => {
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "ID,Type,Crypto,Amount,Value,Date\n"
-      + transactions.map(t => `${t.id},${t.type},${t.crypto},${t.amount},${t.value},${t.date}`).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "transaction_history.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast({
-      title: "CSV Downloaded",
-      description: "Your transaction history has been downloaded as a CSV file.",
-    });
   };
 
-  if (!user) return null;
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-600';
+      case 'pending':
+        return 'text-yellow-600';
+      case 'failed':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-screen-xl mx-auto pt-28"
+    <motion.div
+      className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-20"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
     >
-      <Card className="w-full">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Transaction History</CardTitle>
-          <Button onClick={exportToCSV} className="flex items-center text-sm h-8 w-32 rounded-sm hover:bg-green-600">
-            <Download className="mr-2 h-4 w-4" /> Export CSV
-          </Button>
+      <BackButton />
+      
+      <Card className="max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-green-600">Transaction History</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-500">
-              <thead className="text-xs text-gray-700 uppercase bg-green-600 text-white">
-                <tr>
-                  <th scope="col" className="px-6 py-3">Date</th>
-                  <th scope="col" className="px-6 py-3">Type</th>
-                  <th scope="col" className="px-6 py-3">Crypto</th>
-                  <th scope="col" className="px-6 py-3">Amount</th>
-                  <th scope="col" className="px-6 py-3">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.length > 0 ? (
-                  transactions.map((tx) => (
-                    <tr key={tx.id} className="bg-gray-200 border-b text-black">
-                      <td className="px-6 py-4">{tx.date}</td>
-                      <td className="px-6 py-4">{tx.type}</td>
-                      <td className="px-6 py-4">{tx.crypto}</td>
-                      <td className="px-6 py-4">{tx.amount}</td>
-                      <td className="px-6 py-4">${tx.value.toLocaleString()}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr className="bg-gray-200 border-b text-black">
-                    <td colSpan={5} className="px-6 py-4 text-center">No transactions available</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <motion.div variants={itemVariants} className="mb-6 flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search transactions..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="w-full md:w-48">
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Transactions</SelectItem>
+                  <SelectItem value="deposit">Deposits</SelectItem>
+                  <SelectItem value="withdrawal">Withdrawals</SelectItem>
+                  <SelectItem value="swap">Swaps</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </motion.div>
+
+          <div className="space-y-4">
+            {transactions.length > 0 ? (
+              transactions.map((transaction) => (
+                <motion.div
+                  key={transaction.id}
+                  variants={itemVariants}
+                  className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      {transaction.type === 'deposit' ? (
+                        <ArrowDownLeft className="w-6 h-6 text-green-600" />
+                      ) : (
+                        <ArrowUpRight className="w-6 h-6 text-red-600" />
+                      )}
+                      <div>
+                        <p className="font-semibold capitalize">{transaction.type}</p>
+                        <p className="text-sm text-gray-500">{new Date(transaction.date).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">
+                        {transaction.type === 'deposit' ? '+' : '-'}₦{transaction.amount.toFixed(2)}
+                      </p>
+                      <p className={`text-sm capitalize ${getStatusColor(transaction.status)}`}>
+                        {transaction.status}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <motion.div
+                variants={itemVariants}
+                className="text-center py-8 text-gray-500"
+              >
+                No transactions found
+              </motion.div>
+            )}
           </div>
         </CardContent>
       </Card>

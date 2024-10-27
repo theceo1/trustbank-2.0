@@ -1,17 +1,22 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createClientComponentClient, User } from "@supabase/auth-helpers-nextjs";
+import { createClientComponentClient, User, Session } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 
 export interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  signUp: (email: string, password: string, metadata?: {
+    name?: string;
+    referralCode?: string;
+    referredBy?: string | null;
+  }) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,22 +56,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, metadata?: {
+    name?: string;
+    referralCode?: string;
+    referredBy?: string | null;
+  }) => {
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata
+        }
+      });
+      
       if (error) throw error;
+      
       router.push("/dashboard");
       toast({
         title: "Sign up successful",
         description: "Welcome to TrustBank!",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign up error:", error);
       toast({
         title: "Sign up failed",
         description: "An error occurred during sign up. Please try again.",
         variant: "destructive",
       });
+      throw error;
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      router.push("/dashboard");
+      toast({
+        title: "Sign in successful",
+        description: "Welcome back!",
+      });
+    } catch (error) {
+      console.error("Sign in error:", error);
+      toast({
+        title: "Sign in failed",
+        description: "Please check your credentials and try again.",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
@@ -108,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signUp, signInWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, isLoading: loading, login, signUp, signInWithGoogle, logout, signIn }}>
       {children}
     </AuthContext.Provider>
   );

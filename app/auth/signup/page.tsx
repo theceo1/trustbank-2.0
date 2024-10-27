@@ -2,48 +2,91 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth, AuthContextType } from '@/context/AuthContext';
 import Link from 'next/link';
 import { FcGoogle } from 'react-icons/fc';
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Info } from "lucide-react";
+import { generateReferralCode } from '@/utils/referral';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { validateReferralCode } from '@/utils/referral';
 
 export default function SignUp() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { signUp, signInWithGoogle } = useAuth() as AuthContextType;
   const supabase = createClientComponentClient();
+  const [referralCode, setReferralCode] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setError('Please accept the terms and conditions to continue');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
+
     try {
-      await signUp(email, password);
-      // After successful signup, update the user's profile with their name
-      const { data: { user }, error } = await supabase.auth.updateUser({
-        data: { name: name }
+      if (referralCode) {
+        const isValidReferral = await validateReferralCode(supabase, referralCode);
+        if (!isValidReferral) {
+          setError('Invalid referral code. Please check and try again.');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const newReferralCode = generateReferralCode();
+      console.log('Attempting signup with metadata:', {
+        name,
+        referralCode: newReferralCode,
+        referredBy: referralCode || null
       });
-      if (error) throw error;
+      
+      await signUp(email, password, {
+        name,
+        referralCode: newReferralCode,
+        referredBy: referralCode || null
+      });
+      
       router.push('/dashboard');
-    } catch (error) {
-      setError('Failed to create an account');
-      console.error(error);
+    } catch (error: any) {
+      console.error('Detailed signup error:', error);
+      setError(error.message || 'An error occurred during sign up');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError('');
+    
     try {
       await signInWithGoogle();
       router.push('/dashboard');
-    } catch (error) {
-      setError('Failed to sign in with Google');
-      console.error(error);
+    } catch (error: any) {
+      setError('Failed to sign in with Google. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,11 +99,30 @@ export default function SignUp() {
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md space-y-8 bg-card p-6 rounded-xl shadow-md"
+        className="w-full max-w-md space-y-8 bg-card p-8 rounded-xl shadow-lg"
       >
-        <div>
-          <h2 className="mt-6 text-center text-lg font-extrabold text-card-foreground">Sign up</h2>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-card-foreground">Create your account</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            <i>Join trustBank and explore <span className="text-green-600">Crypto | Simplified</span>.</i>
+          </p>
         </div>
+
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
@@ -113,14 +175,62 @@ export default function SignUp() {
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="referral-code">Referral Code (Optional)</Label>
+              <div className="relative">
+                <Input
+                  id="referral-code"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
+                  placeholder="Enter referral code"
+                />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p><i>Enter a referral code if you were invited by someone</i></p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="terms" 
+                checked={acceptedTerms}
+                onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+              />
+              <Label htmlFor="terms" className="text-sm">
+                By clicking Sign up, I agree to trustBank&apos;s{' '}
+                <Link href="/privacy-policy" className="text-green-600 hover:underline">
+                  Privacy Policy
+                </Link>{' '}
+                and{' '}
+                <Link href="/terms-of-service" className="text-green-600 hover:underline">
+                  Terms of Service
+                </Link>
+              </Label>
+            </div>
+          </div>
 
           <div>
             <Button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600"
+              className="w-full bg-green-600 hover:bg-green-700 hover:text-black hover:bg-green-300 text-white"
+              disabled={isLoading}
             >
-              Sign up
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account ... get ready!💚 
+                </>
+              ) : (
+                'Sign up'
+              )}
             </Button>
           </div>
         </form>

@@ -1,3 +1,4 @@
+// components/Footer.tsx
 "use client";
 
 import Link from "next/link";
@@ -23,6 +24,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link href="/market" className="hover:text-green-600 transition-colors">Market</Link></li>
               <li><Link href="/trade" className="hover:text-green-600 transition-colors">Trade</Link></li>
+              <li><Link href="/profile/wallet" className="hover:text-green-600 transition-colors">Wallet</Link></li>
               <li><Link href="/calculator" className="hover:text-green-600 transition-colors">Calculator</Link></li>
             </ul>
           </div>

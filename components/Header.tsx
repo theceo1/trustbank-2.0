@@ -45,6 +45,7 @@ export default function Header() {
           { href: "/dashboard", label: "Dashboard" },
           { href: "/trade", label: "Trade" },
           { href: "/profile", label: "Profile" },
+          { href: "/profile/wallet", label: "Wallet" },
         ]
       : []),
     { href: "/calculator", label: "Calculator" },

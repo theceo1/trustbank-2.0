@@ -97,7 +97,7 @@ export default function TradePage() {
               </div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button type="submit" className={`w-full py-2 px-4 rounded-md ${
-                  action === 'buy' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'
+                  action === 'buy' ? 'bg-green-500 hover:bg-green-600 hover:text-black' : 'bg-red-500 hover:bg-red-600 hover:text-black'
                 } text-white font-bold transition-colors duration-300`}>
                   {action === 'buy' ? 'Buy' : 'Sell'} {currency}
                 </Button>
