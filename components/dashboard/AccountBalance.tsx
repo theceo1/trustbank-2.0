@@ -34,7 +34,12 @@ export default function AccountBalance() {
         try {
           const response = await fetch(`/api/balance?userId=${user.id}`);
           const data = await response.json();
-          if (data && typeof data.total === 'number') {
+          if (data && 
+            typeof data.total === 'number' && 
+            typeof data.available === 'number' && 
+            typeof data.pending === 'number' && 
+            typeof data.currency === 'string'
+          ) {
             setBalance(data);
           } else {
             console.error('Invalid balance data:', data);

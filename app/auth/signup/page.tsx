@@ -22,6 +22,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { validateReferralCode } from '@/utils/referral';
+import { supabase } from '@/lib/supabase-client';
 
 export default function SignUp() {
   const [name, setName] = useState('');
@@ -31,7 +32,6 @@ export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { signUp, signInWithGoogle } = useAuth() as AuthContextType;
-  const supabase = createClientComponentClient();
   const [referralCode, setReferralCode] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
@@ -45,6 +45,7 @@ export default function SignUp() {
     setError('');
 
     try {
+      let referredBy = null;
       if (referralCode) {
         const isValidReferral = await validateReferralCode(supabase, referralCode);
         if (!isValidReferral) {
@@ -52,19 +53,21 @@ export default function SignUp() {
           setIsLoading(false);
           return;
         }
+        // If valid, set referredBy to the referral code
+        referredBy = referralCode; // or fetch the user ID associated with the referral code
       }
 
       const newReferralCode = generateReferralCode();
       console.log('Attempting signup with metadata:', {
         name,
         referralCode: newReferralCode,
-        referredBy: referralCode || null
+        referredBy: referredBy
       });
       
       await signUp(email, password, {
         name,
         referralCode: newReferralCode,
-        referredBy: referralCode || null
+        referredBy: referredBy // Pass the referredBy value
       });
       
       router.push('/dashboard');

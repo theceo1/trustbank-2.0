@@ -5,6 +5,7 @@ import { createClientComponentClient, User } from "@supabase/auth-helpers-nextjs
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/auth-helpers-nextjs";
+import { supabase } from '@/lib/supabase-client';
 
 export interface AuthContextType {
   user: User | null;
@@ -15,7 +16,7 @@ export interface AuthContextType {
     name?: string;
     referralCode?: string;
     referredBy?: string | null;
-  }) => Promise<{ user: User | null; session: Session | null; } | undefined>;
+  }) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
 }
@@ -25,7 +26,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClientComponentClient();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, []); // Remove supabase.auth from dependencies
 
   const login = async (email: string, password: string) => {
     try {
@@ -85,47 +85,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             full_name: metadata?.name,
             referral_code: metadata?.referralCode,
-            referred_by: metadata?.referredBy,
-            is_verified: false
+            referred_by: metadata?.referredBy
           }
         }
       });
 
-      if (error) {
-        console.error('Signup error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      if (data?.user) {
-        // Create a profile record in the profiles table
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              email: email,
-              name: metadata?.name,
-              referral_code: metadata?.referralCode,
-              referred_by: metadata?.referredBy
-            }
-          ]);
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          throw new Error('Failed to create user profile');
-        }
-
+      if (data) {
         toast({
           title: "Account created successfully",
           description: "Please check your email for verification.",
         });
-        return data;
       }
     } catch (error: any) {
-      console.error('Detailed signup error:', error);
+      console.error('Signup error:', error);
       throw new Error(error.message || 'An error occurred during sign up');
     }
   };
