@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
 import { motion } from "framer-motion";
@@ -11,6 +10,10 @@ import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import Modal from "@/components/ui/modal";
+import { useToast } from "@/hooks/use-toast";
+import Announcements from '@/app/components/dashboard/Announcements';
+import supabase from '@/lib/supabase/client'; // Use the singleton client
+import type { Database } from '@/types/supabase';
 
 export default function WalletPage() {
   const [balance, setBalance] = useState(0);
@@ -20,7 +23,6 @@ export default function WalletPage() {
   const [toCrypto, setToCrypto] = useState("");
   const [swapAmount, setSwapAmount] = useState("");
   const { user } = useAuth();
-  const supabase = createClientComponentClient();
 
   useEffect(() => {
     if (user) {
@@ -29,12 +31,21 @@ export default function WalletPage() {
           .from('wallets')
           .select('balance')
           .eq('user_id', user.id)
-          .single();
-        if (data) setBalance(data.balance);
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error fetching balance:', error);
+          return;
+        }
+        
+        if (data) {
+          setBalance(data.balance);
+        }
       };
+      
       fetchBalance();
     }
-  }, [user, supabase]);
+  }, [user]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
