@@ -21,7 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { validateReferralCode } from '@/utils/referral';
-import supabaseClient from '@/lib/supabase/client';
+import supabase from '@/lib/supabase/client';
 
 export default function SignUp() {
   const [name, setName] = useState('');
@@ -40,38 +40,34 @@ export default function SignUp() {
       setError('Please accept the terms and conditions to continue');
       return;
     }
+    
+    if (isLoading) return;
+    
     setIsLoading(true);
     setError('');
 
     try {
       let referredBy = null;
       if (referralCode) {
-        const isValidReferral = await validateReferralCode(supabaseClient, referralCode);
+        const isValidReferral = await validateReferralCode(supabase, referralCode);
         if (!isValidReferral) {
           setError('Invalid referral code. Please check and try again.');
-          setIsLoading(false);
           return;
         }
-        // If valid, set referredBy to the referral code
-        referredBy = referralCode; // or fetch the user ID associated with the referral code
+        referredBy = referralCode;
       }
 
       const newReferralCode = generateReferralCode();
-      console.log('Attempting signup with metadata:', {
-        name,
-        referralCode: newReferralCode,
-        referredBy: referredBy
-      });
       
       await signUp(email, password, {
         name,
         referralCode: newReferralCode,
-        referredBy: referredBy // Pass the referredBy value
+        referredBy
       });
       
       router.push('/dashboard');
     } catch (error: any) {
-      console.error('Detailed signup error:', error);
+      console.error('Signup error:', error);
       setError(error.message || 'An error occurred during sign up');
     } finally {
       setIsLoading(false);

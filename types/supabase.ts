@@ -1,3 +1,4 @@
+// Supabase types
 export type Json =
   | string
   | number

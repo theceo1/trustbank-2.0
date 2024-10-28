@@ -5,6 +5,14 @@ import { useEffect, useState } from 'react';
 import VerificationBadge from './VerificationBadge';
 import supabase from '@/lib/supabase/client';
 
+interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  is_verified: boolean;
+  created_at: string;
+}
+
 export default function ProfileHeader() {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState<string>('');
@@ -12,15 +20,22 @@ export default function ProfileHeader() {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (user) {
-        const { data: profile } = await supabase
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('*')
           .eq('user_id', user.id)
           .single();
 
-        if (profile?.full_name) {
-          setDisplayName(profile.full_name);
+        if (error) {
+          console.error('Error fetching profile:', error);
+          return;
+        }
+
+        if (data) {
+          setDisplayName(data.full_name);
         } else if (user.user_metadata?.name) {
           setDisplayName(user.user_metadata.name);
         } else {
@@ -28,6 +43,8 @@ export default function ProfileHeader() {
         }
 
         setIsVerified(!!user.user_metadata?.is_verified);
+      } catch (error) {
+        console.error('Error:', error);
       }
     };
 
