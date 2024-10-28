@@ -1,42 +1,38 @@
 "use client";
 
 import { useAuth } from '@/context/AuthContext';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useEffect, useState } from 'react';
 import VerificationBadge from './VerificationBadge';
+import supabase from '@/lib/supabase/client';
 
 export default function ProfileHeader() {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState<string>('');
   const [isVerified, setIsVerified] = useState(false);
-  const supabase = createClientComponentClient();
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (user) {
-        // Get user profile
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .single();
 
-        // Set display name prioritizing metadata name
-        if (user.user_metadata?.name) {
-          setDisplayName(user.user_metadata.name);
-        } else if (profile?.full_name) {
+        if (profile?.full_name) {
           setDisplayName(profile.full_name);
+        } else if (user.user_metadata?.name) {
+          setDisplayName(user.user_metadata.name);
         } else {
-          setDisplayName('User');
+          setDisplayName(user.email?.split('@')[0] || 'User');
         }
 
-        // Check verification status
         setIsVerified(!!user.user_metadata?.is_verified);
       }
     };
 
     fetchUserData();
-  }, [user, supabase]);
+  }, [user]);
 
   return (
     <div className="mb-8">

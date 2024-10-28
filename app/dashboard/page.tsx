@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import Announcements from '@/app/components/dashboard/Announcements';
 import supabaseClient from '@/lib/supabase/client';
+import supabase from "@/lib/supabase/client";
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
@@ -43,10 +44,10 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (user) {
-        const { data: profile } = await supabaseClient
+        const { data: profile } = await supabase
           .from('profiles')
           .select('full_name')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .single();
 
         if (profile?.full_name) {
