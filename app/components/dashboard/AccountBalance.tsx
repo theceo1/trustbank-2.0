@@ -22,15 +22,20 @@ export default function AccountBalance() {
 
   useEffect(() => {
     const fetchBalance = async () => {
+      if (!user) return;
+      
       try {
-        const response = await fetch('/api/balance');
-        const data = await response.json();
+        const response = await fetch('/api/balance', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
         
-        if (response.ok) {
-          setBalance(data);
-        } else {
-          console.error('Invalid balance data:', data);
-        }
+        if (!response.ok) throw new Error('Failed to fetch balance');
+        
+        const data = await response.json();
+        setBalance(data);
       } catch (error) {
         console.error('Error fetching balance:', error);
       } finally {
@@ -38,9 +43,7 @@ export default function AccountBalance() {
       }
     };
 
-    if (user) {
-      fetchBalance();
-    }
+    fetchBalance();
   }, [user]);
 
   return (

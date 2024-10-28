@@ -1,17 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createClientComponentClient, User } from "@supabase/auth-helpers-nextjs";
+import { User, Session } from "@supabase/auth-helpers-nextjs";
+import { AuthChangeEvent } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
-import { Session } from "@supabase/auth-helpers-nextjs";
-import { supabase } from '@/lib/supabase-client';
+import supabaseClient from '@/lib/supabase/client';
 
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
   signUp: (email: string, password: string, metadata?: {
     name?: string;
     referralCode?: string;
@@ -22,7 +20,7 @@ export interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-  
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,50 +28,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+      (event: AuthChangeEvent, session: Session | null) => {
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+      }
+    );
 
     return () => subscription.unsubscribe();
-  }, []); // Remove supabase.auth from dependencies
-
-  const login = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      router.push("/dashboard");
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.push("/");
-      toast({
-        title: "Signed out successfully",
-        description: "You have been logged out of your account.",
-      });
-    } catch (error) {
-      console.error("Error signing out:", error);
-      toast({
-        title: "Sign out failed",
-        description: "An error occurred while signing out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  }, []);
 
   const signUp = async (email: string, password: string, metadata?: {
     name?: string;
@@ -81,47 +44,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     referredBy?: string | null;
   }) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabaseClient.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            full_name: metadata?.name,
-            referral_code: metadata?.referralCode,
-            referred_by: metadata?.referredBy
-          }
+          data: metadata
         }
       });
-
       if (error) throw error;
-
-      if (data) {
-        toast({
-          title: "Account created successfully",
-          description: "Please check your email for verification.",
-        });
-      }
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      throw new Error(error.message || 'An error occurred during sign up');
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) throw error;
+      router.push("/auth/verify");
     } catch (error) {
-      console.error("Google sign-in error:", error);
+      console.error("Error signing up:", error);
       toast({
-        title: "Google sign-in failed",
-        description: "An error occurred during sign-in. Please try again.",
+        title: "Sign up failed",
+        description: "An error occurred during sign up.",
         variant: "destructive",
       });
     }
@@ -129,27 +65,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabaseClient.auth.signInWithPassword({
         email,
-        password,
+        password
       });
       if (error) throw error;
+      router.push("/dashboard");
     } catch (error) {
-      throw error;
+      console.error("Error signing in:", error);
+      toast({
+        title: "Sign in failed",
+        description: "Please check your credentials and try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const value = {
-    user,
-    isLoading,
-    login,
-    logout,
-    signUp,
-    signInWithGoogle,
-    signIn,
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'google'
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+      toast({
+        title: "Sign in failed",
+        description: "An error occurred during Google sign in.",
+        variant: "destructive",
+      });
+    }
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{
+      user,
+      isLoading,
+      signUp,
+      signIn,
+      signInWithGoogle
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

@@ -11,7 +11,6 @@ import { useAuth, AuthContextType } from '@/context/AuthContext';
 import Link from 'next/link';
 import { FcGoogle } from 'react-icons/fc';
 import { ThemeToggle } from "@/components/theme-toggle";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Info } from "lucide-react";
 import { generateReferralCode } from '@/utils/referral';
@@ -22,7 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { validateReferralCode } from '@/utils/referral';
-import { supabase } from '@/lib/supabase-client';
+import supabaseClient from '@/lib/supabase/client';
 
 export default function SignUp() {
   const [name, setName] = useState('');
@@ -47,7 +46,7 @@ export default function SignUp() {
     try {
       let referredBy = null;
       if (referralCode) {
-        const isValidReferral = await validateReferralCode(supabase, referralCode);
+        const isValidReferral = await validateReferralCode(supabaseClient, referralCode);
         if (!isValidReferral) {
           setError('Invalid referral code. Please check and try again.');
           setIsLoading(false);

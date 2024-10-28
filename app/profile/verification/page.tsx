@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Shield, CheckCircle, XCircle } from "lucide-react";
+import { Shield, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Link from "next/link";
 
 export default function VerificationPage() {
   const [isVerified, setIsVerified] = useState(false);
@@ -114,6 +115,15 @@ export default function VerificationPage() {
       transition={{ duration: 0.5 }}
       className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4"
     >
+      <div className="w-full max-w-md mb-4">
+        <Link href="/profile">
+          <Button variant="ghost" className="text-green-600 hover:text-green-700">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Profile
+          </Button>
+        </Link>
+      </div>
+      
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center">

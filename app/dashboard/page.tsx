@@ -15,13 +15,14 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import Announcements from '@/app/components/dashboard/Announcements';
+import supabaseClient from '@/lib/supabase/client';
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [isVerified, setIsVerified] = useState(false);
-  const supabase = createClientComponentClient();
   const { toast } = useToast();
+  const [displayName, setDisplayName] = useState('');
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -31,13 +32,35 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const checkVerificationStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseClient.auth.getUser();
       if (user?.user_metadata?.is_verified) {
         setIsVerified(true);
       }
     };
     checkVerificationStatus();
-  }, [supabase.auth]);
+  }, []);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.full_name) {
+          setDisplayName(profile.full_name);
+        } else if (user.user_metadata?.name) {
+          setDisplayName(user.user_metadata.name);
+        } else {
+          setDisplayName(user.email?.split('@')[0] || 'User');
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -55,8 +78,8 @@ export default function DashboardPage() {
         transition={{ duration: 0.5 }}
         className="mb-8"
       >
-        <h1 className="text-sm font-bold text-green-600 dark:text-green-600">
-          Welcome back, {user.user_metadata?.name || user.email}
+        <h1 className="text-2xl font-bold mb-8 text-green-600">
+          Welcome back, {displayName}
         </h1>
         <p className="text-gray-600 dark:text-gray-300 mt-2 fa-solid fa-chart-line text-sm">
           <i>Here&apos;s an overview of your financial activities.</i> 
