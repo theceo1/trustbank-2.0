@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from "@supabase/auth-helpers-nextjs";
+import { Session, User } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import supabase from '@/lib/supabase/client';
@@ -9,7 +9,11 @@ import supabase from '@/lib/supabase/client';
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, metadata: any) => Promise<void>;
+  signUp: (email: string, password: string, metadata: {
+    name: string;
+    referralCode: string;
+    referredBy: string | null;
+  }) => Promise<{ user: User | null; session: Session | null; } | void>;  // Updated return type
   signInWithGoogle: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -32,28 +36,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, metadata: any): Promise<void> => {
+  const signUp = async (email: string, password: string, metadata: {
+    name: string;
+    referralCode: string;
+    referredBy: string | null;
+  }) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: metadata,
+          data: {
+            full_name: metadata.name,
+            referral_code: metadata.referralCode,
+            referred_by: metadata.referredBy,
+            is_verified: false
+          },
           emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
 
       if (error) throw error;
 
+      // Create profile after successful signup
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            user_id: data.user.id,
+            full_name: metadata.name,
+            is_verified: false,
+            referral_code: metadata.referralCode,
+            referred_by: metadata.referredBy
+          });
+
+        if (profileError) throw profileError;
+      }
+
       toast({
         title: "Sign up successful",
         description: "Please check your email to verify your account.",
       });
-    } catch (error: any) {
+
+      return data;  // This return is now type-safe
+    } catch (error) {
       console.error("Sign up error:", error);
       toast({
         title: "Sign up failed",
-        description: error.message || "An error occurred during sign up",
+        description: error instanceof Error ? error.message : "An error occurred during sign up",
         variant: "destructive",
       });
       throw error;

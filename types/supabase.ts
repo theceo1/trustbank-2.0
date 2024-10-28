@@ -13,79 +13,25 @@ export interface Database {
       profiles: {
         Row: {
           id: string
-          user_id: string
           full_name: string | null
           is_verified: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          full_name?: string | null
-          is_verified?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          full_name?: string | null
-          is_verified?: boolean
-          created_at?: string
-        }
-      }
-      wallets: {
-        Row: {
-          id: string
-          user_id: string
-          balance: number
+          referral_code: string | null
+          referred_by: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          balance?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          balance?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      balances: {
-        Row: {
           id: string
-          user_id: string
-          total: number
-          available: number
-          pending: number
-          currency: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          total?: number
-          available?: number
-          pending?: number
-          currency?: string
-          created_at?: string
-          updated_at?: string
+          full_name?: string | null
+          is_verified?: boolean
+          referral_code?: string | null
+          referred_by?: string | null
         }
         Update: {
-          id?: string
-          user_id?: string
-          total?: number
-          available?: number
-          pending?: number
-          currency?: string
-          created_at?: string
-          updated_at?: string
+          full_name?: string | null
+          is_verified?: boolean
+          referral_code?: string | null
+          referred_by?: string | null
         }
       }
     }

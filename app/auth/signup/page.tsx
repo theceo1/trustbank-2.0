@@ -52,6 +52,7 @@ export default function SignUp() {
         const isValidReferral = await validateReferralCode(supabase, referralCode);
         if (!isValidReferral) {
           setError('Invalid referral code. Please check and try again.');
+          setIsLoading(false);
           return;
         }
         referredBy = referralCode;
