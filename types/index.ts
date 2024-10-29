@@ -1,17 +1,22 @@
+import { Session, User } from "@supabase/supabase-js";
+
 export interface UserProfile {
-    id: string;
+    user_id: string;
     email: string;
     name?: string;
-    referralCode: string;
-    referredBy?: string;
+    referral_code: string;
     created_at: string;
   }
 
 export interface AuthContextType {
-  user: any | null;
-  signUp: (email: string, password: string) => Promise<void>;
+  user: User | null;
+  isLoading: boolean;
+  signUp: (email: string, password: string, metadata?: {
+    name?: string;
+    referralCode?: string;
+    referredBy?: string | null;
+  }) => Promise<{ user: User | null; session: Session | null; } | void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  loading: boolean;
+  logout: () => Promise<void>;
 }

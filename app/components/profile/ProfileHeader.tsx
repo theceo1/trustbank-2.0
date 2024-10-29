@@ -6,7 +6,6 @@ import VerificationBadge from './VerificationBadge';
 import supabase from '@/lib/supabase/client';
 
 interface Profile {
-  id: string;
   user_id: string;
   full_name: string;
   is_verified: boolean;

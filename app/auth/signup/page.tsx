@@ -67,9 +67,8 @@ export default function SignUp() {
       });
       
       router.push('/dashboard');
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      setError(error.message || 'An error occurred during sign up');
+    } catch (error) {
+      setError('An error occurred during sign up');
     } finally {
       setIsLoading(false);
     }

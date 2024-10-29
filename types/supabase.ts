@@ -12,26 +12,23 @@ export interface Database {
     Tables: {
       profiles: {
         Row: {
-          id: string
+          user_id: string
           full_name: string | null
           is_verified: boolean
           referral_code: string | null
-          referred_by: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
+          user_id: string
           full_name?: string | null
           is_verified?: boolean
           referral_code?: string | null
-          referred_by?: string | null
         }
         Update: {
           full_name?: string | null
           is_verified?: boolean
           referral_code?: string | null
-          referred_by?: string | null
         }
       }
     }

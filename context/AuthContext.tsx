@@ -42,33 +42,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     referredBy: string | null;
   }) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: metadata.name,
             referral_code: metadata.referralCode,
-            referred_by: metadata.referredBy,
             is_verified: false
           },
           emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
 
-      if (error) throw error;
+    
 
       // Create profile after successful signup
       if (data.user) {
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
-            id: data.user.id,
+          .upsert({
             user_id: data.user.id,
             full_name: metadata.name,
             is_verified: false,
             referral_code: metadata.referralCode,
             referred_by: metadata.referredBy
+          }, {
+            onConflict: 'user_id',  // Specify the column that might conflict
+            ignoreDuplicates: false // Update existing record if found
           });
 
         if (profileError) throw profileError;
@@ -81,7 +82,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return data;  // This return is now type-safe
     } catch (error) {
-      console.error("Sign up error:", error);
       toast({
         title: "Sign up failed",
         description: error instanceof Error ? error.message : "An error occurred during sign up",
