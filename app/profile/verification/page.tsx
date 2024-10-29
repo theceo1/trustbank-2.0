@@ -3,12 +3,26 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle,
+  CardDescription 
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Shield, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import { 
+  Shield, 
+  CheckCircle, 
+  XCircle, 
+  ArrowLeft, 
+  AlertCircle,
+  Loader2 
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -16,13 +30,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import Link from "next/link";
+
+interface VerificationTypeInfo {
+  label: string;
+  placeholder: string;
+  helperText: string;
+  pattern?: string;
+}
+
+const VERIFICATION_TYPES: Record<string, VerificationTypeInfo> = {
+  bvn: {
+    label: "Bank Verification Number (BVN)",
+    placeholder: "Enter your 11-digit BVN",
+    helperText: "Your 11-digit Bank Verification Number",
+    pattern: "^[0-9]{11}$"
+  },
+  nin: {
+    label: "National Identity Number (NIN)",
+    placeholder: "Enter your 11-digit NIN",
+    helperText: "Your 11-digit National Identity Number",
+    pattern: "^[0-9]{11}$"
+  },
+  drivers_license: {
+    label: "Driver's License",
+    placeholder: "Enter your license number",
+    helperText: "Your Driver's License number as shown on the card",
+  },
+  international_passport: {
+    label: "International Passport",
+    placeholder: "Enter your passport number",
+    helperText: "Your passport number (e.g., A12345678)",
+    pattern: "^[A-Z][0-9]{8}$"
+  }
+};
 
 export default function VerificationPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [verificationType, setVerificationType] = useState('bvn');
   const [verificationId, setVerificationId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const supabase = createClientComponentClient();
   const { toast } = useToast();
 
@@ -37,19 +90,28 @@ export default function VerificationPage() {
     checkVerificationStatus();
   }, [supabase.auth]);
 
+  const validateVerificationId = (type: string, id: string): boolean => {
+    const typeInfo = VERIFICATION_TYPES[type];
+    if (!typeInfo.pattern) return true; // Skip validation if no pattern defined
+    
+    const regex = new RegExp(typeInfo.pattern);
+    return regex.test(id);
+  };
+
   const handleVerification = async () => {
+    setError('');
     setIsLoading(true);
+    
     try {
       if (!verificationId) {
-        toast({
-          title: "Validation Error",
-          description: "Please enter your verification ID.",
-          variant: "destructive",
-        });
-        return;
+        throw new Error("Please enter your verification ID.");
       }
 
-      // Use test BVN for sandbox: 10000000001
+      if (!validateVerificationId(verificationType, verificationId)) {
+        throw new Error(`Invalid ${VERIFICATION_TYPES[verificationType].label} format`);
+      }
+
+      // API call to verify the ID
       const response = await fetch('/api/verify', {
         method: 'POST',
         headers: {
@@ -58,13 +120,12 @@ export default function VerificationPage() {
         body: JSON.stringify({
           verificationType,
           data: {
-            verificationId: verificationId.trim() // Remove any whitespace
+            verificationId: verificationId.trim()
           }
         }),
       });
 
       const data = await response.json();
-      console.log('Verification response:', data);
 
       if (!response.ok || data.error) {
         throw new Error(data.error || 'Verification failed');
@@ -87,17 +148,12 @@ export default function VerificationPage() {
         toast({
           title: "Verification Successful",
           description: "Your identity has been verified successfully.",
-          variant: "default",
         });
       } else {
-        toast({
-          title: "Verification Failed",
-          description: "The provided information could not be verified. Please check your details and try again.",
-          variant: "destructive",
-        });
+        throw new Error("The provided information could not be verified. Please check your details and try again.");
       }
     } catch (error) {
-      console.error('Verification error:', error);
+      setError(error instanceof Error ? error.message : "An error occurred during verification");
       toast({
         title: "Verification Failed",
         description: error instanceof Error ? error.message : "An error occurred during verification",
@@ -129,57 +185,77 @@ export default function VerificationPage() {
           <CardTitle className="flex items-center">
             <Shield className="mr-2" /> Verification Status
           </CardTitle>
+          <CardDescription>
+            <i>Identity verification is required to unlock withdrawals.</i>
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center mb-6">
-            {isVerified ? (
-              <div className="flex items-center text-green-600">
-                <CheckCircle className="mr-2" /> 
-                <span>Your account is verified</span>
+          {isVerified ? (
+            <div className="flex items-center text-green-600">
+              <CheckCircle className="mr-2" /> 
+              <span>Your account is verified</span>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex items-center text-red-500">
+                <XCircle className="mr-2" /> 
+                <span>Your account is not verified</span>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center text-red-500 mb-4">
-                  <XCircle className="mr-2" /> 
-                  <span>Your account is not verified</span>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Verification Type</Label>
+                  <Select onValueChange={setVerificationType} defaultValue={verificationType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select verification type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bvn">BVN</SelectItem>
+                      <SelectItem value="nin">NIN</SelectItem>
+                      <SelectItem value="drivers_license">Driver&apos;s License</SelectItem>
+                      <SelectItem value="international_passport">International Passport</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">
+                    {VERIFICATION_TYPES[verificationType].helperText}
+                  </p>
                 </div>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Verification Type</label>
-                    <Select onValueChange={setVerificationType} defaultValue={verificationType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select verification type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bvn">BVN</SelectItem>
-                        <SelectItem value="nin">NIN</SelectItem>
-                        <SelectItem value="drivers_license">Driver&apos;s License</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">ID Number</label>
-                    <Input
-                      type="text"
-                      placeholder="Enter your ID number"
-                      value={verificationId}
-                      onChange={(e) => setVerificationId(e.target.value)}
-                    />
-                  </div>
-
-                  <Button 
-                    onClick={handleVerification} 
-                    className="w-full bg-green-600 hover:bg-green-700"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Verifying..." : "Verify Identity"}
-                  </Button>
+                <div className="space-y-2">
+                  <Label>ID Number</Label>
+                  <Input
+                    type="text"
+                    placeholder={VERIFICATION_TYPES[verificationType].placeholder}
+                    value={verificationId}
+                    onChange={(e) => setVerificationId(e.target.value)}
+                  />
                 </div>
-              </>
-            )}
-          </div>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button 
+                  onClick={handleVerification} 
+                  className="w-full bg-green-700 hover:bg-green-300 hover:text-black dark:bg-green-700 dark:text-black dark:hover:bg-green-300 dark:hover:text-black"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify Identity"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

@@ -65,9 +65,9 @@ export default function ProfilePage() {
         transition={{ duration: 0.5 }}
         className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-black dark:to-gray-900 p-4"
       >
-        <Card className="w-full max-w-2xl overflow-hidden shadow-xl pt-20">
+        <Card className="w-full max-w-2xl overflow-hidden shadow-xl pt-10">
           <CardHeader className="bg-green-600 text-white p-2">
-            <CardTitle className="text-lg font-bold">User Profile</CardTitle>
+            {/* <CardTitle className="text-lg font-bold">User Profile</CardTitle> */}
           </CardHeader>
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
@@ -75,7 +75,7 @@ export default function ProfilePage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                className="relative w-32 h-32 rounded-full overflow-hidden"
+                className="relative w-22 h-22 rounded-full overflow-hidden"
               >
                 <Image
                   src={`https://api.dicebear.com/6.x/initials/svg?seed=${userData?.email}`}
@@ -87,9 +87,9 @@ export default function ProfilePage() {
                 />
               </motion.div>
               <div className="flex-grow">
-                <h2 className="text-lg font-semibold">
+                {/* <h2 className="text-lg font-semibold">
                   Name: {userData?.user_metadata?.name || 'User'}
-                </h2>
+                </h2> */}
                 <p className="text-gray-600 dark:text-gray-300">
                   Email: {userData?.email}
                 </p>
@@ -114,7 +114,13 @@ export default function ProfilePage() {
                 <ProfileCard icon={<CreditCard className="w-6 h-6" />} title="Billing" description="View and manage your billing information" />
               </Link>
               <Link href="/profile/verification">
-                <ProfileCard icon={<Shield className="w-6 h-6" />} title="Verification Status" description="Check your account verification status" />
+                <ProfileCard 
+                  icon={<Shield className="w-6 h-6" />} 
+                  title="Verification Status" 
+                  description={userData?.user_metadata?.is_verified 
+                    ? "Your account is verified" 
+                    : "Complete your KYC verification"} 
+                />
               </Link>
               <Link href="/profile/transaction-history">
                 <ProfileCard icon={<History className="w-6 h-6" />} title="Transaction History" description="View your complete transaction history" />
@@ -128,7 +134,7 @@ export default function ProfilePage() {
           className="mt-8"
         >
           <Button onClick={handleSignOut} variant="destructive" className="px-8 py-2">
-            <LogOut className="w-4 h-4 mr-2" />
+            <LogOut className="w-4 h-4 mr-2 hover:text-black dark:hover:text-black" />
             Sign Out
           </Button>
         </motion.div>
