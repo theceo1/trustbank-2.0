@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,6 +24,7 @@ export default function Header() {
   const { user, loading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -58,6 +59,16 @@ export default function Header() {
     { href: "/about/faq", label: "FAQ" },
     { href: "/about/contact", label: "Contact Us" },
   ];
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
     <header className="bg-background border-b fixed top-0 left-0 right-0 z-50">
@@ -101,7 +112,7 @@ export default function Header() {
                 </NavigationMenuList>
               </NavigationMenu>
               {user ? (
-                <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
+                <Button variant="outline" size="sm" onClick={handleSignOut}>
                   Sign Out
                 </Button>
               ) : (
@@ -172,7 +183,7 @@ export default function Header() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      supabase.auth.signOut();
+                      handleSignOut();
                       setIsMenuOpen(false);
                     }}
                     className="mt-4"

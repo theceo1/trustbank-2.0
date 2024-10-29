@@ -161,18 +161,20 @@ export default function AccountSettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
+      const updatedSettings = {
+        ...settings,
+        ...newSettings,
+      };
+
       const { error } = await supabase
         .from('account_settings')
-        .upsert({
-          user_id: user.id,
-          ...settings,
-          ...newSettings,
-          updated_at: new Date().toISOString(),
-        });
+        .update(updatedSettings)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      setSettings(prev => ({ ...prev, ...newSettings }));
+      setSettings(updatedSettings);
+      
       toast({
         title: "Success",
         description: "Settings updated successfully",
@@ -292,11 +294,15 @@ export default function AccountSettingsPage() {
                     <Switch
                       id="show-balance"
                       checked={settings.privacy.show_balance}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) => {
+                        const newPrivacySettings = {
+                          ...settings.privacy,
+                          show_balance: checked
+                        };
                         updateSettings({
-                          privacy: { ...settings.privacy, show_balance: checked }
-                        })
-                      }
+                          privacy: newPrivacySettings
+                        });
+                      }}
                     />
                   </div>
                   
@@ -307,7 +313,11 @@ export default function AccountSettingsPage() {
                     </div>
                     <Select
                       value={settings.currency}
-                      onValueChange={(value) => updateSettings({ currency: value })}
+                      onValueChange={(value) => {
+                        updateSettings({
+                          currency: value
+                        });
+                      }}
                     >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select currency" />

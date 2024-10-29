@@ -57,7 +57,7 @@ export default function ProfilePage() {
   if (!userData) return null;
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-20">
+    <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 pt-20">
       <ProfileHeader />
       <motion.div 
         initial={{ opacity: 0 }}
@@ -65,9 +65,8 @@ export default function ProfilePage() {
         transition={{ duration: 0.5 }}
         className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-black dark:to-gray-900 p-4"
       >
-        <Card className="w-full max-w-2xl overflow-hidden shadow-xl pt-10">
+        <Card className="w-full max-w-2xl overflow-hidden shadow-xl pt-4">
           <CardHeader className="bg-green-600 text-white p-2">
-            {/* <CardTitle className="text-lg font-bold">User Profile</CardTitle> */}
           </CardHeader>
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
