@@ -13,8 +13,11 @@ export interface AuthContextType {
     name: string;
     referralCode: string;
     referredBy: string | null;
-  }) => Promise<{ user: User | null; session: Session | null; } | void>;  // Updated return type
-  signInWithGoogle: () => Promise<void>;
+  }) => Promise<{ user: User | null; session: Session | null; } | void>;
+  signInWithGoogle: () => Promise<{
+    data: { provider: string; url: string | null } | null;
+    error: Error | null;
+  }>;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -111,17 +114,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google'
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
       });
+      
       if (error) throw error;
+      return { 
+        data: data ? { provider: data.provider, url: data.url } : null, 
+        error: null 
+      };
     } catch (error) {
-      console.error("Error signing in with Google:", error);
-      toast({
-        title: "Sign in failed",
-        description: "An error occurred during Google sign in.",
-        variant: "destructive",
-      });
+      return { data: null, error: error as Error };
     }
   };
 

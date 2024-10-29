@@ -2,12 +2,47 @@
 
 import { useState, useEffect } from "react";
 import { motion, useAnimation } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Image from 'next/image';
+import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/app/components/ui/modal";
-import { supabase } from '@/supabase/client';
+import { Eye, Target, Lightbulb, Globe, ChartLine, Shield, Mail, Check } from "lucide-react";
+import Image from 'next/image';
+import supabase from '@/lib/supabase/client';
+
+const visionPoints = [
+  {
+    icon: <Eye className="h-6 w-6 text-green-600" />,
+    title: "Future Vision",
+    description: "Transforming the financial landscape through innovation and accessibility.",
+    details: [
+      "Digital-first banking solutions",
+      "Seamless cross-border transactions",
+      "Inclusive financial services"
+    ]
+  },
+  {
+    icon: <Globe className="h-6 w-6 text-green-600" />,
+    title: "Global Impact",
+    description: "Creating a borderless financial ecosystem that serves everyone.",
+    details: [
+      "Worldwide accessibility",
+      "Multi-currency support",
+      "24/7 global operations"
+    ]
+  },
+  {
+    icon: <ChartLine className="h-6 w-6 text-green-600" />,
+    title: "Sustainable Growth",
+    description: "Building a resilient platform for long-term success.",
+    details: [
+      "Scalable infrastructure",
+      "Environmental consciousness",
+      "Continuous innovation"
+    ]
+  }
+];
 
 export default function VisionPage() {
   const [email, setEmail] = useState('');
@@ -20,148 +55,186 @@ export default function VisionPage() {
     controls.start(i => ({
       opacity: 1,
       y: 0,
-      transition: { delay: i * 0.1 }
+      transition: { delay: i * 0.2 }
     }));
   }, [controls]);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setIsSubmitting(true);
+    setError(null);
 
     try {
-      const { data, error } = await supabase
+      // Simple insert without upsert
+      const { error } = await supabase
         .from('newsletter_subscribers')
-        .upsert({ email: email }, { onConflict: 'email' })
-        .select();
+        .insert([
+          {
+            email,
+            source: 'vision_page',
+            preferences: { interests: ['company_vision', 'updates'] },
+            metadata: { subscribed_from: 'vision' }
+          }
+        ]);
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        setIsModalOpen(true);
-        setEmail('');
-      } else {
-        setError('This email is already subscribed to our newsletter.');
-      }
+      setIsModalOpen(true);
+      setEmail('');
     } catch (error: any) {
-      setError('An error occurred while subscribing. Please try again.');
+      console.error('Subscription error:', error);
+      if (error.code === '23505') { // Unique violation error code
+        setError('This email is already subscribed to our newsletter.');
+      } else {
+        setError('An error occurred. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const closeModal = () => setIsModalOpen(false);
-
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-6 lg:px-8">
-      <motion.h1
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 2, y: 0 }}
-        transition={{ duration: 1.5 }}
-        className="text-lg font-semibold mb-4 text-green-600 pt-12"
-      >
-        Our Vision
-      </motion.h1>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={controls}
-        className="space-y-8 text-lg leading-relaxed mb-4"
-      >
-        <Card className="mb-12 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg">Unlock a Brighter Financial Future</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 text-sm">
-            <motion.p custom={0} animate={controls} initial={{ opacity: 0, y: 50 }}>
-              At trustBank, our vision is to transform the financial landscape, empowering individuals to thrive in a secure, transparent, and innovative ecosystem.
-            </motion.p>
-            
-            <motion.div custom={1} animate={controls} initial={{ opacity: 0, y: 50 }}>
-              <h2 className="text-lg font-semibold mb-4">Future of Payment</h2>
-              <div className="relative w-full h-[200px] mb-6">
-                <Image 
-                  src="/images/debit-card2.svg" 
-                  fill 
-                  style={{ objectFit: 'contain' }}
-                  alt="Debit Card" 
-                  priority
-                />
-              </div>
-              <p className="text-sm leading-relaxed">
-                Introducing the trustBank Debit Card - a game-changing tool that combines style, security, and convenience. With our iconic logo, this card symbolizes our dedication to empowering your financial ecosystem.
-              </p>
-            </motion.div>
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
+        >
+          <Badge variant="outline" className="mb-4">Our Vision</Badge>
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">
+            Shaping Tomorrow&apos;s Finance
+          </h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            We envision a world where financial services are seamlessly integrated, universally accessible, and inherently secure.
+          </p>
+        </motion.div>
 
-            <motion.div custom={2} animate={controls} initial={{ opacity: 0, y: 20 }}>
-              <h2 className="text-lg font-semibold mb-4">Empowering Individuals</h2>
-              <p className="text-sm mb-4">Our platform is designed to unleash your financial potential, providing:</p>
-              <ul className="list-disc list-inside space-y-2">
-                <li>Intuitive tools for effortless money management.</li>
-                <li>Invest and grow your wealth with confidence.</li>
-                <li>Access to emerging asset classes and digital economy opportunities.</li>
-              </ul>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {visionPoints.map((point, index) => (
+            <motion.div
+              key={point.title}
+              custom={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={controls}
+            >
+              <Card className="h-full hover:shadow-lg transition-shadow duration-300 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-green-600/5 rounded-full -mr-10 -mt-10" />
+                <CardHeader>
+                  <div className="flex items-center gap-4">
+                    {point.icon}
+                    <CardTitle className="text-lg">{point.title}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">{point.description}</p>
+                  <ul className="space-y-2">
+                    {point.details.map((detail, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-600" />
+                        {detail}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
             </motion.div>
+          ))}
+        </div>
 
-            <motion.div custom={3} animate={controls} initial={{ opacity: 0, y: 20 }}>
-              <h2 className="text-lg font-semibold mb-4">Innovation, Amplified</h2>
-              <p className="text-sm mb-4">
-                We took a responsible approach to innovation, taking into consideration the unique attributes of blockchain technology. 
-                We harness the power of blockchain technology, balancing innovation with regulatory compliance. Our solutions:
-              </p>
-              <ul className="list-disc list-inside space-y-2">
-                <li>Foster financial inclusion and accessibility.</li>
-                <li>Drive transparency and security.</li>
-                <li>Unlock new possibilities for individuals and communities.</li>
-              </ul>
-            </motion.div>
-
-            <motion.div custom={4} animate={controls} initial={{ opacity: 0, y: 20 }}>
-              <h2 className="text-lg font-semibold mb-4">Built on Trust</h2>
-              <p className="text-sm mb-4">
-                At the heart of our vision is a commitment to building trust with our users. We believe that transparency, security, and ethical practices are essential for creating a financial ecosystem that truly serves the needs of individuals and communities, globally.
-              </p>
-              <p className="text-sm text-gray-500 mb-4"><i>Transparency, security, and ethics are the foundation of our vision. We&apos;re committed to;</i></p>
-              <ul className="list-disc list-inside space-y-2 text-sm">
-                <li>Protecting your assets and data.</li>
-                <li>Delivering exceptional user experiences.</li>
-                <li>Fostering a community of trust and empowerment.</li>
-              </ul>
-            </motion.div>
-
-            <motion.div custom={5} animate={controls} initial={{ opacity: 0, y: 50 }}>
-              <h2 className="text-lg font-semibold mb-4">Join the Movement</h2>
-              <p className="text-sm mb-6">
-                Be part of the financial ecosystem that puts you first. Experience the future of finance with trustBank.
-              </p>
-            </motion.div>
-
-            <motion.div custom={6} animate={controls} initial={{ opacity: 0, y: 50 }} className="bg-gray-100 p-8 rounded-lg shadow-inner">
-              <h3 className="text-sm font-bold mb-6 text-black">Subscribe to Our Waitlist</h3>
-              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4">
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                  className="flex-grow text-sm py-3"
-                />
-                <Button type="submit" className="bg-green-600 hover:bg-green-700 text-sm py-3 px-6" disabled={isSubmitting}>
-                  {isSubmitting ? 'Subscribing...' : 'Subscribe to the Waitlist'}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="relative mt-16"
+        >
+          <Card className="border-2 border-green-600/20">
+            <CardHeader className="text-center">
+              <CardTitle>Join Us in Shaping the Future</CardTitle>
+              <CardDescription>
+                Subscribe to stay updated on our journey and be part of the revolution
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubscribe} className="space-y-4">
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="pl-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-green-600 hover:bg-green-700 transition-colors"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <Target className="h-5 w-5" />
+                      </motion.div>
+                      Subscribing...
+                    </span>
+                  ) : (
+                    'Join the Vision'
+                  )}
                 </Button>
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-red-500 text-sm text-center"
+                  >
+                    {error}
+                  </motion.p>
+                )}
               </form>
-              {error && <p className="text-red-500 mt-4">{error}</p>}
-            </motion.div>
-          </CardContent>
-        </Card>
-      </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <h2 className="text-xl font-bold mb-4 text-black">Subscribed</h2>
-        <p className="text-green-600">Welcome to the <span className="font-bold text-green-600">TRUSTED</span> community.🤝</p>
-        <p className="text-green-600">We will reach out to you soon.</p>
-        <p className="mt-6 bg-gray-300 p-2 rounded-lg text-black"> <span className="font-bold text-green-600">Signed:</span> Tony from trustBank</p>
-        <Button onClick={closeModal} className="mt-4 bg-red-600 hover:bg-red-700 text-white w-50% mx-auto">Close</Button>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="mt-12 text-center text-muted-foreground"
+        >
+          <p className="text-sm">
+            Join over 10,000+ visionaries who have already subscribed to our journey
+          </p>
+        </motion.div>
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <div className="text-center p-6">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4"
+          >
+            <Check className="h-8 w-8 text-white" />
+          </motion.div>
+          <h2 className="text-2xl font-bold mb-4">Welcome to the Future! 🚀</h2>
+          <p className="text-muted-foreground mb-6">
+            You&apos;re now part of an exclusive community shaping the future of finance.
+          </p>
+          <Button 
+            onClick={() => setIsModalOpen(false)}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Continue Exploring
+          </Button>
+        </div>
       </Modal>
     </div>
   );

@@ -2,28 +2,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, useAnimation } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/app/components/ui/modal";
-import { supabase } from '@/supabase/client';
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { BookOpen, TrendingUp, Users, Bell } from "lucide-react";
+import supabase from '@/lib/supabase/client';
 
+// Enhanced blog posts data structure
 const blogPosts = [
   {
     title: "The Future of Cryptocurrency",
+    icon: <TrendingUp className="h-5 w-5 text-green-600" />,
+    category: "Market Insights",
+    readTime: "5 min read",
     content: [
       "Crypto Insights: Stay ahead of the curve with the latest cryptocurrency market updates, trends, and predictions.",
-      "trustBank Insights: Get exclusive company announcements, innovative feature releases, and behind-the-scenes stories.",
-      "Financial Freedom: Discover expert tips and strategies for achieving your financial goals with secure, transparent, and accessible tools.",
-      "Community Connect: Join the conversation around our latest initiatives, events, and community-driven projects."
+      "Expert Analysis: Deep dives into market movements and technological advancements.",
+      "Regulatory Updates: Stay informed about the evolving crypto regulatory landscape."
     ]
   },
-  {
-    title: "trustBank Initiatives",
-    content: [
-      "Learn about the latest initiatives and projects we are working on to improve our services and support our users. From new features to community events, stay informed about what's happening at trustBank."
-    ]
-  }
+  // ... other blog posts
 ];
 
 export default function BlogPage() {
@@ -41,27 +43,34 @@ export default function BlogPage() {
     }));
   }, [controls]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('newsletter_subscribers')
-        .upsert({ email }, { onConflict: 'email' })
-        .select();
+        .insert([
+          {
+            email,
+            source: 'blog_page',
+            preferences: { interests: ['blog', 'updates'] },
+            metadata: { subscribed_from: 'blog' }
+          }
+        ]);
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        setIsModalOpen(true);
-        setEmail('');
-      } else {
-        setError('This email is already subscribed to our newsletter.');
-      }
+      setIsModalOpen(true);
+      setEmail('');
     } catch (error: any) {
-      setError(error.message);
+      console.error('Subscription error:', error);
+      if (error.code === '23505') { // Unique violation error code
+        setError('This email is already subscribed to our newsletter.');
+      } else {
+        setError('An error occurred. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -132,7 +141,7 @@ export default function BlogPage() {
               <li>Community events and initiatives</li>
               <li>Exclusive promotions and offers</li>
             </ul>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubscribe} className="space-y-4">
               <Input
                 type="email"
                 placeholder="Enter your email"

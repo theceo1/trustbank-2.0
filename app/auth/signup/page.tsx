@@ -79,10 +79,29 @@ export default function SignUp() {
     setError('');
     
     try {
-      await signInWithGoogle();
-      router.push('/dashboard');
+      const { data, error } = await signInWithGoogle();
+      if (error) throw error;
+
+      // Wait for the session to be established
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Generate and save referral code for new Google users
+        const newReferralCode = generateReferralCode();
+        await supabase.from('profiles').upsert({
+          user_id: session.user.id,
+          referral_code: newReferralCode,
+          full_name: session.user.user_metadata?.full_name || '',
+        });
+
+        router.push('/dashboard');
+        router.refresh(); // Force a refresh to update auth state
+      } else {
+        throw new Error('Failed to establish session');
+      }
     } catch (error: any) {
-      setError('Failed to sign in with Google. Please try again.');
+      console.error('Google sign up error:', error);
+      setError('Failed to sign up with Google. Please try again.');
     } finally {
       setIsLoading(false);
     }

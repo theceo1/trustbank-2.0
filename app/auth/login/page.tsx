@@ -12,6 +12,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Mail, Lock } from "lucide-react";
+import supabase from '@/lib/supabase/client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -41,11 +42,15 @@ export default function Login() {
     setError('');
     
     try {
-      await signInWithGoogle();
-      router.push('/dashboard');
+      const { data, error } = await signInWithGoogle();
+      if (error) throw error;
+
+      // No need to check for session immediately as OAuth redirects to another page
+      // The callback handler will handle the redirect to dashboard
+      
     } catch (error: any) {
+      console.error('Google sign in error:', error);
       setError('Failed to sign in with Google. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };

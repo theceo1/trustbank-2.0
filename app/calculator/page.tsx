@@ -9,6 +9,12 @@ import { motion } from "framer-motion";
 import axios from 'axios';
 import Image from 'next/image';
 import { Modal } from "@/app/components/ui/modal";
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface CoinGeckoResponse {
   [key: string]: {
@@ -95,12 +101,24 @@ export default function CalculatorPage() {
     setIsSubmitting(true);
     setSubscriptionError(null);
 
-    // Simulating subscription process
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const { data, error } = await supabase
+        .from('newsletter_subscribers')
+        .insert([{ 
+          email,
+          source: 'calculator_page'
+        }]);
+
+      if (error) throw error;
+
       setIsModalOpen(true);
       setEmail('');
-    }, 1500);
+    } catch (error: any) {
+      console.error('Error subscribing:', error);
+      setSubscriptionError('Failed to subscribe. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const closeModal = () => setIsModalOpen(false);
