@@ -35,25 +35,23 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!acceptedTerms) {
-      setError('Please accept the terms and conditions to continue');
-      return;
-    }
-
     setIsLoading(true);
     setError('');
 
     try {
-      const result = await signUp(email, password, {
-        name: name,
-        referralCode: referralCode || undefined,
-        referredBy: referralCode || undefined
-      });
-      
-      if (result?.user) {
-        router.push('/dashboard');
+      if (!acceptedTerms) {
+        throw new Error('Please accept the terms and conditions');
       }
+
+      const { data, error } = await signUp(email, password, {
+        name,
+        referralCode,
+      });
+
+      if (error) throw error;
+      if (!data?.user) throw new Error('No user returned from signup');
+
+      router.push('/auth/verify');
     } catch (err) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred during sign up');
@@ -67,10 +65,9 @@ export default function SignUp() {
     setError('');
     
     try {
-      const result = await signInWithGoogle();
-      if (!result || result.error) {
-        throw new Error(result?.error?.message || 'Failed to sign in with Google');
-      }
+      const { data, error } = await signInWithGoogle();
+      if (error) throw error;
+      if (!data?.user) throw new Error('No user returned from Google sign in');
 
       // Wait for the session to be established
       const { data: { session } } = await supabase.auth.getSession();
@@ -81,21 +78,15 @@ export default function SignUp() {
         const { error: upsertError } = await supabase
           .from('profiles')
           .upsert({
-            user_id: session.user.id,
+            user_id: data.user.id,
             referral_code: newReferralCode,
-            full_name: session.user.user_metadata?.full_name || '',
           });
 
         if (upsertError) throw upsertError;
-
-        router.push('/dashboard');
-        router.refresh(); // Force a refresh to update auth state
-      } else {
-        throw new Error('Failed to establish session');
       }
     } catch (err) {
-      console.error('Google sign up error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to sign up with Google. Please try again.');
+      console.error('Google sign in error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to sign in with Google');
     } finally {
       setIsLoading(false);
     }

@@ -42,15 +42,17 @@ export default function Login() {
     setError('');
     
     try {
-      const { data, error } = await signInWithGoogle();
+      const result = await signInWithGoogle();
+      if (!result) return;
+      
+      const { data, error } = result;
       if (error) throw error;
 
       // No need to check for session immediately as OAuth redirects to another page
-      // The callback handler will handle the redirect to dashboard
-      
-    } catch (error: any) {
-      console.error('Google sign in error:', error);
-      setError('Failed to sign in with Google. Please try again.');
+    } catch (err) {
+      console.error('Google sign in error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to sign in with Google');
+    } finally {
       setIsLoading(false);
     }
   };

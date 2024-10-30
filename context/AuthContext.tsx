@@ -1,3 +1,4 @@
+// context/AuthContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -13,9 +14,15 @@ export interface AuthContextType {
     name?: string;
     referralCode?: string;
     referredBy?: string | null;
-  }) => Promise<{ user: User | null; session: Session | null; } | undefined>;
+  }) => Promise<{ 
+    data: { user: User | null; session: Session | null } | null; 
+    error: Error | null; 
+  }>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<{ data: any; error: any; } | undefined>;
+  signInWithGoogle: () => Promise<{ 
+    data: { user: User | null; session: Session | null } | null; 
+    error: Error | null; 
+  }>;
   logout: () => Promise<void>;
 }
 
@@ -68,8 +75,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
       
-      if (error) throw error;
-      return data;
+      return { 
+        data: { user: data.user, session: data.session }, 
+        error: null 
+      };
     } catch (error) {
       console.error("Error signing up:", error);
       toast({
@@ -77,7 +86,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "An error occurred during sign up.",
         variant: "destructive",
       });
-      throw error;
+      return { 
+        data: null, 
+        error: error as Error 
+      };
     }
   };
 
@@ -99,10 +111,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = async () => {
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google'
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
       });
+
+      // signInWithOAuth returns { data: { provider, url }, error }
+      // We should handle the redirect case
       if (error) throw error;
-      return { data, error };
+      
+      // For OAuth, we don't get user/session immediately as it redirects
+      return { 
+        data: null,
+        error: null 
+      };
     } catch (error) {
       console.error("Error signing in with Google:", error);
       toast({
@@ -110,7 +133,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Could not sign in with Google.",
         variant: "destructive",
       });
-      throw error;
+      return {
+        data: null,
+        error: error as Error
+      };
     }
   };
 
