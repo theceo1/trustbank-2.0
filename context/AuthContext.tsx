@@ -1,173 +1,148 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-// import { Session, User } from "@supabase/auth-helpers-nextjs";
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useToast } from "@/hooks/use-toast";
 import supabase from '@/lib/supabase/client';
-import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
+import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { generateReferralCode } from '@/utils/referral';
 
 export interface AuthContextType {
   user: User | null;
+  loading: boolean;
   isLoading: boolean;
-  signUp: (email: string, password: string, metadata: {
-    name: string;
-    referralCode: string;
-    referredBy: string | null;
-  }) => Promise<{ user: User | null; session: Session | null; } | void>;
-  signInWithGoogle: () => Promise<{
-    data: { provider: string; url: string | null } | null;
-    error: Error | null;
-  }>;
-  signIn: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ data: any; error: any }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session: Session | null) => {
-        if (session) {
-          setUser(session.user);
-        } else {
-          setUser(null);
-        }
-        setIsLoading(false);
-      }
-    );
+    // Check active sessions and sets the user
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+      setIsLoading(false);
+    });
+
+    // Listen for changes on auth state
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (
+      event: AuthChangeEvent,
+      session: Session | null
+    ) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+      setIsLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, metadata: {
-    name: string;
-    referralCode: string;
-    referredBy: string | null;
-  }) => {
+  const signInWithGoogle = async () => {
     try {
-      const { data } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google'
+      });
+      return { data, error };
+    } catch (error) {
+      return { data: null, error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      const referralCode = generateReferralCode();
+      
+      // 1. Create auth user
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            full_name: metadata.name,
-            referral_code: metadata.referralCode,
-            is_verified: false
+            full_name: name,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        }
+        },
       });
 
-    
+      if (signUpError) throw signUpError;
 
-      // Create profile after successful signup
-      if (data.user) {
+      // 2. Create profile if signup successful
+      if (data?.user) {
         const { error: profileError } = await supabase
           .from('profiles')
-          .upsert({
-            user_id: data.user.id,
-            full_name: metadata.name,
-            is_verified: false,
-            referral_code: metadata.referralCode,
-            referred_by: metadata.referredBy
-          }, {
-            onConflict: 'user_id',  // Specify the column that might conflict
-            ignoreDuplicates: false // Update existing record if found
+          .insert({
+            id: data.user.id,
+            full_name: name,
+            referral_code: referralCode,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           });
 
         if (profileError) throw profileError;
+        
+        // 3. Create initial wallet for user
+        const { error: walletError } = await supabase
+          .from('wallets')
+          .insert({
+            user_id: data.user.id,
+            balance: 0,
+            currency: 'NGN'
+          });
+
+        if (walletError) throw walletError;
+
+        router.push('/dashboard');
+        return { error: null };
       }
-
-      toast({
-        title: "Sign up successful",
-        description: "Please check your email to verify your account.",
-      });
-
-      return data;  // This return is now type-safe
     } catch (error) {
-      toast({
-        title: "Sign up failed",
-        description: error instanceof Error ? error.message : "An error occurred during sign up",
-        variant: "destructive",
-      });
-      throw error;
+      console.error('SignUp error:', error);
+      return { error };
     }
+    return { error: new Error('Signup failed') };
   };
 
   const signIn = async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
+
       if (error) throw error;
-      router.push("/dashboard");
+
+      router.push('/dashboard');
+      return { error: null };
     } catch (error) {
-      console.error("Error signing in:", error);
-      toast({
-        title: "Sign in failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
+      return { error };
     }
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-      
-      if (error) throw error;
-      return { 
-        data: data ? { provider: data.provider, url: data.url } : null, 
-        error: null 
-      };
-    } catch (error) {
-      return { data: null, error: error as Error };
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-      toast({
-        title: "Sign out failed",
-        description: "An error occurred during sign out.",
-        variant: "destructive",
-      });
-    }
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isLoading,
-      signUp,
-      signInWithGoogle,
-      signIn,
-      logout
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      isLoading, 
+      signUp, 
+      signIn, 
+      signInWithGoogle, 
+      signOut 
     }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

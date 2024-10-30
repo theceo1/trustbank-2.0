@@ -13,15 +13,24 @@ interface CoinData {
 
 export default function MarketOverview({ itemsPerPage = 3 }) {
   const [marketData, setMarketData] = useState<CoinData[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false');
+        setIsLoading(true);
+        const response = await fetch('/api/market-data');
+        if (!response.ok) {
+          throw new Error(`API responded with status: ${response.status}`);
+        }
         const data = await response.json();
         setMarketData(data);
       } catch (error) {
-        console.error("Error fetching market data:", error);
+        console.error('Error fetching market data:', error);
+        setError('Failed to load market data');
+      } finally {
+        setIsLoading(false);
       }
     };
 

@@ -19,89 +19,89 @@ interface BalanceData {
   currency: string;
 }
 
-interface PostgresChangesPayload {
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-  new: BalanceData;
-  old: BalanceData | null;
-}
-
 export default function AccountBalance() {
-  const [balance, setBalance] = useState<BalanceData | null>(null);
+  const [balance, setBalance] = useState<BalanceData>({
+    balance: 0,
+    total_deposits: 0,
+    total_withdrawals: 0,
+    total: 0,
+    available: 0,
+    pending: 0,
+    currency: '₦'
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (!user) return;
+  const formatAmount = (amount: number | undefined | null): string => {
+    return amount ? amount.toFixed(2) : '0.00';
+  };
 
+  const getCurrency = (): string => {
+    return balance?.currency || 'NGN';
+  };
+
+  useEffect(() => {
     const fetchBalance = async () => {
       if (!user) return;
       
       try {
-        const { data: existingWallet, error: fetchError } = await supabase
+        const { data, error } = await supabase
           .from('wallets')
           .select('*')
           .eq('user_id', user.id)
           .single();
 
-        if (fetchError) {
-          if (fetchError.code === 'PGRST116') {
+        if (error) {
+          if (error.code === 'PGRST116') {
             // Create new wallet if none exists
             const { data: newWallet, error: createError } = await supabase
               .from('wallets')
               .insert([
                 {
                   user_id: user.id,
-                  total: 0,
-                  available: 0,
-                  pending: 0,
-                  currency: 'NGN'
+                  balance: 0,
+                  total_deposits: 0,
+                  total_withdrawals: 0,
+                  currency: '₦',
+                  last_transaction_at: new Date().toISOString()
                 }
               ])
               .select()
               .single();
 
-            if (createError) {
-              console.error('Error creating wallet:', createError);
-              return;
+            if (createError) throw createError;
+            
+            if (newWallet) {
+              setBalance({
+                ...newWallet,
+                total: newWallet.balance,
+                available: newWallet.balance,
+                pending: 0,
+                currency: newWallet.currency || '₦'
+              });
             }
-            setBalance(newWallet);
           } else {
-            console.error('Error fetching wallet:', fetchError);
+            throw error;
           }
-        } else {
-          setBalance(existingWallet);
+        } else if (data) {
+          setBalance({
+            ...data,
+            total: data.balance,
+            available: data.balance,
+            pending: 0,
+            currency: data.currency || '₦'
+          });
         }
       } catch (error) {
-        console.error('Error in wallet operation:', error);
+        console.error('Error fetching balance:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchBalance();
-
-    // Subscribe to real-time changes
-    const subscription = supabase
-      .channel('wallets')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'wallets', filter: `user_id=eq.${user.id}` },
-        (payload: PostgresChangesPayload) => {
-          setBalance({
-            ...payload.new,
-            total: payload.new.balance,
-            available: payload.new.balance - payload.new.pending,
-            pending: 0,
-            currency: '₦'
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [user]);
 
   return (
@@ -124,7 +124,7 @@ export default function AccountBalance() {
               <div className="flex items-center justify-between">
                 <div className="text-2xl font-bold">
                   {showBalance ? (
-                    `${balance?.currency || 'NGN'} ${balance?.available.toFixed(2) || '0.00'}`
+                    `${getCurrency()} ${formatAmount(balance?.available)}`
                   ) : (
                     '****'
                   )}
@@ -138,8 +138,9 @@ export default function AccountBalance() {
                 </Button>
               </div>
               <div className="mt-2 text-sm text-gray-500">
-                <div>Pending: {balance?.currency} {balance?.pending.toFixed(2)}</div>
-                <div>Total: {balance?.currency} {balance?.total.toFixed(2)}</div>
+                <div>
+                  Total: {getCurrency()} {formatAmount(balance?.total)}
+                </div>
               </div>
               <Button 
                 onClick={() => setIsModalOpen(true)} 

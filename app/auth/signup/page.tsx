@@ -13,14 +13,13 @@ import { FcGoogle } from 'react-icons/fc';
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Info } from "lucide-react";
-import { generateReferralCode } from '@/utils/referral';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { validateReferralCode } from '@/utils/referral';
+import { generateReferralCode, validateReferralCode } from '@/utils/referral';
 import supabase from '@/lib/supabase/client';
 
 export default function SignUp() {
@@ -36,39 +35,32 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!acceptedTerms) {
       setError('Please accept the terms and conditions to continue');
       return;
     }
-    
-    if (isLoading) return;
-    
+
     setIsLoading(true);
     setError('');
 
     try {
-      let referredBy = null;
-      if (referralCode) {
-        const isValidReferral = await validateReferralCode(supabase, referralCode);
-        if (!isValidReferral) {
-          setError('Invalid referral code. Please check and try again.');
-          setIsLoading(false);
-          return;
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          }
         }
-        referredBy = referralCode;
-      }
-
-      const newReferralCode = generateReferralCode();
-      
-      await signUp(email, password, {
-        name,
-        referralCode: newReferralCode,
-        referredBy
       });
+
+      if (error) throw error;
       
       router.push('/dashboard');
-    } catch (error) {
-      setError('An error occurred during sign up');
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      setError(error.message || 'An error occurred during sign up');
     } finally {
       setIsLoading(false);
     }
