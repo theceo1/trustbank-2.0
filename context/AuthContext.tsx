@@ -9,17 +9,13 @@ import supabase from '@/lib/supabase/client';
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signUp: (data: {
-    email: string;
-    password: string;
-    options?: {
-      data: {
-        full_name: string;
-      }
-    }
-  }) => Promise<{ user: User | null; session: Session | null; } | void>;
+  signUp: (email: string, password: string, metadata?: {
+    name?: string;
+    referralCode?: string;
+    referredBy?: string | null;
+  }) => Promise<{ user: User | null; session: Session | null; } | undefined>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<{ data: any; error: any; }>;
+  signInWithGoogle: () => Promise<{ data: any; error: any; } | undefined>;
   logout: () => Promise<void>;
 }
 
@@ -32,32 +28,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Remove the second argument from onAuthStateChange
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        setUser(session.user);
-      } else {
-        setUser(null);
-      }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
       setIsLoading(false);
+      
+      if (event === 'SIGNED_IN') {
+        router.refresh();
+      }
+      if (event === 'SIGNED_OUT') {
+        router.refresh();
+        router.push('/');
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []); // Empty dependency array
+  }, [router]);
 
-  const signUp = async (data: {
-    email: string;
-    password: string;
-    options?: {
-      data: {
-        full_name: string;
-      }
+  const signUp = async (
+    email: string, 
+    password: string, 
+    metadata?: {
+      name?: string;
+      referralCode?: string;
+      referredBy?: string | null;
     }
-  }) => {
+  ) => {
     try {
-      const { data: authData, error } = await supabase.auth.signUp(data);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: metadata?.name,
+            referralCode: metadata?.referralCode,
+            referredBy: metadata?.referredBy,
+          }
+        }
+      });
+      
       if (error) throw error;
-      return authData;
+      return data;
     } catch (error) {
       console.error("Error signing up:", error);
       toast({

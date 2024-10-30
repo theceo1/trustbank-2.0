@@ -27,7 +27,7 @@ export default function AccountBalance() {
     total: 0,
     available: 0,
     pending: 0,
-    currency: 'NGN'
+    currency: '₦'
   });
   const [isLoading, setIsLoading] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
@@ -39,7 +39,7 @@ export default function AccountBalance() {
   };
 
   const getCurrency = (): string => {
-    return balance?.currency || 'NGN';
+    return balance?.currency || '₦';
   };
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function AccountBalance() {
                   total_deposits: 0,
                   total_withdrawals: 0,
                   pending_balance: 0,
-                  currency: 'NGN',
+                  currency: '₦',
                   last_transaction_at: new Date().toISOString()
                 }
               ])
@@ -80,7 +80,7 @@ export default function AccountBalance() {
                 total: newWallet.balance,
                 available: newWallet.balance - (newWallet.pending_balance || 0),
                 pending: newWallet.pending_balance || 0,
-                currency: newWallet.currency
+                currency: '₦'
               });
             }
           } else {
@@ -92,7 +92,7 @@ export default function AccountBalance() {
             total: data.balance,
             available: data.balance - (data.pending_balance || 0),
             pending: data.pending_balance || 0,
-            currency: data.currency
+            currency: '₦'
           });
         }
       } catch (error) {
@@ -103,6 +103,29 @@ export default function AccountBalance() {
     };
 
     fetchBalance();
+
+    // Subscribe to real-time changes
+    const subscription = supabase
+      .channel('wallets')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'wallets', filter: `user_id=eq.${user?.id}` },
+        (payload: any) => {
+          if (payload.new) {
+            setBalance({
+              ...payload.new,
+              total: payload.new.balance,
+              available: payload.new.balance - (payload.new.pending_balance || 0),
+              pending: payload.new.pending_balance || 0,
+              currency: '₦'
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [user]);
 
   return (

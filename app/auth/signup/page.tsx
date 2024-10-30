@@ -45,22 +45,18 @@ export default function SignUp() {
     setError('');
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: name,
-          }
-        }
+      const result = await signUp(email, password, {
+        name: name,
+        referralCode: referralCode || undefined,
+        referredBy: referralCode || undefined
       });
-
-      if (error) throw error;
       
-      router.push('/dashboard');
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      setError(error.message || 'An error occurred during sign up');
+      if (result?.user) {
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred during sign up');
     } finally {
       setIsLoading(false);
     }
@@ -71,8 +67,10 @@ export default function SignUp() {
     setError('');
     
     try {
-      const { data, error } = await signInWithGoogle();
-      if (error) throw error;
+      const result = await signInWithGoogle();
+      if (!result || result.error) {
+        throw new Error(result?.error?.message || 'Failed to sign in with Google');
+      }
 
       // Wait for the session to be established
       const { data: { session } } = await supabase.auth.getSession();
@@ -80,20 +78,24 @@ export default function SignUp() {
       if (session) {
         // Generate and save referral code for new Google users
         const newReferralCode = generateReferralCode();
-        await supabase.from('profiles').upsert({
-          user_id: session.user.id,
-          referral_code: newReferralCode,
-          full_name: session.user.user_metadata?.full_name || '',
-        });
+        const { error: upsertError } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: session.user.id,
+            referral_code: newReferralCode,
+            full_name: session.user.user_metadata?.full_name || '',
+          });
+
+        if (upsertError) throw upsertError;
 
         router.push('/dashboard');
         router.refresh(); // Force a refresh to update auth state
       } else {
         throw new Error('Failed to establish session');
       }
-    } catch (error: any) {
-      console.error('Google sign up error:', error);
-      setError('Failed to sign up with Google. Please try again.');
+    } catch (err) {
+      console.error('Google sign up error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to sign up with Google. Please try again.');
     } finally {
       setIsLoading(false);
     }
