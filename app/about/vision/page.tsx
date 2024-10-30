@@ -94,7 +94,7 @@ export default function VisionPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-24">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -209,7 +209,7 @@ export default function VisionPage() {
           className="mt-12 text-center text-muted-foreground"
         >
           <p className="text-sm">
-            Join over 10,000+ visionaries who have already subscribed to our journey
+            Join over 3,000+ visionaries who have already subscribed to our journey
           </p>
         </motion.div>
       </div>

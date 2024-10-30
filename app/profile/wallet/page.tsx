@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import supabase from '@/lib/supabase/client';
 import WalletPageSkeleton from "@/app/components/skeletons/WalletPageSkeleton";
 import { Badge } from "@/components/ui/badge";
+import BackButton from "@/components/ui/back-button";
 
 interface WalletData {
   balance: number;
@@ -234,6 +235,7 @@ export default function WalletPage() {
       initial="hidden"
       animate="visible"
     >
+      <BackButton />
       <motion.div variants={itemVariants} className="mb-8">
         <Card>
           <CardHeader>

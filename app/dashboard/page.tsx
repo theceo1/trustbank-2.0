@@ -10,7 +10,7 @@ import AccountBalance from '@/components/dashboard/AccountBalance';
 import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import MarketOverview from '@/components/dashboard/MarketOverview';
 import Trade from '@/components/dashboard/Trade';
-import CryptoPriceTracker from '@/components/common/CryptoPriceTracker';
+// import CryptoPriceTracker from '@/components/common/CryptoPriceTracker';
 import DashboardHeader from '@/app/components/dashboard/DashboardHeader';
 import LoadingDashboard from '@/app/components/dashboard/LoadingDashboard';
 import QuickStats from '@/app/components/dashboard/QuickStats';
@@ -19,6 +19,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import supabase from "@/lib/supabase/client";
+import CryptoPriceTracker from "@/components/dashboard/CryptoPriceTracker";
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();

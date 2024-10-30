@@ -1,146 +1,122 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { Bell, Check, AlertCircle, Info, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
-import supabase from '@/lib/supabase/client';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  is_read: boolean;
-  created_at: string;
-}
+import { Bell, Mail, Smartphone, DollarSign, Megaphone } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import BackButton from "@/components/ui/back-button";
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [notifications, setNotifications] = useState({
+    email: true,
+    push: true,
+    transactions: true,
+    security: true,
+    marketing: false,
+  });
 
-  const fetchNotifications = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error: fetchError } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+  const previousSettings = useRef(notifications);
 
-      if (fetchError) throw fetchError;
-      setNotifications(data || []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch notifications';
-      setError(errorMessage);
-      console.error('Notification fetch error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleToggle = useCallback((key: keyof typeof notifications) => {
+    setNotifications(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }, []);
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
+    // Find which setting changed
+    const changedKey = Object.keys(notifications).find(
+      key => notifications[key as keyof typeof notifications] !== previousSettings.current[key as keyof typeof notifications]
+    ) as keyof typeof notifications;
+
+    if (changedKey) {
+      const isEnabled = notifications[changedKey];
+      toast({
+        title: `${changedKey.charAt(0).toUpperCase() + changedKey.slice(1)} notifications ${isEnabled ? 'enabled' : 'disabled'}`,
+        description: `You will ${isEnabled ? 'now' : 'no longer'} receive ${changedKey} notifications`,
+      });
     }
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const markAsRead = async (notificationId: string) => {
-    try {
-      const { error: updateError } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId);
+    previousSettings.current = notifications;
+  }, [notifications, toast]);
 
-      if (updateError) throw updateError;
-      await fetchNotifications();
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-      </div>
-    );
-  }
+  const notificationSettings = [
+    {
+      key: 'email',
+      title: 'Email Notifications',
+      description: 'Receive notifications via email',
+      icon: <Mail className="h-5 w-5 text-blue-500" />,
+    },
+    {
+      key: 'push',
+      title: 'Push Notifications',
+      description: 'Receive push notifications on your devices',
+      icon: <Smartphone className="h-5 w-5 text-green-500" />,
+    },
+    {
+      key: 'transactions',
+      title: 'Transaction Alerts',
+      description: 'Get notified about your transactions',
+      icon: <DollarSign className="h-5 w-5 text-purple-500" />,
+    },
+    {
+      key: 'security',
+      title: 'Security Alerts',
+      description: 'Important security-related notifications',
+      icon: <Bell className="h-5 w-5 text-red-500" />,
+    },
+    {
+      key: 'marketing',
+      title: 'Marketing Updates',
+      description: 'Receive news about products and features',
+      icon: <Megaphone className="h-5 w-5 text-yellow-500" />,
+    },
+  ];
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Bell className="h-6 w-6 text-green-600" />
-        Notifications
-      </h1>
-
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="space-y-4">
-        {notifications.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center justify-center p-6">
-              <p className="text-gray-500">No notifications yet</p>
-            </CardContent>
-          </Card>
-        ) : (
-          notifications.map((notification) => (
-            <motion.div
-              key={notification.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <Card className={notification.is_read ? 'opacity-70' : ''}>
-                <CardContent className="flex items-start justify-between p-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {getNotificationIcon(notification.type)}
-                      <h3 className="font-semibold">{notification.title}</h3>
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 min-h-screen pt-24">
+      <BackButton />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              <Bell className="h-6 w-6" />
+              Notification Settings
+            </CardTitle>
+            <CardDescription>
+              Manage how you receive notifications
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {notificationSettings.map((setting) => (
+              <Card key={setting.key}>
+                <CardContent className="flex items-center justify-between py-4">
+                  <div className="flex items-center space-x-4">
+                    {setting.icon}
+                    <div>
+                      <h4 className="font-medium">{setting.title}</h4>
+                      <p className="text-sm text-gray-500">{setting.description}</p>
                     </div>
-                    <p className="text-sm text-gray-600">{notification.message}</p>
-                    <span className="text-xs text-gray-400 mt-2 block">
-                      {new Date(notification.created_at).toLocaleDateString()}
-                    </span>
                   </div>
-                  {!notification.is_read && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => markAsRead(notification.id)}
-                    >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Switch
+                    checked={notifications[setting.key as keyof typeof notifications]}
+                    onCheckedChange={() => handleToggle(setting.key as keyof typeof notifications)}
+                  />
                 </CardContent>
               </Card>
-            </motion.div>
-          ))
-        )}
-      </div>
+            ))}
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
-}
-
-function getNotificationIcon(type: Notification['type']) {
-  switch (type) {
-    case 'success':
-      return <Check className="h-4 w-4 text-green-600" />;
-    case 'error':
-      return <AlertCircle className="h-4 w-4 text-red-600" />;
-    case 'warning':
-      return <AlertCircle className="h-4 w-4 text-yellow-600" />;
-    default:
-      return <Info className="h-4 w-4 text-blue-600" />;
-  }
 }
