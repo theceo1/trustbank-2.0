@@ -9,7 +9,7 @@ import { ArrowUpRight, ArrowDownLeft, Search, Filter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from '@/context/AuthContext';
 
 interface Transaction {
   id: string;

@@ -14,14 +14,14 @@ export interface AuthContextType {
     name?: string;
     referralCode?: string;
     referredBy?: string | null;
-  }) => Promise<{ 
-    data: { user: User | null; session: Session | null } | null; 
-    error: Error | null; 
+  }) => Promise<{
+    data: { user: User | null; session: Session | null } | null;
+    error: Error | null;
   }>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<{ 
-    data: { user: User | null; session: Session | null } | null; 
-    error: Error | null; 
+  signInWithGoogle: () => Promise<{
+    data: { url: string; provider: string } | null;
+    error: Error | null;
   }>;
   logout: () => Promise<void>;
 }
@@ -61,7 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       referralCode?: string;
       referredBy?: string | null;
     }
-  ) => {
+  ): Promise<{
+    data: { user: User | null; session: Session | null } | null;
+    error: Error | null;
+  }> => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -74,6 +77,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       });
+      
+      if (error) throw error;
       
       return { 
         data: { user: data.user, session: data.session }, 
@@ -117,13 +122,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      // signInWithOAuth returns { data: { provider, url }, error }
-      // We should handle the redirect case
       if (error) throw error;
       
-      // For OAuth, we don't get user/session immediately as it redirects
       return { 
-        data: null,
+        data: {
+          url: data.url,
+          provider: data.provider
+        },
         error: null 
       };
     } catch (error) {

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from '@/context/AuthContext';
 import { supabase } from "@/supabase/client";
 import { Menu, X } from "lucide-react";
 import {
@@ -21,7 +21,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Header() {
   const pathname = usePathname();
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -77,7 +77,7 @@ export default function Header() {
           trustBank
         </Link>
         <nav className="hidden md:flex space-x-4 items-center">
-          {!loading && (
+          {!isLoading && (
             <>
               {menuItems.map((item) => (
                 <Link
@@ -176,7 +176,7 @@ export default function Header() {
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
-            {!loading && (
+            {!isLoading && (
               <>
                 {user ? (
                   <Button

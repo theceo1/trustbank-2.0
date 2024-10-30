@@ -43,13 +43,13 @@ export default function SignUp() {
         throw new Error('Please accept the terms and conditions');
       }
 
-      const { data, error } = await signUp(email, password, {
+      const result = await signUp(email, password, {
         name,
         referralCode,
       });
 
-      if (error) throw error;
-      if (!data?.user) throw new Error('No user returned from signup');
+      if (result.error) throw result.error;
+      if (!result.data?.user) throw new Error('No user returned from signup');
 
       router.push('/auth/verify');
     } catch (err) {
@@ -67,23 +67,9 @@ export default function SignUp() {
     try {
       const { data, error } = await signInWithGoogle();
       if (error) throw error;
-      if (!data?.user) throw new Error('No user returned from Google sign in');
-
-      // Wait for the session to be established
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (session) {
-        // Generate and save referral code for new Google users
-        const newReferralCode = generateReferralCode();
-        const { error: upsertError } = await supabase
-          .from('profiles')
-          .upsert({
-            user_id: data.user.id,
-            referral_code: newReferralCode,
-          });
-
-        if (upsertError) throw upsertError;
-      }
+      // Google OAuth will handle the redirect automatically
+      // No need to manually check for user/session here
     } catch (err) {
       console.error('Google sign in error:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in with Google');

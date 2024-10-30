@@ -15,8 +15,14 @@ export interface AuthContextType {
     name?: string;
     referralCode?: string;
     referredBy?: string | null;
-  }) => Promise<{ user: User | null; session: Session | null; } | void>;
+  }) => Promise<{
+    data: { user: User | null; session: Session | null } | null;
+    error: Error | null;
+  }>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<{
+    data: { url: string; provider: string } | null;
+    error: Error | null;
+  }>;
   logout: () => Promise<void>;
 }

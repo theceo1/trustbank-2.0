@@ -1,23 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 export default function WithdrawalPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [amount, setAmount] = useState('');
-  const supabase = createClientComponentClient();
   const router = useRouter();
   const { toast } = useToast();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
     const checkVerificationStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (user?.user_metadata?.is_verified) {
         setIsVerified(true);
       } else {
@@ -30,7 +29,7 @@ export default function WithdrawalPage() {
       }
     };
     checkVerificationStatus();
-  }, [supabase.auth, router, toast]);
+  }, [user, router, toast]);
 
   const handleWithdrawal = async () => {
     // Implement withdrawal logic here
