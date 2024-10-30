@@ -1,10 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Session, User } from "@supabase/auth-helpers-nextjs";
+// import { Session, User } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import supabase from '@/lib/supabase/client';
+import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 
 export interface AuthContextType {
   user: User | null;
@@ -31,10 +32,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event: AuthChangeEvent, session: Session | null) => {
+        if (session) {
+          setUser(session.user);
+        } else {
+          setUser(null);
+        }
+        setIsLoading(false);
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);

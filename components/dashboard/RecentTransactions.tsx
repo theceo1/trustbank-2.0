@@ -15,6 +15,8 @@ interface Transaction {
   amount: number;
   fiat_amount: number;
   fiat_currency: string;
+  crypto_amount?: number;
+  crypto_currency?: string;
   status: 'completed' | 'pending' | 'failed';
   created_at: string;
 }
@@ -119,7 +121,7 @@ export default function RecentTransactions() {
                       {tx.type === 'buy' ? 'Bought' : 
                        tx.type === 'sell' ? 'Sold' : 
                        tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
-                      {tx.crypto_amount && ` ${tx.crypto_amount} ${tx.crypto_currency}`}
+                      {tx.crypto_amount && tx.crypto_currency ? ` ${tx.crypto_amount} ${tx.crypto_currency}` : ''}
                     </span>
                     <span className="text-sm text-muted-foreground">
                       {format(new Date(tx.created_at), 'MMM d, yyyy HH:mm')}
