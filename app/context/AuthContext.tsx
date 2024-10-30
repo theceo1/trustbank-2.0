@@ -1,22 +1,25 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import supabase from '@/lib/supabase/client';
-import { AuthChangeEvent } from '@supabase/supabase-js';
 
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, metadata?: {
-    name?: string;
-    referralCode?: string;
-    referredBy?: string | null;
+  signUp: (data: {
+    email: string;
+    password: string;
+    options?: {
+      data: {
+        full_name: string;
+      }
+    }
   }) => Promise<{ user: User | null; session: Session | null; } | void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<{ data: any; error: any; }>;
   logout: () => Promise<void>;
 }
 
@@ -29,31 +32,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+    // Remove the second argument from onAuthStateChange
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setUser(session.user);
       } else {
         setUser(null);
       }
       setIsLoading(false);
-    }, []);
+    });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, []); // Empty dependency array
 
-  const signUp = async (email: string, password: string, metadata?: {
-    name?: string;
-    referralCode?: string;
-    referredBy?: string | null;
+  const signUp = async (data: {
+    email: string;
+    password: string;
+    options?: {
+      data: {
+        full_name: string;
+      }
+    }
   }) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: metadata }
-      });
+      const { data: authData, error } = await supabase.auth.signUp(data);
       if (error) throw error;
-      return data;
+      return authData;
     } catch (error) {
       console.error("Error signing up:", error);
       toast({
@@ -61,22 +65,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "An error occurred during sign up.",
         variant: "destructive",
       });
+      throw error;
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      router.push("/dashboard");
     } catch (error) {
       console.error("Error signing in:", error);
       toast({
         title: "Sign in failed",
-        description: "Please check your credentials and try again.",
+        description: "Invalid email or password.",
         variant: "destructive",
       });
       throw error;
@@ -85,10 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google'
       });
       if (error) throw error;
+      return { data, error };
     } catch (error) {
       console.error("Error signing in with Google:", error);
       toast({
@@ -112,10 +114,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "An error occurred while signing out.",
         variant: "destructive",
       });
+      throw error;
     }
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     isLoading,
     signUp,

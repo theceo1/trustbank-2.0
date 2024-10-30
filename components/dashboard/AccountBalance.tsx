@@ -27,7 +27,7 @@ export default function AccountBalance() {
     total: 0,
     available: 0,
     pending: 0,
-    currency: '₦'
+    currency: 'NGN'
   });
   const [isLoading, setIsLoading] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
@@ -64,7 +64,8 @@ export default function AccountBalance() {
                   balance: 0,
                   total_deposits: 0,
                   total_withdrawals: 0,
-                  currency: '₦',
+                  pending_balance: 0,
+                  currency: 'NGN',
                   last_transaction_at: new Date().toISOString()
                 }
               ])
@@ -77,9 +78,9 @@ export default function AccountBalance() {
               setBalance({
                 ...newWallet,
                 total: newWallet.balance,
-                available: newWallet.balance,
-                pending: 0,
-                currency: newWallet.currency || '₦'
+                available: newWallet.balance - (newWallet.pending_balance || 0),
+                pending: newWallet.pending_balance || 0,
+                currency: newWallet.currency
               });
             }
           } else {
@@ -89,9 +90,9 @@ export default function AccountBalance() {
           setBalance({
             ...data,
             total: data.balance,
-            available: data.balance,
-            pending: 0,
-            currency: data.currency || '₦'
+            available: data.balance - (data.pending_balance || 0),
+            pending: data.pending_balance || 0,
+            currency: data.currency
           });
         }
       } catch (error) {

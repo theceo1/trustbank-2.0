@@ -8,6 +8,7 @@ import supabase from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { TransactionsSkeleton } from "@/app/components/skeletons";
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface Transaction {
   id: string;
@@ -62,12 +63,14 @@ export default function RecentTransactions() {
     fetchTransactions();
 
     // Subscribe to real-time updates
-    const subscription = supabase
-      .channel('transactions')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
+    const channel = supabase.channel('transactions') as RealtimeChannel;
+
+    channel
+      .on(
+        'postgres_changes' as any,
+        {
+          event: '*',
+          schema: 'public',
           table: 'transactions',
           filter: `user_id=eq.${user.id}`
         },
@@ -89,7 +92,7 @@ export default function RecentTransactions() {
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      channel.unsubscribe();
     };
   }, [user]);
 

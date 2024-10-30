@@ -20,6 +20,7 @@ import supabase from '@/lib/supabase/client';
 import WalletPageSkeleton from "@/app/components/skeletons/WalletPageSkeleton";
 import { Badge } from "@/components/ui/badge";
 import BackButton from "@/components/ui/back-button";
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface WalletData {
   balance: number;
@@ -147,13 +148,15 @@ export default function WalletPage() {
 
     // Set up real-time subscription for transactions
     if (user) {
-      const subscription = supabase
-        .channel('transactions')
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'transactions',
+      const channel = supabase.channel('wallet-updates') as RealtimeChannel;
+
+      channel
+        .on(
+          'postgres_changes' as any,
+          {
+            event: '*',
+            schema: 'public',
+            table: 'wallets',
             filter: `user_id=eq.${user.id}`
           },
           (payload: PostgresChangesPayload) => {
@@ -166,7 +169,7 @@ export default function WalletPage() {
         .subscribe();
 
       return () => {
-        subscription.unsubscribe();
+        channel.unsubscribe();
       };
     }
   }, [user, fetchWalletData, fetchTransactions]);
