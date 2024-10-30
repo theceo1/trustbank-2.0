@@ -16,15 +16,12 @@ export default function CryptoPriceTracker() {
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,cardano&vs_currencies=usd');
+        const response = await fetch('/api/crypto-prices');
         const data = await response.json();
-        setPrices({
-          BTC: data.bitcoin.usd,
-          ETH: data.ethereum.usd,
-          ADA: data.cardano.usd
-        });
+        if (data.error) throw new Error(data.error);
+        setPrices(data);
       } catch (error) {
-        console.error("Error fetching crypto prices:", error);
+        console.error('Error fetching crypto prices:', error);
       }
     };
 

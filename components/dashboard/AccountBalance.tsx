@@ -7,12 +7,22 @@ import Modal from '@/components/ui/modal';
 import { useAuth } from '@/context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from "framer-motion";
+import supabase from "@/lib/supabase/client";
 
 interface BalanceData {
+  balance: number;
+  total_deposits: number;
+  total_withdrawals: number;
   total: number;
   available: number;
   pending: number;
   currency: string;
+}
+
+interface PostgresChangesPayload {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new: BalanceData;
+  old: BalanceData | null;
 }
 
 export default function AccountBalance() {
@@ -23,43 +33,75 @@ export default function AccountBalance() {
   const { user } = useAuth();
 
   useEffect(() => {
+    if (!user) return;
+
     const fetchBalance = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
+      if (!user) return;
+      
       try {
-        const response = await fetch('/api/balance', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
+        const { data: existingWallet, error: fetchError } = await supabase
+          .from('wallets')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
 
-        const data = await response.json();
+        if (fetchError) {
+          if (fetchError.code === 'PGRST116') {
+            // Create new wallet if none exists
+            const { data: newWallet, error: createError } = await supabase
+              .from('wallets')
+              .insert([
+                {
+                  user_id: user.id,
+                  total: 0,
+                  available: 0,
+                  pending: 0,
+                  currency: 'NGN'
+                }
+              ])
+              .select()
+              .single();
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch balance');
+            if (createError) {
+              console.error('Error creating wallet:', createError);
+              return;
+            }
+            setBalance(newWallet);
+          } else {
+            console.error('Error fetching wallet:', fetchError);
+          }
+        } else {
+          setBalance(existingWallet);
         }
-
-        setBalance(data);
       } catch (error) {
-        console.error('Error fetching balance:', error);
-        // Set default balance on error
-        setBalance({
-          total: 0,
-          available: 0,
-          pending: 0,
-          currency: 'NGN'
-        });
+        console.error('Error in wallet operation:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchBalance();
+
+    // Subscribe to real-time changes
+    const subscription = supabase
+      .channel('wallets')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'wallets', filter: `user_id=eq.${user.id}` },
+        (payload: PostgresChangesPayload) => {
+          setBalance({
+            ...payload.new,
+            total: payload.new.balance,
+            available: payload.new.balance - payload.new.pending,
+            pending: 0,
+            currency: '₦'
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [user]);
 
   return (

@@ -2,20 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Bell, Wallet, ArrowUpRight, Settings, Shield } from "lucide-react";
 import AccountBalance from '@/components/dashboard/AccountBalance';
 import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import MarketOverview from '@/components/dashboard/MarketOverview';
 import Trade from '@/components/dashboard/Trade';
 import CryptoPriceTracker from '@/components/common/CryptoPriceTracker';
+import DashboardHeader from '@/app/components/dashboard/DashboardHeader';
+import LoadingDashboard from '@/app/components/dashboard/LoadingDashboard';
+import QuickStats from '@/app/components/dashboard/QuickStats';
+import QuickActions from '@/app/components/dashboard/QuickActions';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import Announcements from '@/app/components/dashboard/Announcements';
-import supabaseClient from '@/lib/supabase/client';
 import supabase from "@/lib/supabase/client";
 
 export default function DashboardPage() {
@@ -25,6 +27,10 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState('');
 
+  // Add new loading states
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/auth/login');
@@ -33,7 +39,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const checkVerificationStatus = async () => {
-      const { data: { user } } = await supabaseClient.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (user?.user_metadata?.is_verified) {
         setIsVerified(true);
       }
@@ -63,32 +69,30 @@ export default function DashboardPage() {
     fetchUserProfile();
   }, [user]);
 
+  // Enhanced loading component
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-20">
+        <LoadingDashboard />
+      </div>
+    );
   }
 
-  if (!user) {
-    return null;
+  // Enhanced error handling
+  if (loadingError) {
+    return (
+      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-20">
+        <Alert variant="destructive">
+          <AlertDescription>{loadingError}</AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-20">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-8"
-      >
-        <h1 className="text-2xl font-bold mb-8 text-green-600">
-          Welcome back, {displayName}
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2 fa-solid fa-chart-line text-sm">
-          <i>Here&apos;s an overview of your financial activities.</i> 
-        </p>
-      </motion.div>
+      <DashboardHeader displayName={displayName} isVerified={isVerified} />
       
-      <Announcements isVerified={isVerified} />
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
@@ -96,26 +100,12 @@ export default function DashboardPage() {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="lg:col-span-1 space-y-8"
         >
+          <QuickStats />
           <AccountBalance />
           <CryptoPriceTracker />
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Link href="/trade" className="block">
-                <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-400 transition-colors hover:text-black">
-                  Trade Now
-                </button>
-              </Link>
-              <Link href="/profile" className="block">
-                <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-400 transition-colors hover:text-black">
-                  View Profile
-                </button>
-              </Link>
-            </CardContent>
-          </Card>
+          <QuickActions />
         </motion.div>
+        
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
