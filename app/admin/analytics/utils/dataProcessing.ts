@@ -13,27 +13,30 @@ import { TimeframeType } from '../hooks/useAnalyticsData';
 
 export const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
+interface TimeSeriesData {
+  date: string;
+  count?: number;
+  amount?: number;
+}
+
 export const processTimeSeriesData = (
   data: any[],
   timeframe: TimeframeType,
   dateField: string,
-  valueField: string = 'count'
-): { date: string; [key: string]: string | number }[] => {
+  valueField: 'count' | 'amount' = 'count'
+): TimeSeriesData[] => {
   if (!data.length) return [];
 
   const groupedData = data.reduce((acc, item) => {
     const date = format(parseISO(item[dateField]), 'yyyy-MM-dd');
     if (!acc[date]) {
-      acc[date] = { [valueField]: 0 };
+      acc[date] = { date, [valueField]: 0 };
     }
     acc[date][valueField] += valueField === 'count' ? 1 : (item[valueField] || 0);
     return acc;
-  }, {} as Record<string, any>);
+  }, {} as Record<string, TimeSeriesData>);
 
-  return Object.entries(groupedData).map(([date, values]) => ({
-    date,
-    ...values
-  }));
+  return Object.values(groupedData);
 };
 
 export const processReferralData = (
@@ -60,7 +63,7 @@ export const processUserData = (data: any[], timeframe: TimeframeType) => {
   };
 };
 
-export const processTransactionData = (data: any[], timeframe: string) => {
+export const processTransactionData = (data: any[], timeframe: TimeframeType) => {
   const total = data.reduce((sum, tx) => sum + (tx.amount || 0), 0);
   return {
     totalTransactions: data.length,
