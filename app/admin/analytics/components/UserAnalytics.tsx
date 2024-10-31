@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FC } from "react";
+import { useState, useEffect, FC, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -35,18 +35,12 @@ const UserAnalytics: FC<UserAnalyticsProps> = ({ data, timeframe }) => {
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUserAnalytics();
-  }, []);
-
-  const fetchUserAnalytics = async () => {
+  const fetchUserAnalytics = useCallback(async () => {
     try {
-      // Fetch user demographics, activity patterns, etc.
       const { data: users } = await supabase
         .from('profiles')
         .select('*');
 
-      // Process data for visualization
       const processedData = processUserData(users || [], timeframe);
       setUserData(processedData);
     } catch (error) {
@@ -54,7 +48,11 @@ const UserAnalytics: FC<UserAnalyticsProps> = ({ data, timeframe }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [timeframe]);
+
+  useEffect(() => {
+    fetchUserAnalytics();
+  }, [fetchUserAnalytics]);
 
   return (
     <div className="space-y-6">
