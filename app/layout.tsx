@@ -10,6 +10,7 @@ import { Providers } from './providers';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from "@/components/ui/toaster";
+import { AdminAuthProvider } from './admin/context/AdminAuthContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -32,12 +33,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <Header />
-            {children}
-            <Footer />
-            <Toaster />
-          </AuthProvider>
+          <AdminAuthProvider>
+            <AuthProvider>
+              <Header />
+              {children}
+              <Footer />
+              <Toaster />
+            </AuthProvider>
+          </AdminAuthProvider>
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />

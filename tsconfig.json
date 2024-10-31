@@ -12,7 +12,7 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
+    "module": "CommonJS",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -28,7 +28,7 @@
         "./*"
       ]
     },
-    "types": ["d3-path"]
+    "types": ["d3-path", "node"]
   },
   "include": [
     "next-env.d.ts",

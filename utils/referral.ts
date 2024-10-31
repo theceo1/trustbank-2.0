@@ -8,7 +8,7 @@ export function generateReferralCode(length: number = 8): string {
   }
 
 export async function validateReferralCode(supabase: any, code: string): Promise<boolean> {
-  if (!code) return true; // Empty referral code is valid (optional field)
+  if (!code) return true;
   
   const { data, error } = await supabase
     .from('profiles')
@@ -21,5 +21,5 @@ export async function validateReferralCode(supabase: any, code: string): Promise
     return false;
   }
 
-  return !!data;
+  return !!data && data.referral_code === code;
 }

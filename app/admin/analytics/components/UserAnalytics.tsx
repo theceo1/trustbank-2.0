@@ -1,0 +1,81 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
+import supabase from "@/lib/supabase/client";
+import { COLORS, processUserData } from "../utils/dataProcessing";
+
+export default function UserAnalytics() {
+  const [userData, setUserData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUserAnalytics();
+  }, []);
+
+  const fetchUserAnalytics = async () => {
+    try {
+      // Fetch user demographics, activity patterns, etc.
+      const { data: users } = await supabase
+        .from('profiles')
+        .select('*');
+
+      // Process data for visualization
+      const processedData = processUserData(users || []);
+      setUserData(processedData);
+    } catch (error) {
+      console.error('Error fetching user analytics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>User Demographics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={userData?.demographics}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  fill="#8884d8"
+                  label
+                >
+                  {userData?.demographics.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Add more user analytics cards */}
+      </div>
+    </div>
+  );
+}

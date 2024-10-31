@@ -6,6 +6,7 @@ import { Session, User } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import supabase from '@/lib/supabase/client';
+import { validateReferralCode } from '@/utils/referral';
 
 export interface AuthContextType {
   user: User | null;
@@ -66,35 +67,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error: Error | null;
   }> => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      if (metadata?.referralCode) {
+        const isValid = await validateReferralCode(supabase, metadata.referralCode);
+        if (!isValid) {
+          throw new Error('Invalid referral code');
+        }
+      }
+
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name: metadata?.name,
-            referralCode: metadata?.referralCode,
-            referredBy: metadata?.referredBy,
           }
         }
       });
-      
-      if (error) throw error;
-      
-      return { 
-        data: { user: data.user, session: data.session }, 
-        error: null 
-      };
+
+      if (signUpError) throw signUpError;
+
+      if (authData.user) {
+        const randomString = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const newReferralCode = `REF${randomString}`;
+        
+        const { data: newProfile, error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: authData.user.id,
+            full_name: metadata?.name,
+            email: email,
+            referral_code: newReferralCode,
+            referred_by: metadata?.referralCode || null,
+            is_verified: false,
+            referral_count: 0
+          })
+          .select()
+          .single();
+
+        if (profileError) throw profileError;
+
+        if (metadata?.referralCode) {
+          const { error: updateError } = await supabase.rpc('increment_referral_count', {
+            referral_code_param: metadata.referralCode
+          });
+
+          if (updateError) throw updateError;
+        }
+      }
+
+      return { data: authData, error: null };
     } catch (error) {
-      console.error("Error signing up:", error);
-      toast({
-        title: "Sign up failed",
-        description: "An error occurred during sign up.",
-        variant: "destructive",
-      });
-      return { 
-        data: null, 
-        error: error as Error 
-      };
+      console.error('Error in signUp:', error);
+      return { data: null, error: error as Error };
     }
   };
 

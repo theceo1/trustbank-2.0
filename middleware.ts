@@ -10,20 +10,26 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Protect authenticated routes
-  if (!session && (
-    req.nextUrl.pathname.startsWith('/dashboard') ||
-    req.nextUrl.pathname.startsWith('/profile')
-  )) {
-    return NextResponse.redirect(new URL('/auth/login', req.url));
+  if (!session) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
+  // Check if user is admin for /admin routes
+  if (req.nextUrl.pathname.startsWith('/admin')) {
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    if (!adminUser) {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
   }
 
   return res;
 }
 
 export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/profile/:path*',
-  ],
+  matcher: ['/admin/:path*'],
 };

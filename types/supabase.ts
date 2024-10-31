@@ -16,6 +16,8 @@ export interface Database {
           full_name: string | null
           is_verified: boolean
           referral_code: string | null
+          referred_by: string | null
+          email: string | null
           created_at: string
           updated_at: string
         }
@@ -24,11 +26,15 @@ export interface Database {
           full_name?: string | null
           is_verified?: boolean
           referral_code?: string | null
+          referred_by?: string | null
+          email?: string | null
         }
         Update: {
           full_name?: string | null
           is_verified?: boolean
           referral_code?: string | null
+          referred_by?: string | null
+          email?: string | null
         }
       }
       wallets: {

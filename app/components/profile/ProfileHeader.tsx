@@ -5,129 +5,221 @@ import { useEffect, useState } from 'react';
 import VerificationBadge from './VerificationBadge';
 import supabase from '@/lib/supabase/client';
 import { Button } from "@/components/ui/button";
-import { Copy, Share2 } from "lucide-react";
+import { Copy, Share2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { validateReferralCode } from '@/utils/referral';
+import { Badge } from "@/components/ui/badge";
 
 interface Profile {
   user_id: string;
-  full_name: string;
+  full_name: string | null;
+  email: string | null;
   is_verified: boolean;
+  referral_code: string | null;
+  referred_by: string | null;
+  referral_count: number;
   created_at: string;
-  referral_code: string;
 }
 
 export default function ProfileHeader() {
   const { user } = useAuth();
-  const [displayName, setDisplayName] = useState<string>('');
-  const [isVerified, setIsVerified] = useState(false);
-  const [referralCode, setReferralCode] = useState<string>('');
   const { toast } = useToast();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [referralCount, setReferralCount] = useState(0);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchProfile = async () => {
       if (!user?.id) return;
 
       try {
-        const { data, error } = await supabase
+        const { data: existingProfile, error: fetchError } = await supabase
           .from('profiles')
           .select('*')
           .eq('user_id', user.id)
           .single();
 
-        if (error) {
-          console.error('Error fetching profile:', error);
-          return;
-        }
+        if (fetchError && fetchError.code === 'PGRST116') {
+          // Profile doesn't exist, create one with referral code from utils
+          const newReferralCode = `REF${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+          
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert([{
+              user_id: user.id,
+              full_name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+              email: user.email,
+              referral_code: newReferralCode,
+              is_verified: false
+            }])
+            .select()
+            .single();
 
-        if (data) {
-          setDisplayName(data.full_name);
-          setReferralCode(data.referral_code);
-        } else if (user.user_metadata?.name) {
-          setDisplayName(user.user_metadata.name);
-        } else {
-          setDisplayName(user.email?.split('@')[0] || 'User');
+          if (insertError) throw insertError;
+          setProfile(newProfile);
+        } else if (existingProfile) {
+          setProfile(existingProfile);
+          
+          // Fetch referral count
+          const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact' })
+            .eq('referred_by', existingProfile.referral_code);
+            
+          setReferralCount(count || 0);
         }
-
-        setIsVerified(!!user.user_metadata?.is_verified);
       } catch (error) {
         console.error('Error:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchUserData();
-  }, [user]);
+    fetchProfile();
+  }, [user, toast]);
 
   const copyReferralCode = async () => {
+    if (!profile?.referral_code) return;
+    
     try {
-      await navigator.clipboard.writeText(referralCode);
+      await navigator.clipboard.writeText(profile.referral_code);
       toast({
         title: "Copied!",
         description: "Referral code copied to clipboard",
       });
     } catch (err) {
       toast({
-        title: "Failed to copy",
-        description: "Please try again",
+        title: "Error",
+        description: "Failed to copy referral code",
         variant: "destructive",
       });
     }
   };
 
   const shareReferralCode = async () => {
+    if (!profile?.referral_code) return;
+    
     try {
       await navigator.share({
-        title: 'Join trustBank',
-        text: `Join trustBank using my referral code: ${referralCode}`,
-        url: `${window.location.origin}/auth/signup?ref=${referralCode}`,
+        title: 'Join TrustBank',
+        text: `Use my referral code: ${profile.referral_code}`,
+        url: `${window.location.origin}/signup?ref=${profile.referral_code}`,
       });
     } catch (err) {
-      toast({
-        title: "Sharing failed",
-        description: "Your browser might not support sharing",
-        variant: "destructive",
-      });
+      // Fall back to copying to clipboard if share is not supported
+      copyReferralCode();
     }
   };
 
+  if (isLoading) {
+    return <ProfileHeaderSkeleton />;
+  }
+
   return (
-    <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <Card className="p-6 bg-white dark:bg-gray-800 shadow-md">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-green-600">
-            {displayName}&apos;s profile
-          </h1>
-          <VerificationBadge isVerified={isVerified} />
-        </div>
-        
-        {referralCode && (
-          <div className="flex flex-col gap-2 w-full md:w-auto">
-            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg flex items-center justify-between gap-2">
-              <span className="text-sm font-mono">{referralCode}</span>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={copyReferralCode}
-                  className="hover:text-green-600"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={shareReferralCode}
-                  className="hover:text-green-600"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+              <User className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {profile?.full_name}
+              </h1>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {profile?.email}
+                </span>
+                <VerificationBadge isVerified={profile?.is_verified || false} />
               </div>
             </div>
-            <p className="text-xs text-gray-500 text-center">
-              Share your referral code to earn rewards
-            </p>
+          </div>
+        </div>
+
+        {profile?.referral_code && (
+          <div className="w-full md:w-auto space-y-2">
+            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Referral Code
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={copyReferralCode}
+                      className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={shareReferralCode}
+                      className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <code className="font-mono text-lg font-semibold text-green-600 dark:text-green-400">
+                  {profile.referral_code}
+                </code>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Earn up to 40% commission on referral trades
+                </p>
+                <div className="mt-2 flex items-center gap-4">
+                  <div className="text-sm">
+                    <span className="text-gray-500">Total Referrals: </span>
+                    <span className="font-semibold">{profile?.referral_count || 0}</span>
+                  </div>
+                  {profile?.referred_by && (
+                    <div className="text-sm">
+                      <span className="text-gray-500">Referred By: </span>
+                      <span className="font-mono">{profile.referred_by}</span>
+                    </div>
+                  )}
+                </div>
+                {profile?.referral_count >= 50 && (
+                  <div className="mt-2">
+                    <Badge variant="default" className="text-xs">
+                      🎉 Elite Referrer
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
-    </div>
+    </Card>
+  );
+}
+
+function ProfileHeaderSkeleton() {
+  return (
+    <Card className="p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div>
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-32 mt-2" />
+            </div>
+          </div>
+        </div>
+        <Skeleton className="h-24 w-full md:w-72" />
+      </div>
+    </Card>
   );
 }
