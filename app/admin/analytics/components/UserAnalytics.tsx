@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, FC } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -17,8 +17,21 @@ import {
 } from 'recharts';
 import supabase from "@/lib/supabase/client";
 import { COLORS, processUserData } from "../utils/dataProcessing";
+import { TimeframeType } from '../hooks/useAnalyticsData';
+import { TimeSeriesData } from '../types';
 
-export default function UserAnalytics() {
+interface UserAnalyticsProps {
+  data: {
+    totalUsers: number;
+    activeUsers: number;
+    growth: number;
+    retention: number;
+    usersByTime: TimeSeriesData[];
+  };
+  timeframe: TimeframeType;
+}
+
+const UserAnalytics: FC<UserAnalyticsProps> = ({ data, timeframe }) => {
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +47,7 @@ export default function UserAnalytics() {
         .select('*');
 
       // Process data for visualization
-      const processedData = processUserData(users || []);
+      const processedData = processUserData(users || [], timeframe);
       setUserData(processedData);
     } catch (error) {
       console.error('Error fetching user analytics:', error);
@@ -78,4 +91,6 @@ export default function UserAnalytics() {
       </div>
     </div>
   );
-}
+};
+
+export default UserAnalytics;

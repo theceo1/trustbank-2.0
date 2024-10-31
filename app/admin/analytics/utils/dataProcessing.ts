@@ -15,22 +15,28 @@ export const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 interface TimeSeriesData {
   date: string;
-  count?: number;
-  amount?: number;
+  count: number;
+  amount: number;
+  value: number;
 }
 
 export const processTimeSeriesData = (
   data: any[],
   timeframe: TimeframeType,
   dateField: string,
-  valueField: 'count' | 'amount' = 'count'
+  valueField: keyof TimeSeriesData = 'count'
 ): TimeSeriesData[] => {
   if (!data.length) return [];
 
   const groupedData = data.reduce((acc, item) => {
     const date = format(parseISO(item[dateField]), 'yyyy-MM-dd');
     if (!acc[date]) {
-      acc[date] = { date, [valueField]: 0 };
+      acc[date] = {
+        date,
+        count: 0,
+        amount: 0,
+        value: 0
+      };
     }
     acc[date][valueField] += valueField === 'count' ? 1 : (item[valueField] || 0);
     return acc;

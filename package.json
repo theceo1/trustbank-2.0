@@ -2,13 +2,12 @@
   "name": "trustbank",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "create-admin": "node --loader ts-node/esm scripts/create-admin.ts"
+    "create-admin": "ts-node scripts/create-admin.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.5",
