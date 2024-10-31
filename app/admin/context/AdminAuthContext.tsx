@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import supabase from '@/lib/supabase/client';
+import { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 interface AdminAuthContextType {
   isAdmin: boolean;
@@ -34,7 +35,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       const { data: adminUser } = await supabase
         .from('admin_users')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('user_id', session.user.id)
         .single();
 
       if (adminUser) {
@@ -55,8 +56,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     checkAdmin();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      checkAdmin();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+      if (event === 'SIGNED_OUT') {
+        setIsAdmin(false);
+        setPermissions([]);
+      } else {
+        await checkAdmin();
+      }
     });
 
     return () => subscription.unsubscribe();

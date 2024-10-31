@@ -26,13 +26,19 @@ export function useAnalyticsData({ dateRange, timeframe }: AnalyticsDataOptions)
 
       // Fetch data from Supabase
       const [usersData, referralsData, transactionsData] = await Promise.all([
-        supabase.from('users').select('*')
+        supabase
+          .from('users')
+          .select('*')
           .gte('created_at', dateRange.from.toISOString())
           .lte('created_at', dateRange.to.toISOString()),
-        supabase.from('referrals').select('*')
+        supabase
+          .from('referrals')
+          .select('*')
           .gte('created_at', dateRange.from.toISOString())
           .lte('created_at', dateRange.to.toISOString()),
-        supabase.from('transactions').select('*')
+        supabase
+          .from('transactions')
+          .select('*')
           .gte('created_at', dateRange.from.toISOString())
           .lte('created_at', dateRange.to.toISOString())
       ]);
