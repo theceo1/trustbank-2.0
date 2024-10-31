@@ -58,8 +58,24 @@ export default function Footer() {
               <SocialIcon href="https://www.tiktok.com/@trustbanktech" icon={FaTiktok} />
             </div>
           </div>
-        <div className="mt-8 pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} trustBank. All rights reserved.
+        <div className="mt-8 pt-8 border-t border-gray-200 text-center">
+          <p className="text-sm text-gray-500">
+            © {new Date().getFullYear()} trustBank. All rights reserved.
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Powered by{' '}
+            <Link 
+              href="https://www.trustbank.tech" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-green-600 hover:text-green-300"
+            >
+              Digital Kloud Transact Limited
+            </Link>
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            A licensed financial service company
+          </p>
         </div>
       </div>
     </motion.footer>
