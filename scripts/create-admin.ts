@@ -83,7 +83,8 @@ async function createAdmin(email: string, password: string) {
         is_active: true,
         last_login_at: new Date().toISOString()
       }, {
-        onConflict: 'user_id'
+        onConflict: 'user_id',
+        ignoreDuplicates: false
       });
 
     if (adminError) {
