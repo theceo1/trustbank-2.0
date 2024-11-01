@@ -3,11 +3,27 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, LineChart, Line 
+} from 'recharts';
 import { useCryptoWebSocket } from "@/hooks/use-crypto-websocket";
-import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  TrendingUp, TrendingDown, Activity, 
+  RefreshCcw, ArrowUpRight, ArrowDownRight,
+  Info, DollarSign, BarChart2
+} from "lucide-react";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Tooltip as TooltipUI,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CryptoData {
   id: string;
@@ -22,14 +38,15 @@ interface ChartData {
   eth: number;
 }
 
-const TOP_CRYPTOS = ['bitcoin', 'ethereum', 'tether', 'binancecoin', 'cardano', 'solana'];
-const TIMEFRAMES = ['1H', '24H', '7D', '30D'];
+const TIMEFRAMES = ['1H', '24H', '7D', '30D', 'ALL'];
+const CURRENCIES = ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'DOT'];
 
 export default function MarketPage() {
-  const [activeTimeframe, setActiveTimeframe] = useState('1H');
-  const [selectedCrypto, setSelectedCrypto] = useState('ETH');
+  const [activeTimeframe, setActiveTimeframe] = useState('24H');
+  const [selectedCrypto, setSelectedCrypto] = useState('BTC');
   const [cryptoData, setCryptoData] = useState<CryptoData[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { prices, isConnected } = useCryptoWebSocket();
 
   useEffect(() => {
@@ -91,16 +108,25 @@ export default function MarketPage() {
     return () => clearInterval(interval);
   }, [fetchCryptoData]);
 
-  // Access price data
-  const btcPrice = prices.BTCUSDT;
-  const btcChange = prices.BTCUSDT_24h_change;
-  const btcPrevPrice = prices.BTCUSDT_prev;
-
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 min-h-screen pt-24">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Market Overview Section */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Market Overview Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Crypto Market</h1>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Activity className="h-4 w-4" />
+          <span>Real-time market data</span>
+          {isConnected ? (
+            <Badge variant="success" className="ml-2">Live</Badge>
+          ) : (
+            <Badge variant="destructive" className="ml-2">Disconnected</Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Main Chart Section */}
+        <div className="lg:col-span-8 space-y-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -109,31 +135,53 @@ export default function MarketPage() {
             <Card className="overflow-hidden">
               <CardHeader className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-2xl font-bold">
-                    {selectedCrypto}/USD
-                  </CardTitle>
-                  <span className={`text-lg font-semibold ${
-                    prices[`${selectedCrypto}USDT`] > prices[`${selectedCrypto}USDT_prev`] 
-                    ? 'text-green-500' 
-                    : 'text-red-500'
-                  }`}>
-                    ${prices[`${selectedCrypto}USDT`]?.toFixed(2) || '0.00'}
-                  </span>
+                  <div>
+                    <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                      {selectedCrypto}/USD
+                      <TooltipProvider>
+                        <TooltipUI>
+                          <TooltipTrigger>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Real-time price data for {selectedCrypto}</p>
+                          </TooltipContent>
+                        </TooltipUI>
+                      </TooltipProvider>
+                    </CardTitle>
+                    <CardDescription className="flex items-center space-x-2">
+                      <DollarSign className="h-4 w-4" />
+                      <span className="font-mono">
+                        {prices[`${selectedCrypto}USDT`]?.toFixed(2) || '0.00'}
+                      </span>
+                      <span className={`flex items-center ${
+                        prices[`${selectedCrypto}USDT_24h_change`] > 0 
+                          ? 'text-green-500' 
+                          : 'text-red-500'
+                      }`}>
+                        {prices[`${selectedCrypto}USDT_24h_change`]?.toFixed(2)}%
+                        {prices[`${selectedCrypto}USDT_24h_change`] > 0 
+                          ? <ArrowUpRight className="h-4 w-4" />
+                          : <ArrowDownRight className="h-4 w-4" />
+                        }
+                      </span>
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {CURRENCIES.map((currency) => (
+                      <Button
+                        key={currency}
+                        variant={selectedCrypto === currency ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedCrypto(currency)}
+                      >
+                        {currency}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-                <CardDescription className="flex items-center space-x-2">
-                  <span className={prices[`${selectedCrypto}USDT_24h_change`] > 0 
-                    ? 'text-green-500' 
-                    : 'text-red-500'
-                  }>
-                    {prices[`${selectedCrypto}USDT_24h_change`]?.toFixed(2)}%
-                  </span>
-                  {prices[`${selectedCrypto}USDT_24h_change`] > 0 
-                    ? <TrendingUp className="w-4 h-4 text-green-500" />
-                    : <TrendingDown className="w-4 h-4 text-red-500" />
-                  }
-                </CardDescription>
               </CardHeader>
-              
+
               <CardContent>
                 <Tabs value={activeTimeframe} onValueChange={setActiveTimeframe}>
                   <TabsList className="mb-4">
@@ -143,7 +191,7 @@ export default function MarketPage() {
                       </TabsTrigger>
                     ))}
                   </TabsList>
-                  <div className="h-[400px] w-full">
+                  <div className="h-[500px] w-full">
                     <ResponsiveContainer>
                       <AreaChart data={chartData}>
                         <defs>
@@ -190,20 +238,70 @@ export default function MarketPage() {
         </div>
 
         {/* Market Stats Section */}
-        <div className="space-y-6">
-          {cryptoData.map((crypto) => (
-            <Card key={crypto.id} className="flex flex-col justify-between">
+        <div className="lg:col-span-4 space-y-6">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card>
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">{crypto.name} ({crypto.symbol.toUpperCase()})</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Market Stats
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => fetchCryptoData()}
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-lg sm:text-xl font-bold">${crypto.current_price.toFixed(2)}</p>
-                <p className={`text-sm ${crypto.price_change_percentage_24h > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {crypto.price_change_percentage_24h.toFixed(2)}% (24h)
-                </p>
+                <div className="space-y-4">
+                  {isLoading ? (
+                    Array(6).fill(0).map((_, i) => (
+                      <div key={i} className="flex justify-between items-center">
+                        <Skeleton className="h-4 w-[100px]" />
+                        <Skeleton className="h-4 w-[80px]" />
+                      </div>
+                    ))
+                  ) : (
+                    cryptoData.map((crypto) => (
+                      <motion.div
+                        key={crypto.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex justify-between items-center p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <BarChart2 className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{crypto.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {crypto.symbol.toUpperCase()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono">
+                            ${crypto.current_price.toFixed(2)}
+                          </p>
+                          <p className={`text-sm ${
+                            crypto.price_change_percentage_24h > 0 
+                              ? 'text-green-500' 
+                              : 'text-red-500'
+                          }`}>
+                            {crypto.price_change_percentage_24h.toFixed(2)}%
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
               </CardContent>
             </Card>
-          ))}
+          </motion.div>
         </div>
       </div>
     </div>
