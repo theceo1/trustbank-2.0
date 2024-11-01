@@ -1,21 +1,17 @@
+export interface TimeSeriesData {
+  date: string;
+  count: number;
+  activeUsers: number;
+}
+
+export interface UserMetrics {
+  totalUsers: number;
+  activeUsers: number;
+  growth: number;
+  retention: number;
+  usersByTime: TimeSeriesData[];
+}
+
 export interface AnalyticsData {
-    userGrowth: UserGrowthData[];
-    referralMetrics: ReferralMetricData[];
-    transactionData: TransactionData[];
-  }
-  
-  export interface UserGrowthData {
-    timestamp: string;
-    count: number;
-  }
-  
-  export interface ReferralMetricData {
-    timestamp: string;
-    value: number;
-  }
-  
-  export interface TransactionData {
-    timestamp: string;
-    amount: number;
-    status: string;
-  }
+  userMetrics: UserMetrics;
+}

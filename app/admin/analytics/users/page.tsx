@@ -1,5 +1,5 @@
-//app/admin/analytics/users/page.tsx"use client";
-
+// app/admin/analytics/users/page.tsx
+"use client";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import { UserMetrics, AnalyticsData } from '@/app/admin/types/analytics';
 
 export default function UserAnalyticsPage() {
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -80,7 +81,7 @@ export default function UserAnalyticsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{userMetrics.totalUsers.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {userMetrics.userGrowth >= 0 ? "+" : ""}{userMetrics.userGrowth.toFixed(1)}% from last period
+              {userMetrics.growth >= 0 ? "+" : ""}{userMetrics.growth.toFixed(1)}% from last period
             </p>
           </CardContent>
         </Card>
@@ -104,7 +105,9 @@ export default function UserAnalyticsPage() {
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userMetrics.newUsers.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {userMetrics.usersByTime[userMetrics.usersByTime.length - 1]?.count.toLocaleString() || 0}
+            </div>
             <p className="text-xs text-muted-foreground">
               Last 30 days
             </p>
@@ -117,7 +120,7 @@ export default function UserAnalyticsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userMetrics.retentionRate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{userMetrics.retention.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
               Active users retention
             </p>
