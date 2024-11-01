@@ -1,3 +1,4 @@
+// middleware.ts
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -6,6 +7,21 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
   const { pathname } = req.nextUrl;
+
+  // Force dynamic behavior for specific routes
+  const dynamicRoutes = [
+    '/dashboard',
+    '/profile',
+    '/wallet',
+    '/auth/verify',
+    '/profile/wallet',
+    '/admin'
+  ];
+
+  if (dynamicRoutes.some(route => pathname.startsWith(route))) {
+    res.headers.set('x-middleware-cache', 'no-cache');
+    res.headers.set('Cache-Control', 'no-store, max-age=0');
+  }
 
   // Allow access to auth-related pages
   if (pathname.startsWith('/auth')) {
@@ -52,6 +68,7 @@ export const config = {
     '/admin/:path*',
     '/dashboard/:path*',
     '/profile/:path*',
-    '/auth/verify'
+    '/auth/verify',
+    '/wallet/:path*'
   ],
 };

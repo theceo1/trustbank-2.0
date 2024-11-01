@@ -26,6 +26,8 @@ import { User } from '@supabase/supabase-js';
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileSkeleton from "../components/profile/ProfileSkeleton";
 
+export const dynamic = 'force-dynamic';
+
 interface ExtendedUser extends Omit<User, 'created_at'> {
   user_metadata: {
     name?: string;

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import supabase from "@/lib/supabase/client";
 
+export const dynamic = 'force-dynamic';
+
 function VerifyContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();

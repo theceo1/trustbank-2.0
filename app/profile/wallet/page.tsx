@@ -23,6 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import BackButton from "@/components/ui/back-button";
 import { RealtimeChannel } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 interface WalletData {
   balance: number;
   total_deposits: number;

@@ -21,6 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import supabase from "@/lib/supabase/client";
 import CryptoPriceTracker from "@/components/dashboard/CryptoPriceTracker";
 
+export const dynamic = 'force-dynamic';
+
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
