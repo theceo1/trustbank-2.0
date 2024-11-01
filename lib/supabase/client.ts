@@ -1,20 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/types/supabase';
 
-let supabaseInstance: ReturnType<typeof createClient<Database>>;
+let supabaseInstance: ReturnType<typeof createClientComponentClient<Database>>;
 
 function getSupabaseClient() {
   if (!supabaseInstance) {
-    supabaseInstance = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          persistSession: true,
-          storageKey: 'trustbank-auth'
-        }
-      }
-    );
+    supabaseInstance = createClientComponentClient<Database>();
   }
   return supabaseInstance;
 }

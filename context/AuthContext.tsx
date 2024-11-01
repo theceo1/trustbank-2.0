@@ -150,15 +150,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) throw error;
       
-      toast({
-        title: "Signed out successfully",
-        description: "You have been signed out of your account",
-      });
+      // Clear any local storage or state
+      setUser(null);
       
-      router.push('/auth/login');
+      // Force a hard redirect to clear all state
+      window.location.href = '/auth/login';
     } catch (error) {
       console.error('Error signing out:', error);
       toast({
