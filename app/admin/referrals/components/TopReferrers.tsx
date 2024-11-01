@@ -41,10 +41,6 @@ export default function TopReferrers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("referral_count");
 
-  useEffect(() => {
-    fetchReferrers();
-  }, [fetchReferrers]);
-
   const fetchReferrers = useCallback(async () => {
     try {
       let query = supabase
@@ -75,6 +71,10 @@ export default function TopReferrers() {
       setIsLoading(false);
     }
   }, [timeRange, sortBy]);
+
+  useEffect(() => {
+    fetchReferrers();
+  }, [fetchReferrers]);
 
   const filteredReferrers = referrers.filter(referrer => 
     referrer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
