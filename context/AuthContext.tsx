@@ -6,17 +6,18 @@ import { Session, User } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import supabase from '@/lib/supabase/client';
-import { validateReferralCode } from '@/utils/referral';
+import { validateReferralCode, generateReferralCode } from '@/utils/referral';
 
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, metadata?: {
-    name?: string;
-    referralCode?: string;
-    referredBy?: string | null;
-  }) => Promise<{
-    data: { user: User | null; session: Session | null } | null;
+  signUp: (
+    email: string, 
+    password: string, 
+    fullName: string, 
+    referralCode?: string
+  ) => Promise<{
+    user: User | null;
     error: Error | null;
   }>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -36,89 +37,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       setIsLoading(false);
-      
-      if (event === 'SIGNED_IN') {
-        router.refresh();
-      }
-      if (event === 'SIGNED_OUT') {
-        router.refresh();
-        router.push('/');
-      }
+    };
+
+    getUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, []);
 
   const signUp = async (
     email: string, 
     password: string, 
-    metadata?: {
-      name?: string;
-      referralCode?: string;
-      referredBy?: string | null;
-    }
-  ): Promise<{
-    data: { user: User | null; session: Session | null } | null;
-    error: Error | null;
-  }> => {
+    fullName: string, 
+    referralCode?: string
+  ): Promise<{ user: User | null; error: Error | null }> => {
     try {
-      if (metadata?.referralCode) {
-        const isValid = await validateReferralCode(supabase, metadata.referralCode);
-        if (!isValid) {
-          throw new Error('Invalid referral code');
-        }
-      }
-
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      const { data: { user }, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name: metadata?.name,
-          }
-        }
+            full_name: fullName,
+          },
+        },
       });
 
-      if (signUpError) throw signUpError;
+      if (error) throw error;
 
-      if (authData.user) {
-        const randomString = Math.random().toString(36).substring(2, 10).toUpperCase();
-        const newReferralCode = `REF${randomString}`;
-        
-        const { data: newProfile, error: profileError } = await supabase
+      if (user) {
+        // Create profile record
+        const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
-            user_id: authData.user.id,
-            full_name: metadata?.name,
-            email: email,
-            referral_code: newReferralCode,
-            referred_by: metadata?.referralCode || null,
-            is_verified: false,
-            referral_count: 0
-          })
-          .select()
-          .single();
+          .insert([
+            {
+              user_id: user.id,
+              email: email,
+              full_name: fullName,
+              referral_code: generateReferralCode(),
+              referred_by: referralCode || null,
+            },
+          ]);
 
         if (profileError) throw profileError;
-
-        if (metadata?.referralCode) {
-          const { error: updateError } = await supabase.rpc('increment_referral_count', {
-            referral_code_param: metadata.referralCode
-          });
-
-          if (updateError) throw updateError;
-        }
       }
 
-      return { data: authData, error: null };
+      return { user, error: null };
     } catch (error) {
-      console.error('Error in signUp:', error);
-      return { data: null, error: error as Error };
+      console.error('Error signing up:', error);
+      return { 
+        user: null, 
+        error: error instanceof Error ? error : new Error('An unknown error occurred') 
+      };
     }
   };
 
@@ -169,19 +148,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      router.push("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
+      
       toast({
-        title: "Sign out failed",
-        description: "An error occurred while signing out.",
+        title: "Signed out successfully",
+        description: "You have been signed out of your account",
+      });
+      
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Error signing out",
+        description: "There was a problem signing out. Please try again.",
         variant: "destructive",
       });
-      throw error;
     }
   };
 
@@ -191,7 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signInWithGoogle,
-    logout
+    logout: signOut
   };
 
   return (

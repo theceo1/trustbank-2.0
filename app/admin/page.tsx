@@ -24,6 +24,7 @@ import {
 import { useAdminAuth } from "./context/AdminAuthContext";
 import supabase from "@/lib/supabase/client";
 import { StatsCard } from "./components/StatsCard";
+import { DashboardSkeleton } from "./components/DashboardSkeleton";
 
 interface DashboardStats {
   totalUsers: number;

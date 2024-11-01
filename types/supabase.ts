@@ -1,4 +1,4 @@
-// Supabase types
+// types/supabase.ts
 export type Json =
   | string
   | number
@@ -65,6 +65,27 @@ export interface Database {
           crypto_currency?: string;
         };
       };
+      admin_users: {
+        Row: {
+          id: string
+          user_id: string
+          is_active: boolean
+          role: {
+            name: string
+            permissions: Record<string, string[]>
+          }[]
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          is_active?: boolean
+        }
+      }
     }
   }
 }

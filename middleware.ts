@@ -5,24 +5,41 @@ import type { NextRequest } from 'next/server';
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
+  const { pathname } = req.nextUrl;
+
+  // Allow access to auth-related pages
+  if (pathname.startsWith('/auth')) {
+    return res;
+  }
 
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  if (!session) {
-    return NextResponse.redirect(new URL('/login', req.url));
+  // Redirect unauthenticated users to login
+  if (!session && !pathname.startsWith('/auth')) {
+    return NextResponse.redirect(new URL('/auth/login', req.url));
   }
 
   // Check if user is admin for /admin routes
-  if (req.nextUrl.pathname.startsWith('/admin')) {
-    const { data: adminUser } = await supabase
+  if (pathname.startsWith('/admin')) {
+    if (!session?.user?.id) {
+      return NextResponse.redirect(new URL('/auth/login', req.url));
+    }
+
+    const { data: adminUser, error } = await supabase
       .from('admin_users')
-      .select('*')
+      .select(`
+        *,
+        role:admin_roles(
+          name,
+          permissions
+        )
+      `)
       .eq('user_id', session.user.id)
       .single();
 
-    if (!adminUser) {
+    if (error || !adminUser || !adminUser.is_active) {
       return NextResponse.redirect(new URL('/', req.url));
     }
   }
@@ -31,5 +48,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/dashboard/:path*',
+    '/profile/:path*',
+    '/auth/verify'
+  ],
 };

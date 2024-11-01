@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from "@/supabase/client";
 import { Menu, X } from "lucide-react";
 import {
   NavigationMenu,
@@ -18,13 +17,17 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useToast } from "@/hooks/use-toast";
+import { useAdminAuth } from '@/app/admin/context/AdminAuthContext';
 
 export default function Header() {
   const pathname = usePathname();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { toast } = useToast();
+  const { isAdmin } = useAdminAuth();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -39,17 +42,24 @@ export default function Header() {
     };
   }, []);
 
-  const menuItems = [
-    { href: "/market", label: "Market" },
-    ...(user
-      ? [
-          { href: "/dashboard", label: "Dashboard" },
-          { href: "/trade", label: "Trade" },
-          { href: "/profile", label: "Profile" },
-          { href: "/profile/wallet", label: "Wallet" },
-        ]
-      : []),
-    { href: "/calculator", label: "Calculator" },
+  // Admin redirect effect
+  useEffect(() => {
+    if (isAdmin && pathname === '/dashboard') {
+      router.push('/admin/dashboard');
+    }
+  }, [isAdmin, pathname, router]);
+
+  // Define menu items based on auth state
+  const menuItems = user ? [
+    { href: '/market', label: 'Market' },
+    { href: '/calculator', label: 'Calculator' },
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/trade', label: 'Trade' },
+    { href: '/profile/wallet', label: 'Wallet' },
+    { href: '/profile', label: 'Profile' }
+  ] : [
+    { href: '/market', label: 'Market' },
+    { href: '/calculator', label: 'Calculator' }
   ];
 
   const aboutItems = [
@@ -57,18 +67,46 @@ export default function Header() {
     { href: "/about/mission", label: "Mission" },
     { href: "/about/blog", label: "Blog" },
     { href: "/about/faq", label: "FAQ" },
-    { href: "/about/contact", label: "Contact Us" },
+    { href: "/about/contact", label: "Contact Us" }
   ];
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      router.push('/');
+      await logout();
+      setIsMenuOpen(false); // Close mobile menu if open
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account",
+      });
+      router.push('/auth/login');
     } catch (error) {
       console.error('Error signing out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
     }
   };
+
+  // Early return for admin pages
+  if (isAdmin && user) {
+    return null;
+  }
+
+  // Early return for loading state
+  if (isLoading) {
+    return (
+      <header className="bg-background border-b fixed top-0 left-0 right-0 z-50">
+        <div className="container mx-auto flex justify-between items-center py-4 px-4 md:px-0">
+          <Link href="/" className="text-xl md:text-2xl font-bold">
+            trustBank
+          </Link>
+          <ThemeToggle />
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="bg-background border-b fixed top-0 left-0 right-0 z-50">

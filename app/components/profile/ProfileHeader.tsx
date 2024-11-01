@@ -39,27 +39,27 @@ export default function ProfileHeader() {
           .from('profiles')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (fetchError && fetchError.code === 'PGRST116') {
-          // Profile doesn't exist, create one with referral code from utils
+        if (!existingProfile) {
+          // Profile doesn't exist, create one with referral code
           const newReferralCode = `REF${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
           
           const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
-            .insert([{
+            .upsert({
               user_id: user.id,
               full_name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
               email: user.email,
               referral_code: newReferralCode,
               is_verified: false
-            }])
+            })
             .select()
             .single();
 
           if (insertError) throw insertError;
           setProfile(newProfile);
-        } else if (existingProfile) {
+        } else {
           setProfile(existingProfile);
           
           // Fetch referral count

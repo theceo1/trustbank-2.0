@@ -1,3 +1,4 @@
+// app/auth/signup/page.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { generateReferralCode, validateReferralCode } from '@/utils/referral';
 import supabase from '@/lib/supabase/client';
+import { useToast } from "@/hooks/use-toast";
 
 export default function SignUp() {
   const [name, setName] = useState('');
@@ -32,6 +34,7 @@ export default function SignUp() {
   const { signUp, signInWithGoogle } = useAuth() as AuthContextType;
   const [referralCode, setReferralCode] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,15 +46,21 @@ export default function SignUp() {
         throw new Error('Please accept the terms and conditions');
       }
 
-      const result = await signUp(email, password, {
-        name,
-        referralCode,
+      const { user, error: signUpError } = await signUp(
+        email, 
+        password, 
+        name, 
+        referralCode
+      );
+
+      if (signUpError) throw signUpError;
+      if (!user) throw new Error('No user returned from signup');
+
+      toast({
+        title: "Account created successfully",
+        description: "Please check your email to verify your account.",
       });
-
-      if (result.error) throw result.error;
-      if (!result.data?.user) throw new Error('No user returned from signup');
-
-      router.push('/auth/verify');
+      router.push('/dashboard');
     } catch (err) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred during sign up');

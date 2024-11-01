@@ -33,17 +33,17 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AdminAuthProvider>
-            <AuthProvider>
+          <AuthProvider>
+            <AdminAuthProvider>
               <Header />
               {children}
               <Footer />
-              <Toaster />
-            </AuthProvider>
-          </AdminAuthProvider>
+              <Analytics />
+              <SpeedInsights />
+            </AdminAuthProvider>
+          </AuthProvider>
+          <Toaster />
         </ThemeProvider>
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

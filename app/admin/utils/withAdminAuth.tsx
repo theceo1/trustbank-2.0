@@ -13,14 +13,13 @@ export function AdminAuthWrapper({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        router.push('/login?redirect=/admin');
-        return;
+        router.push('/auth/login?redirect=/admin');
       }
 
       const { data: adminUser } = await supabase
         .from('admin_users')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', session?.user.id)
         .single();
 
       if (!adminUser) {

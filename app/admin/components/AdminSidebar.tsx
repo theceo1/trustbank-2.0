@@ -88,7 +88,7 @@ export default function AdminSidebar() {
       <nav className="flex-1 overflow-y-auto">
         <ul className="space-y-1 px-3">
           {menuItems.map((item) => 
-            hasPermission(item.permission.module) && (
+            hasPermission(item.permission.module, item.permission.action) && (
               <li key={item.href}>
                 <Link
                   href={item.href}
