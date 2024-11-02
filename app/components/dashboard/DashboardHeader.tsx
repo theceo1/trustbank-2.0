@@ -20,10 +20,10 @@ export default function DashboardHeader({ displayName, isVerified }: DashboardHe
     >
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold mb-2 text-green-600">
+          <h1 className="text-lg font-bold mb-2 text-green-600">
             Welcome back, {displayName}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-xs italic">
             Here&apos;s an overview of your financial activities
           </p>
         </div>
