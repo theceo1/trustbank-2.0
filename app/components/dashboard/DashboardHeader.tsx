@@ -41,10 +41,10 @@ export default function DashboardHeader({ displayName, isVerified }: DashboardHe
               </Badge>
             </Link>
           )}
-          <Link href="/notifications">
+          <Link href="/profile/notifications">
             <Bell className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
           </Link>
-          <Link href="/settings">
+          <Link href="/profile/security">
             <Settings className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
           </Link>
         </div>

@@ -144,6 +144,51 @@ export default function VisionPage() {
         </div>
 
         <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="my-16"
+        >
+          <Card className="overflow-hidden">
+            <div className="grid md:grid-cols-2 gap-6 p-6">
+              <div className="space-y-4 flex flex-col justify-center">
+                <Badge variant="outline" className="w-fit text-xs bg-green-600/10 text-gray-500">Coming Soon</Badge>
+                <CardTitle className="text-lg">trustCard</CardTitle>
+                <CardDescription className="text-sm">
+                  The future of crypto spending. trustCard seamlessly bridges the gap between your crypto assets and everyday transactions.
+                </CardDescription>
+                <ul className="space-y-2 text-sm">
+                  {[
+                    "Instant crypto-to-fiat conversion",
+                    "Zero foreign transaction fees",
+                    "Enhanced security features",
+                    "Worldwide acceptance",
+                    "Real-time transaction tracking"
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-600" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm text-muted-foreground italic">
+                    earn while you spend
+                </p>
+              </div>
+              <div className="relative h-[300px] md:h-auto">
+                <Image
+                  src="/images/debit-card2.svg"
+                  alt="TrustCard - Crypto Debit Card"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
@@ -171,7 +216,7 @@ export default function VisionPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full bg-green-600 hover:bg-green-700 transition-colors"
+                  className="w-full bg-green-600 hover:bg-green-300 text-white hover:text-black transition-colors"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -180,7 +225,7 @@ export default function VisionPage() {
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                       >
-                        <Target className="h-5 w-5" />
+                        <Target className="h-6 w-6" />
                       </motion.div>
                       Subscribing...
                     </span>
@@ -224,13 +269,13 @@ export default function VisionPage() {
           >
             <Check className="h-8 w-8 text-white" />
           </motion.div>
-          <h2 className="text-2xl font-bold mb-4">Welcome to the Future! 🚀</h2>
-          <p className="text-muted-foreground mb-6">
-            You&apos;re now part of an exclusive community shaping the future of finance.
+          <h2 className="text-lg font-bold mb-2 text-center text-green-600">Welcome to the Future! 🚀</h2>
+          <p className="text-muted-foreground mb-4 text-center">
+            You&apos;re now part of the exclusive community shaping the future of finance.
           </p>
           <Button 
             onClick={() => setIsModalOpen(false)}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-300 text-white hover:text-black transition-colors"
           >
             Continue Exploring
           </Button>

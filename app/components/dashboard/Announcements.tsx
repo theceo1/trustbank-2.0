@@ -1,5 +1,6 @@
 import { Shield, Bell, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import Link from "next/link";
 
 interface AnnouncementProps {
   isVerified: boolean;
@@ -12,17 +13,17 @@ export default function Announcements({ isVerified }: AnnouncementProps) {
         <Card className="p-4 bg-yellow-50 border-yellow-200">
           <div className="flex items-center space-x-2">
             <Shield className="h-4 w-4 text-yellow-600" />
-            <h3 className="font-semibold text-yellow-800 text-sm">Verify Your Identity</h3>
+            <h3 className="font-semibold text-yellow-800 text-sm">Verify Your Account</h3>
           </div>
           <p className="mt-2 text-xs text-yellow-700">
             Complete KYC verification to enable withdrawals and higher limits.
           </p>
-          <a 
+          <Link 
             href="/profile/verification"
-            className="mt-2 inline-block text-sm text-yellow-600 hover:text-yellow-700"
+            className="mt-2 inline-block text-sm text-red-500 hover:text-green-600"
           >
             Verify Now →
-          </a>
+          </Link>
         </Card>
       )}
       

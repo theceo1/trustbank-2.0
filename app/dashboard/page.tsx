@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import supabase from "@/lib/supabase/client";
 import CryptoPriceTracker from "@/components/dashboard/CryptoPriceTracker";
+import Announcements from '@/app/components/dashboard/Announcements';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,6 +96,7 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-20">
       <DashboardHeader displayName={displayName} isVerified={isVerified} />
+      <Announcements isVerified={isVerified} />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <motion.div
@@ -115,7 +117,7 @@ export default function DashboardPage() {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="lg:col-span-2 space-y-8"
         >
-          <MarketOverview itemsPerPage={5} />
+          <MarketOverview itemsPerPage={4} />
           <Trade />
           <RecentTransactions />
         </motion.div>
