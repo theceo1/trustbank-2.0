@@ -1,237 +1,249 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import axios from 'axios';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
-import axios from 'axios';
-import Image from 'next/image';
+import ParticleBackground from "@/app/components/calculator/ParticleBackground";
+import CryptoCard from "@/app/components/calculator/CryptoCard";
+import MarketInsights from "@/app/components/calculator/MarketInsights";
 import { Modal } from "@/app/components/ui/modal";
-import { createClient } from '@supabase/supabase-js';
+import { Loader2 } from 'lucide-react';
+import { useMediaQuery } from "@/app/hooks/use-media-query";
+import ResponsiveContainer from "@/app/components/calculator/ResponsiveContainer";
+import MobileBottomNav from "@/app/components/calculator/MobileBottomNav";
+import PriceHistoryChart from '@/app/components/calculator/PriceHistoryChart';
+import PriceStatistics from '@/app/components/calculator/PriceStatistics';
+import { Check as CheckIcon } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { currencyIds } from '@/app/lib/constants/crypto';
+import supabase from '@/lib/supabase/client';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const TAX_AMOUNT = 50; // NGN tax per transaction
 
-interface CoinGeckoResponse {
-  [key: string]: {
-    usd: number;
-    ngn: number;
-  };
-}
-
-const currencyIds = {
-  BTC: 'bitcoin',
-  ETH: 'ethereum',
-  USDT: 'tether',
-  USDC: 'usd-coin'
-};
+type CurrencyType = "BTC" | "ETH" | "USDT" | "USDC";
+type WalletActionType = "BUY" | "SELL";
 
 export default function CalculatorPage() {
-  const [selectedCurrency, setSelectedCurrency] = useState<'BTC' | 'ETH' | 'USDT' | 'USDC'>('BTC');
-  const [walletAction, setWalletAction] = useState('BUY');
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType>("BTC");
+  const [walletAction, setWalletAction] = useState<WalletActionType>("BUY");
   const [amount, setAmount] = useState("");
   const [calculatedValue, setCalculatedValue] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showMarketInsights, setShowMarketInsights] = useState(false);
 
-  const fetchMarketValue = async () => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  const calculateWithTax = (baseAmount: number) => {
+    return baseAmount + TAX_AMOUNT;
+  };
+
+  const handleCalculate = async () => {
+    if (!amount || isNaN(parseFloat(amount))) {
+      setError('Please enter a valid amount');
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    setCalculatedValue(null);
 
     try {
-      const currencyId = currencyIds[selectedCurrency];
-      const response = await axios.get<CoinGeckoResponse>(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${currencyId}&vs_currencies=usd,ngn`
+      const response = await axios.get(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${currencyIds[selectedCurrency]}&vs_currencies=usd,ngn`
       );
 
-      const currencyData = response.data[currencyId];
-
-      if (!currencyData) {
-        throw new Error(`No data found for ${selectedCurrency}`);
-      }
-
-      const usdRate = currencyData.usd;
-      const ngnRate = currencyData.ngn;
+      const data = response.data[currencyIds[selectedCurrency]];
       const usdAmount = parseFloat(amount);
-      
-      let value: number;
+      let nairaValue;
+
       if (walletAction === 'BUY') {
-        value = (usdAmount / usdRate) * ngnRate;
+        nairaValue = (usdAmount * data.ngn) / data.usd;
       } else {
-        value = (usdAmount * ngnRate) / usdRate;
+        nairaValue = (usdAmount * data.ngn) / data.usd;
       }
 
-      setCalculatedValue(value);
-    } catch (err: any) {
-      console.error("Error fetching market value:", err);
-      setError('Failed to fetch market value. Please try again later.');
+      // Add tax to the calculated amount
+      const finalAmount = calculateWithTax(nairaValue);
+      setCalculatedValue(finalAmount);
+    } catch (error) {
+      setError('Failed to fetch current rates. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatNaira = (value: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
-  };
-
-  const handleCalculate = () => {
-    if (!amount || isNaN(parseFloat(amount))) {
-      setError('Please enter a valid amount.');
-      return;
-    }
-    fetchMarketValue();
-  };
-
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setSubscriptionError(null);
+    setIsSubscribing(true);
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('newsletter_subscribers')
-        .insert([{ 
+        .upsert({ 
           email,
-          source: 'calculator_page'
-        }]);
+          source: 'calculator_page',
+          preferences: { interests: ['product_updates', 'calculator'] },
+          metadata: { subscribed_from: 'calculator' }
+        }, 
+        { onConflict: 'email' })
+        .select();
 
-      if (error) throw error;
-
-      setIsModalOpen(true);
+      if (error) {
+        if (error.code === '23505') {
+          setError('This email is already subscribed.');
+        } else {
+          throw error;
+        }
+        return;
+      }
+      
+      setShowSubscriptionModal(true);
       setEmail('');
-    } catch (error: any) {
-      console.error('Error subscribing:', error);
-      setSubscriptionError('Failed to subscribe. Please try again.');
+      setError(null);
+    } catch (error) {
+      console.error('Subscription error:', error);
+      setError('Failed to subscribe. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setIsSubscribing(false);
     }
   };
 
-  const closeModal = () => setIsModalOpen(false);
-
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <motion.h1
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 2, y: 0 }}
-        transition={{ duration: 1.5 }}
-        className="text-lg font-bold mb-4 pt-12 text-green-600"
-      >
-        Rate Calculator
-      </motion.h1>
-      <i><h2 className="text-sm mb-4 text-gray-700">Market rates you can trust</h2></i>
+    <>
+      <ParticleBackground />
+      
+      <ResponsiveContainer>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className={`text-center mt-14 mb-${isMobile ? '6' : '12'}`}
+        >
+          <h1 className={`${
+            isMobile ? 'text-lg' : 'text-2xl'
+          } font-bold text-green-600 mb-2`}>
+            Crypto Calculator
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Real-time cryptocurrency conversion rates
+          </p>
+        </motion.div>
+
+        <div className={`grid grid-cols-1 ${
+          isMobile ? 'gap-4' : 'lg:grid-cols-2 gap-8'
+        } max-w-7xl mx-auto`}>
+          <CryptoCard
+            selectedCurrency={selectedCurrency}
+            walletAction={walletAction}
+            amount={amount}
+            loading={loading}
+            calculatedValue={calculatedValue}
+            error={error}
+            onCurrencyChange={setSelectedCurrency}
+            onActionChange={setWalletAction}
+            onAmountChange={setAmount}
+            onCalculate={handleCalculate}
+          />
+          
+          {!isMobile && <MarketInsights />}
+          
+          {isMobile && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <Button
+                onClick={() => setShowMarketInsights(!showMarketInsights)}
+                className="w-full bg-green-600"
+              >
+                {showMarketInsights ? "Hide" : "Show"} Market Insights
+              </Button>
+              
+              {showMarketInsights && <MarketInsights />}
+            </motion.div>
+          )}
+        </div>
+
+        <MobileBottomNav />
+      </ResponsiveContainer>
 
       <motion.div
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 2, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="max-w-2xl mx-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="mt-16 text-center max-w-md mx-auto"
       >
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold mb-4">CRYPTO | <span className="text-green-600">TRUST</span></CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={(e) => { e.preventDefault(); handleCalculate(); }} className="space-y-2">
-              <div className="flex space-x-6 p-2 rounded-lg">
-                {Object.keys(currencyIds).map((currency) => (
-                  <Button
-                    key={currency}
-                    variant={selectedCurrency === currency ? (walletAction === 'SELL' ? 'destructive' : 'default') : 'outline'}
-                    onClick={() => setSelectedCurrency(currency as 'BTC' | 'ETH' | 'USDT' | 'USDC')}
-                  >
-                    {currency}
-                  </Button>
-                ))}
-              </div>
-              <Select onValueChange={(value) => setWalletAction(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Wallet Action" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BUY">BUY</SelectItem>
-                  <SelectItem value="SELL">SELL</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                type="number"
-                placeholder="Amount in USD"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-              <Button type="submit" className="w-full bg-green-600" disabled={loading}>
-                {loading ? "Calculating..." : "Calculate"}
-              </Button>
-            </form>
-            {error && <p className="mt-4 text-red-500">{error}</p>}
-            {calculatedValue !== null && (
-              <div className="mt-4">
-                <p className="text-2xl font-bold">{formatNaira(calculatedValue)}</p>
-                <p className="text-sm text-muted-foreground text-green-600">
-                  {walletAction === 'BUY' 
-                    ? <> <span className="text-green-600 font-bold">You need to pay {formatNaira(calculatedValue)} NGN to buy ${amount} USD worth of {selectedCurrency}</span></>
-                    : <> <span className="text-green-600 font-bold">You&apos;ll get {formatNaira(calculatedValue)} NGN for selling ${amount} USD worth of {selectedCurrency}</span></>}
-                </p>
-                <p className="text-xs text-muted-foreground mt-2 text-green-600">NOTE: This is an estimated rate. Actual rate may differ</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      <div className="flex items-center justify-center mb-8">
-        <Image
-          src="/images/calculator-illustration.png"
-          alt="Calculator Illustration"
-          width={400}
-          height={400}
-          unoptimized
-        />
-      </div>
-
-      <div className="mt-8 text-center max-w-md mx-auto">
-        <p className="text-sm text-gray-600 mb-2">JOIN THE <span className='text-green-600'>TRUSTED</span> COMMUNITY TODAY</p>
-        <form onSubmit={handleSubscribe} className="mt-2 flex flex-col items-center">
+        <h3 className="text-xl font-semibold mb-4">
+          Join Our Waitlist
+        </h3>
+        <form onSubmit={handleSubscribe} className="space-y-4">
           <Input
             type="email"
             placeholder="Enter your email"
-            className="w-full mb-2"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className=""
           />
           <Button
             type="submit"
-            className="w-full bg-green-600 hover:bg-green-700"
-            disabled={isSubmitting}
+            className="w-full bg-green-600 hover:bg-green-300 text-white hover:text-black"
+            disabled={isSubscribing}
           >
-            {isSubmitting ? 'Subscribing...' : 'Subscribe to the Waitlist'}
+            {isSubscribing ? (
+              <div className="flex items-center space-x-2">
+                <Loader2 className="animate-spin" />
+                <span>Subscribing...</span>
+              </div>
+            ) : (
+              'Join Waitlist'
+            )}
           </Button>
-          {subscriptionError && <p className="text-red-500 mt-2">{subscriptionError}</p>}
         </form>
-      </div>
+      </motion.div>
 
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <h2 className="text-lg font-bold mb-4 text-black">Subscribed</h2>
-        <p className="text-green-600">Welcome to the <span className="font-bold text-green-600">TRUSTED</span> community.🤝</p>
-        <p className="text-green-600">We will reach out to you soon.</p>
-        <p className="mt-6 bg-gray-300 p-2 rounded-lg text-black"> <span className="font-bold text-green-600">Signed:</span> Tony from trustBank</p>
-        <Button onClick={closeModal} className="mt-4 bg-red-600 hover:bg-red-700 text-white w-50% mx-auto">Close</Button>
-      </Modal>
-    </div>
+      <AnimatePresence>
+        {showSubscriptionModal && (
+          <Modal
+            isOpen={showSubscriptionModal}
+            onClose={() => setShowSubscriptionModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="text-center p-6"
+            >
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckIcon className="w-8 h-8 text-green-600" />
+              </div>
+              <h2 className="text-lg text-green-600 font-bold mb-2">Welcome to TrustBank!</h2>
+              <p className="text-muted-foreground mb-4">
+                Thank you for joining our waitlist. We&apos;ll keep you updated on our latest developments.
+              </p>
+              <p className="mb-6 bg-gray-300 p-2 rounded-sm text-black"> <span className="font-bold text-green-600">Signed:</span> Tony from trustBank</p>
+
+              <Button
+                onClick={() => setShowSubscriptionModal(false)}
+                className="bg-green-600 hover:bg-green-300 text-white hover:text-black"
+              >
+                Close
+              </Button>
+            </motion.div>
+          </Modal>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

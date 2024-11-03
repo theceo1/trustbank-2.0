@@ -82,13 +82,7 @@ export default function MarketPage() {
   const fetchCryptoData = useCallback(async () => {
     try {
       const response = await fetch(
-        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=6&page=1&sparkline=false&x_cg_demo_api_key=${process.env.NEXT_PUBLIC_COINGECKO_API_KEY}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache'
-          }
-        }
+        `/api/crypto?endpoint=/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=6&page=1&sparkline=false`
       );
       
       if (!response.ok) {
