@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
 import { motion } from "framer-motion";
@@ -65,6 +66,7 @@ const itemVariants = {
 };
 
 export default function WalletPage() {
+  const router = useRouter();
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +76,13 @@ export default function WalletPage() {
   const [depositAmount, setDepositAmount] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!user && !isLoading) {
+      router.push('/auth/login?redirect=/profile/wallet');
+      return;
+    }
+  }, [user, isLoading, router]);
 
   const fetchWalletData = useCallback(async () => {
     if (!user) return;
@@ -222,7 +231,9 @@ export default function WalletPage() {
     }
   };
 
-  if (isLoading) return <WalletPageSkeleton />;
+  if (!user || isLoading) {
+    return <WalletPageSkeleton />;
+  }
 
   if (error) {
     return (
