@@ -105,6 +105,7 @@ export default function WalletPage() {
                 balance: 0,
                 total_deposits: 0,
                 total_withdrawals: 0,
+                pending_balance: 0,
                 last_transaction_at: new Date().toISOString()
               }
             ])
@@ -112,12 +113,22 @@ export default function WalletPage() {
             .single();
 
           if (createError) throw createError;
-          setWalletData(newWallet);
+          setWalletData(newWallet || {
+            balance: 0,
+            total_deposits: 0,
+            total_withdrawals: 0,
+            pending_balance: 0
+          });
         } else {
           throw fetchError;
         }
       } else {
-        setWalletData(existingWallet);
+        setWalletData(existingWallet || {
+          balance: 0,
+          total_deposits: 0,
+          total_withdrawals: 0,
+          pending_balance: 0
+        });
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch wallet data';
@@ -276,7 +287,7 @@ export default function WalletPage() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-3xl font-bold">
-                    {showBalance ? `₦${walletData?.balance.toLocaleString()}` : '****'}
+                    {showBalance ? `₦${(walletData?.balance || 0).toLocaleString()}` : '****'}
                   </p>
                   <p className="text-sm text-gray-500">Available Balance</p>
                 </div>
@@ -293,7 +304,7 @@ export default function WalletPage() {
                     <p className="font-medium">Total Deposits</p>
                   </div>
                   <p className="text-xl font-bold">
-                    {showBalance ? `₦${walletData?.total_deposits.toLocaleString()}` : '****'}
+                    {showBalance ? `₦${(walletData?.total_deposits || 0).toLocaleString()}` : '****'}
                   </p>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
@@ -302,7 +313,7 @@ export default function WalletPage() {
                     <p className="font-medium">Total Withdrawals</p>
                   </div>
                   <p className="text-xl font-bold">
-                    {showBalance ? `₦${walletData?.total_withdrawals.toLocaleString()}` : '****'}
+                    {showBalance ? `₦${(walletData?.total_withdrawals || 0).toLocaleString()}` : '****'}
                   </p>
                 </div>
               </div>
@@ -341,7 +352,7 @@ export default function WalletPage() {
                     </div>
                     <div className="text-right">
                       <p className={`font-medium ${tx.type === 'deposit' ? 'text-green-500' : 'text-red-500'}`}>
-                        {tx.type === 'deposit' ? '+' : '-'}₦{tx.amount.toLocaleString()}
+                        {tx.type === 'deposit' ? '+' : '-'}₦{(tx.amount || 0).toLocaleString()}
                       </p>
                       <Badge 
                         variant={
