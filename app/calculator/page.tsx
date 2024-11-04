@@ -85,34 +85,39 @@ export default function CalculatorPage() {
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubscribing(true);
+    setError(null);
 
     try {
+      // First check if email exists
+      const { data: existingUser } = await supabase
+        .from('newsletter_subscribers')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+      if (existingUser) {
+        setShowSubscriptionModal(true);
+        setEmail('');
+        return;
+      }
+
+      // If email doesn't exist, insert new subscriber
       const { error } = await supabase
         .from('newsletter_subscribers')
-        .upsert({ 
+        .insert([{
           email,
           source: 'calculator_page',
           preferences: { interests: ['product_updates', 'calculator'] },
           metadata: { subscribed_from: 'calculator' }
-        }, 
-        { onConflict: 'email' })
-        .select();
+        }]);
 
-      if (error) {
-        if (error.code === '23505') {
-          setError('This email is already subscribed.');
-        } else {
-          throw error;
-        }
-        return;
-      }
-      
+      if (error) throw error;
+
       setShowSubscriptionModal(true);
       setEmail('');
-      setError(null);
     } catch (error) {
       console.error('Subscription error:', error);
-      setError('Failed to subscribe. Please try again.');
+      setError('An error occurred. Please try again.');
     } finally {
       setIsSubscribing(false);
     }
@@ -232,7 +237,9 @@ export default function CalculatorPage() {
               <p className="text-muted-foreground mb-4">
                 Thank you for joining our waitlist. We&apos;ll keep you updated on our latest developments.
               </p>
-              <p className="mb-6 bg-gray-300 p-2 rounded-sm text-black"> <span className="font-bold text-green-600">Signed:</span> Tony from trustBank</p>
+              <p className="mb-6 bg-gray-300 p-2 rounded-sm text-black"> 
+                <span className="font-bold text-green-600">Signed:</span> Tony from trustBank
+              </p>
 
               <Button
                 onClick={() => setShowSubscriptionModal(false)}
