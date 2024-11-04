@@ -15,7 +15,7 @@ export default function QuickActions() {
     },
     {
       title: "Deposit",
-      href: "/wallet/deposit",
+      href: "/profile/wallet",
       icon: <Wallet className="h-5 w-5" />,
       color: "bg-blue-600"
     },
