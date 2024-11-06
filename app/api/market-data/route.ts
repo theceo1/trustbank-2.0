@@ -10,10 +10,8 @@ export async function GET() {
       {
         headers: {
           'Accept': 'application/json',
-          // Add your API key if you have one
-          // 'x-cg-pro-api-key': process.env.COINGECKO_API_KEY,
         },
-        next: { revalidate: 30 } // Cache for 30 seconds
+        next: { revalidate: 30 }
       }
     );
 
@@ -21,23 +19,23 @@ export async function GET() {
       throw new Error(`API responded with status: ${response.status}`);
     }
 
-    const data: CryptoData[] = await response.json();
+    const data = await response.json();
     
-    // Format and clean the data
-    const formattedData = data.map(coin => ({
+    const formattedData: CryptoData[] = data.map((coin: any) => ({
       id: coin.id,
       symbol: coin.symbol,
       name: coin.name,
+      image: coin.image,
       current_price: coin.current_price,
-      price_change_percentage_24h: coin.price_change_percentage_24h,
       market_cap: coin.market_cap,
+      market_cap_rank: coin.market_cap_rank,
       total_volume: coin.total_volume,
-      circulating_supply: coin.circulating_supply,
-      total_supply: coin.total_supply,
-      ath: coin.ath,
-      ath_change_percentage: coin.ath_change_percentage,
-      ath_date: coin.ath_date,
-      image: coin.image
+      price_change_percentage_24h: coin.price_change_percentage_24h,
+      circulating_supply: coin.circulating_supply || 0,
+      total_supply: coin.total_supply || 0,
+      ath: coin.ath || 0,
+      ath_change_percentage: coin.ath_change_percentage || 0,
+      ath_date: coin.ath_date || ''
     }));
 
     return NextResponse.json(formattedData);
