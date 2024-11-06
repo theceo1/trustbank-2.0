@@ -11,6 +11,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from "@/components/ui/toaster";
 import { AdminAuthProvider } from './admin/context/AdminAuthContext';
+import AnalyticsProvider from '@/app/components/PlausibleProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,24 +27,27 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script defer data-domain="trustbank.tech" src="https://plausible.io/js/script.tagged-events.js" />
+      </head>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <AdminAuthProvider>
-              <Header />
-              {children}
-              <Footer />
-              <Analytics />
-              <SpeedInsights />
-            </AdminAuthProvider>
-          </AuthProvider>
-          <Toaster />
-        </ThemeProvider>
+        <AnalyticsProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+              <AdminAuthProvider>
+                <Header />
+                {children}
+                <Footer />
+              </AdminAuthProvider>
+            </AuthProvider>
+            <Toaster />
+          </ThemeProvider>
+        </AnalyticsProvider>
       </body>
     </html>
   );

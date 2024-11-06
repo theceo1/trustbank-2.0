@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { AlertCircle, TrendingUp, TrendingDown, Shield, Users } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import supabase from '@/lib/supabase/client';
+import { usePlausible } from 'next-plausible'
 
 type TradeAction = 'buy' | 'sell';
 
@@ -32,6 +33,7 @@ export default function TradePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [cryptoPrices, setCryptoPrices] = useState<CryptoPrice[]>([]);
   const { toast } = useToast();
+  const plausible = usePlausible()
 
   useEffect(() => {
     if (!user) {
@@ -75,6 +77,15 @@ export default function TradePage() {
         }]);
 
       if (error) throw error;
+
+      // Track the trade event
+      plausible('Trade', {
+        props: {
+          type: action,
+          currency,
+          amount: parseFloat(amount)
+        }
+      });
 
       toast({
         title: "Trade Initiated",
