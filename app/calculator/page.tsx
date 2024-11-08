@@ -7,12 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ParticleBackground from "@/app/components/calculator/ParticleBackground";
 import CryptoCard from "@/app/components/calculator/CryptoCard";
-import MarketInsights from "@/app/components/calculator/MarketInsights";
 import { Modal } from "@/app/components/ui/modal";
 import { Loader2 } from 'lucide-react';
 import { useMediaQuery } from "@/app/hooks/use-media-query";
 import ResponsiveContainer from "@/app/components/calculator/ResponsiveContainer";
-import MobileBottomNav from "@/app/components/calculator/MobileBottomNav";
 import PriceHistoryChart from '@/app/components/calculator/PriceHistoryChart';
 import PriceStatistics from '@/app/components/calculator/PriceStatistics';
 import { Check as CheckIcon } from 'lucide-react';
@@ -160,7 +158,7 @@ export default function CalculatorPage() {
             onCalculate={handleCalculate}
           />
           
-          {!isMobile && <MarketInsights />}
+          {/* {!isMobile && <MarketInsights />} */}
           
           {isMobile && (
             <motion.div
@@ -175,12 +173,10 @@ export default function CalculatorPage() {
                 {showMarketInsights ? "Hide" : "Show"} Market Insights
               </Button>
               
-              {showMarketInsights && <MarketInsights />}
+              {/* {showMarketInsights && <MarketInsights />} */}
             </motion.div>
           )}
         </div>
-
-        <MobileBottomNav />
       </ResponsiveContainer>
 
       <motion.div

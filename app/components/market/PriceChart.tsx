@@ -1,5 +1,6 @@
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 
 interface PriceChartProps {
   data: Array<{
@@ -8,16 +9,33 @@ interface PriceChartProps {
   }>;
   height?: number;
   timeFrame: string;
+  isLoading?: boolean;
 }
 
-export function PriceChart({ data, height = 400, timeFrame }: PriceChartProps) {
-  if (!data || data.length === 0) {
+export function PriceChart({ data, height = 400, timeFrame, isLoading = false }: PriceChartProps) {
+  console.log('PriceChart props:', { dataLength: data.length, timeFrame, isLoading });
+
+  if (isLoading) {
     return (
       <div className="w-full h-[400px] flex items-center justify-center bg-muted/10 rounded-lg">
-        <p className="text-muted-foreground">Loading chart data...</p>
+        <p>Loading chart data...</p>
       </div>
     );
   }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="w-full h-[400px] flex items-center justify-center bg-muted/10 rounded-lg">
+        <p>No data available</p>
+        <pre className="text-xs mt-2">Debug: {JSON.stringify({ data, timeFrame }, null, 2)}</pre>
+      </div>
+    );
+  }
+
+  // Calculate min and max for better chart scaling
+  const prices = data.map(d => d.price);
+  const minPrice = Math.min(...prices) * 0.9995;
+  const maxPrice = Math.max(...prices) * 1.0005;
 
   const formatXAxis = (timestamp: number) => {
     switch (timeFrame) {
@@ -27,19 +45,17 @@ export function PriceChart({ data, height = 400, timeFrame }: PriceChartProps) {
         return format(new Date(timestamp), 'HH:mm');
       case '7D':
         return format(new Date(timestamp), 'MMM dd');
+      case '30D':
+        return format(new Date(timestamp), 'MMM dd');
       default:
         return format(new Date(timestamp), 'MMM dd');
     }
   };
 
-  const prices = data.map(d => d.price);
-  const minPrice = Math.min(...prices) * 0.995;
-  const maxPrice = Math.max(...prices) * 1.005;
-
   return (
     <div className="w-full h-[400px] mt-4">
       <ResponsiveContainer width="100%" height={height}>
-        <AreaChart 
+        <AreaChart
           data={data}
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
@@ -54,17 +70,17 @@ export function PriceChart({ data, height = 400, timeFrame }: PriceChartProps) {
             opacity={0.1} 
             vertical={false}
           />
-          <XAxis 
-            dataKey="timestamp" 
+          <XAxis
+            dataKey="timestamp"
             tickFormatter={formatXAxis}
             tick={{ fontSize: 12 }}
             minTickGap={30}
             dy={10}
           />
-          <YAxis 
+          <YAxis
+            domain={[minPrice, maxPrice]}
             tickFormatter={(value) => `$${value.toLocaleString()}`}
             tick={{ fontSize: 12 }}
-            domain={[minPrice, maxPrice]}
             width={80}
             dx={-10}
           />
@@ -93,9 +109,9 @@ export function PriceChart({ data, height = 400, timeFrame }: PriceChartProps) {
             dataKey="price"
             stroke="#22c55e"
             strokeWidth={2}
-            fillOpacity={1}
             fill="url(#colorPrice)"
-            isAnimationActive={true}
+            isAnimationActive={false}
+            dot={false}
           />
         </AreaChart>
       </ResponsiveContainer>

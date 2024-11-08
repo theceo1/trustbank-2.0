@@ -13,11 +13,10 @@ export interface CryptoData {
   market_cap_rank: number;
   total_volume: number;
   price_change_percentage_24h: number;
+  market_cap_change_percentage_24h: number;
   circulating_supply: number;
   total_supply: number;
-  ath: number;
-  ath_change_percentage: number;
-  ath_date: string;
+  max_supply: number | null;
 }
 
 export interface WebSocketPrice {
