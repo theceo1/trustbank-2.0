@@ -8,7 +8,7 @@ const testimonials = [
   {
     name: "Ijeoma Ogugua",
     role: "Crypto Trader",
-    avatar: "/avatars/ijeoma.jpg", 
+    avatar: "/public/images/placeeholder-user.jpg", 
     content: "TrustBank has made my crypto trading experience smooth and secure. I couldn't ask for a better platform.",
     rating: 4
   },

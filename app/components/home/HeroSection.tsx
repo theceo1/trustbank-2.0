@@ -71,7 +71,7 @@ export default function HeroSection() {
           className="space-y-8"
         >
           <motion.h1 
-            className="text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-400"
+            className="text-6xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-400"
             animate={{ 
               backgroundPosition: ['0%', '100%'],
               opacity: [0.5, 1]
@@ -86,7 +86,7 @@ export default function HeroSection() {
           </motion.h1>
           
           <motion.p 
-            className="text-lg md:text-xl tracking-wide mb-12"
+            className="text-lg tracking-wide mt-2 mb-16"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5 }}
@@ -95,20 +95,18 @@ export default function HeroSection() {
           </motion.p>
           
           <motion.p 
-            className="text-md md:text-lg max-w-2xl mx-auto text-muted-foreground"
+            className="text-md max-w-2xl mx-auto text-muted-foreground"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-          >Experience secure, simple, and seamless crypto trading.
-            {/* Your gateway to the future of finance. Join millions of traders who trust us 
-            for secure, simple, and seamless crypto trading. Start your journey today 
-            and experience the next evolution of digital assets. */}
+          >
+            ❝Empowering You with Trusted Access to Crypto and Web3 Solutions.❞
           </motion.p>
           
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 2 }}
+            transition={{ delay: 1.5 }}
           >
             <Button asChild size="lg" className="bg-green-600 hover:bg-green-300 text-white hover:text-black mt-16">
               <Link href="/auth/signup" className="flex items-center gap-2">
@@ -120,11 +118,11 @@ export default function HeroSection() {
       </div>
 
       <motion.div 
-        className="absolute bottom-8 z-20"
+        className="absolute bottom-8 z-40"
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1, y: [0, 14, 0] }}
+        animate={{ opacity: 2, y: [10, 14, 10] }}
         transition={{ 
-          delay: 1.5,
+          delay: 0.5,
           duration: 1.5,
           repeat: Infinity,
           repeatType: "reverse",
