@@ -23,6 +23,40 @@ interface CryptoPrice {
   change24h: number;
 }
 
+const MarketStats = ({ cryptoPrices }: { cryptoPrices: CryptoPrice[] }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+    className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+  >
+    {cryptoPrices.map((crypto) => (
+      <Card key={crypto.symbol} className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+        <CardContent className="pt-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{crypto.symbol}</span>
+              <span className="text-sm text-muted-foreground">${crypto.price.toFixed(2)}</span>
+            </div>
+            <span className={`flex items-center ${crypto.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {crypto.change24h >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+              {Math.abs(crypto.change24h).toFixed(2)}%
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </motion.div>
+);
+
+const formatTime = (date: Date) => {
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
 export default function TradePage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -34,6 +68,7 @@ export default function TradePage() {
   const [cryptoPrices, setCryptoPrices] = useState<CryptoPrice[]>([]);
   const { toast } = useToast();
   const plausible = usePlausible()
+  const [currentTime, setCurrentTime] = useState(() => formatTime(new Date()));
 
   useEffect(() => {
     if (!user) {
@@ -61,6 +96,14 @@ export default function TradePage() {
     const interval = setInterval(fetchPrices, 30000);
     return () => clearInterval(interval);
   }, [user, router]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(formatTime(new Date()));
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleTrade = async () => {
     setIsLoading(true);
@@ -115,6 +158,8 @@ export default function TradePage() {
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 mt-16">
       <div className="max-w-4xl mx-auto space-y-8">
+        <MarketStats cryptoPrices={cryptoPrices} />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -314,6 +359,9 @@ export default function TradePage() {
           </Modal>
         )}
       </AnimatePresence>
+      <p className="text-sm text-muted-foreground">
+        Last updated: {currentTime}
+      </p>
     </div>
   );
 }
