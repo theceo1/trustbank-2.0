@@ -110,7 +110,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           <div className="space-y-4">
             <h3 className="font-bold text-xl flex items-center gap-2">
-              <Shield className="w-6 h-6 text-green-600" />
+              {/* <Shield className="w-6 h-6 text-green-600" /> */}
               trustBank
             </h3>
             <p className="text-sm text-muted-foreground">

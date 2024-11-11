@@ -118,9 +118,9 @@ export default function HeroSection() {
       </div>
 
       <motion.div 
-        className="absolute bottom-8 z-40"
+        className="absolute bottom-16 z-40"
         initial={{ opacity: 0 }}
-        animate={{ opacity: 2, y: [10, 14, 10] }}
+        animate={{ opacity: 1, y: [10, 14, 10] }}
         transition={{ 
           delay: 0.5,
           duration: 1.5,

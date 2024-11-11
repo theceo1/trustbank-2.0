@@ -15,35 +15,35 @@ const testimonials = [
   {
     name: "Michael Massamba",
     role: "Investment Analyst",
-    avatar: "/avatars/michael.jpg",
+    avatar: "/public/images/placeeholder-user.jpg", 
     content: "The real-time market data and user-friendly interface have significantly improved my trading strategies.",
     rating: 3
   },
   {
     name: "Vivian Vincent",
     role: "Business Owner",
-    avatar: "/avatars/vivian.jpg",
+    avatar: "/public/images/placeeholder-user.jpg", 
     content: "TrustBank's security features give me peace of mind. I can trade confidently knowing my assets are protected.",
     rating: 4
   },
   {
     name: "Austin Obinna",
     role: "Day Trader",
-    avatar: "/avatars/austin.jpg",
+    avatar: "/public/images/placeeholder-user.jpg", 
     content: "The community support is incredible. I've learned so much from other traders!",
     rating: 3
   },
   {
     name: "Kate Chukwu",
     role: "Trader",
-    avatar: "/avatars/kate.jpg",
+    avatar: "/public/images/placeeholder-user.jpg", 
     content: "The platform is easy to use and the customer support is top-notch. I've been able to make consistent profits since joining.",
     rating: 3
   },
   {
     name: "Aminu Sanni",
     role: "Entrepreneur",
-    avatar: "/avatars/aminu.jpg",
+    avatar: "/public/images/placeeholder-user.jpg", 
     content: "TrustBank has been a game-changer for me. The platform's features and the community support have made a significant difference in my trading success.",
     rating: 3
   }
