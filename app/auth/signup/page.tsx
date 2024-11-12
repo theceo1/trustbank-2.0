@@ -175,8 +175,8 @@ export default function SignUp() {
             <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-400">
               Welcome to trustBank
             </h1>
-            <p className="text-xl text-muted-foreground">
-              Your Gateway to Secure Crypto Trading
+            <p className="text-lg text-muted-foreground">
+              The trusted gateway to web 3.0
             </p>
             
             <div className="space-y-4 mt-8">
@@ -215,7 +215,7 @@ export default function SignUp() {
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-card-foreground">Create Account</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Join the future of crypto trading
+                Unlock financial inclusion with <span className="text-green-600">trustBank</span>
               </p>
             </div>
 
@@ -344,7 +344,7 @@ export default function SignUp() {
 
               <Button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-700 text-white transition-all duration-200 transform hover:scale-[1.02]"
+                className="w-full bg-green-600 hover:bg-green-400 hover:text-white text-white transition-all duration-200 transform hover:scale-[1.02]"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -366,14 +366,14 @@ export default function SignUp() {
                   <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
+                  <span className="px-2 bg-card text-muted-foreground">OR</span>
                 </div>
               </div>
 
               <Button
                 onClick={handleGoogleSignIn}
                 variant="outline"
-                className="w-full transition-all duration-200 transform hover:scale-[1.02]"
+                className="w-full transition-all duration-200 transform hover:scale-[1.02] hover:bg-green-400 hover:text-white"
               >
                 <FcGoogle className="h-4 w-4 mr-2" />
                 Sign up with Google

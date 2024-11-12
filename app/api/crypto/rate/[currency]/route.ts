@@ -1,30 +1,44 @@
-import { type NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { currencyIds } from '@/app/lib/constants/crypto';
 
-const BINANCE_API = 'https://api.binance.com/api/v3/ticker/price';
-const NGN_RATE = 1250;
+type SupportedCurrency = keyof typeof currencyIds;
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { currency: string } }
-): Promise<Response> {
+export async function GET(request: Request) {
+  const currency = request.url.split('/').pop()?.toUpperCase() as SupportedCurrency;
+  const ngnRate = 1250; // Fixed rate for now
+  
   try {
-    const currency = params.currency.toUpperCase();
-    let usdPrice = 1;
-    let rate = NGN_RATE;
-
-    if (currency === 'BTC' || currency === 'ETH') {
-      const response = await fetch(
-        `${BINANCE_API}?symbol=${currency}USDT`
+    if (!(currency in currencyIds)) {
+      return NextResponse.json(
+        { error: 'Unsupported currency' }, 
+        { status: 400 }
       );
-      if (!response.ok) throw new Error('Failed to fetch rate');
-      const data = await response.json();
-      usdPrice = parseFloat(data.price);
-      rate = usdPrice * NGN_RATE;
     }
 
-    return Response.json({ rate, usdPrice });
+    if (currency === 'USDT' || currency === 'USDC') {
+      return NextResponse.json({ 
+        rate: ngnRate,
+        usdPrice: 1 
+      });
+    }
+
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${currencyIds[currency]}&vs_currencies=usd`
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch price');
+    }
+
+    const data = await response.json();
+    const usdPrice = data[currencyIds[currency]].usd;
+    const rate = usdPrice * ngnRate;
+
+    return NextResponse.json({ rate, usdPrice });
+
   } catch (error) {
-    return Response.json(
+    console.error('Price fetch error:', error);
+    return NextResponse.json(
       { error: 'Failed to fetch rate' },
       { status: 500 }
     );

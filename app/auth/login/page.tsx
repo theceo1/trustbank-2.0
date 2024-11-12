@@ -64,7 +64,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden">
+    <div className="min-h-screen flex relative overflow-hidden bg-background mt-12">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 z-0">
         {/* Floating Circles */}
@@ -138,37 +138,32 @@ export default function Login() {
           Back to Home
         </Link>
         
-        <div className="relative z-10">
+        <div className="relative z-10 mt-4">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
             className="space-y-6"
           >
-            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-400">
-              Welcome Back
+            <h1 className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-400">
+              Hi there, 👋 
             </h1>
-            <p className="text-xl text-muted-foreground">
-              Continue Your Crypto Journey
+            <p className="text-lg text-muted-foreground font-light text-justify italic">
+            Welcome to trustBank, an ecosystem designed for real impact in emerging markets.
+            </p>
+            <p className="text-sm text-muted-foreground font-light text-justify">
+              CRYPTO | SIMPLIFIED
             </p>
           </motion.div>
         </div>
-
-        <div className="relative z-10">
-          <p className="text-sm text-muted-foreground">
-            New to trustBank?{' '}
-            <Link href="/auth/signup" className="text-green-600 hover:text-green-500">
-              Create an account
-            </Link>
-          </p>
-        </div>
+          
       </div>
 
       {/* Right Panel - Login Form */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-12 relative">
-        <div className="absolute top-4 right-4">
+        {/* <div className="absolute top-4 right-4">
           <ThemeToggle />
-        </div>
+        </div> */}
 
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <motion.div
@@ -178,10 +173,11 @@ export default function Login() {
             className="bg-card/50 backdrop-blur-sm p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800"
           >
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-card-foreground">Welcome back</h2>
+              <h2 className="text-2xl font-bold text-card-foreground">Login </h2>
               <p className="mt-2 text-sm text-gray-600">
-                <i>Login to continue your crypto journey with <span className="text-green-600">trustBank</span></i>
+                <i>to continue your crypto journey with <span className="text-green-600">trustBank</span></i>
               </p>
+             
             </div>
 
             <AnimatePresence mode="wait">
@@ -222,7 +218,7 @@ export default function Login() {
                     <Label htmlFor="password">Password</Label>
                     <Link 
                       href="/auth/forgot-password" 
-                      className="text-sm text-green-600 hover:text-green-500"
+                      className="text-sm text-green-600 hover:text-green-300"
                     >
                       Forgot password?
                     </Link>
@@ -244,7 +240,7 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full bg-green-600 hover:bg-green-300 text-white hover:text-black transition-all duration-200 transform hover:scale-[1.02]"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -263,14 +259,14 @@ export default function Login() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-card text-gray-500">Or continue with</span>
+                <span className="px-2 bg-card text-gray-500">OR</span>
               </div>
             </div>
 
             <Button
               onClick={handleGoogleSignIn}
               variant="outline"
-              className="w-full transition-all duration-200 transform hover:scale-[1.02] mt-6"
+              className="w-full transition-all duration-200 transform hover:scale-[1.02] mt-6 hover:bg-green-300 text-black hover:text-white dark:text-white dark:hover:bg-green-300 dark:hover:text-black"
               disabled={isLoading}
             >
               <FcGoogle className="h-4 w-4 mr-2" />
@@ -279,7 +275,7 @@ export default function Login() {
 
             <p className="text-center text-sm text-gray-600">
               Don&apos;t have an account?{' '}
-              <Link href="/auth/signup" className="font-medium text-green-600 hover:text-green-500">
+              <Link href="/auth/signup" className="font-medium text-green-600 hover:text-green-300">
                 Sign up
               </Link>
             </p>

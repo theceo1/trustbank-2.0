@@ -3,4 +3,4 @@ export const currencyIds = {
     ETH: 'ethereum',
     USDT: 'tether',
     USDC: 'usd-coin'
-  };
+  } as const;
