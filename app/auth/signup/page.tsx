@@ -38,31 +38,38 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
-
+    
     try {
-      if (!acceptedTerms) {
-        throw new Error('Please accept the terms and conditions');
-      }
-
-      const { user, error: signUpError } = await signUp(
-        email, 
-        password, 
-        name, 
-        referralCode
-      );
-
-      if (signUpError) throw signUpError;
-      if (!user) throw new Error('No user returned from signup');
-
-      toast({
-        title: "Account created successfully",
-        description: "Please check your email to verify your account.",
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            kyc_level: 0,
+            is_verified: true,
+            wallet: {
+              balance: 1000000, // 1M NGN for testing
+              currency: 'NGN'
+            }
+          }
+        }
       });
+
+      if (error) throw error;
+
       router.push('/dashboard');
-    } catch (err) {
-      console.error('Signup error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred during sign up');
+      
+      toast({
+        title: "Account created",
+        description: "Welcome! Complete your ID verification to start trading.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create account",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

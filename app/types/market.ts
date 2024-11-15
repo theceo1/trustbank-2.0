@@ -48,3 +48,42 @@ export interface CryptoPriceData {
   price: number;
   change24h: number;
 }
+
+export interface DetailedCryptoPrice {
+  symbol: string;
+  name: string;
+  price: number;
+  change24h: number;
+  volume24h: number;
+  marketCap: number;
+  high24h: number;
+  low24h: number;
+  supply: {
+    circulating: number;
+    total: number;
+    max?: number;
+  };
+}
+
+export interface MarketOverview {
+  totalMarketCap: number;
+  totalVolume24h: number;
+  btcDominance: number;
+  marketCapChange24h: number;
+}
+
+export interface MarketData {
+  pair: string;
+  last_price: number;
+  high_24h: number;
+  low_24h: number;
+  volume_24h: number;
+  price_change_24h: number;
+  price_change_percentage_24h: number;
+}
+
+export interface WalletBalance {
+  currency: string;
+  available: number;
+  pending: number;
+}

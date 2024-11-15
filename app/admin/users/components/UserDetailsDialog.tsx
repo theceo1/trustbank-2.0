@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Transaction } from '@/app/types/transactions';
 
 interface UserDetailsProps {
   user: any;
@@ -237,8 +238,17 @@ function UserReferrals({ userId }: { userId: string }) {
   );
 }
 
+interface ReferralTransaction {
+  id: string;
+  created_at: string;
+  amount: number;
+  status: string;
+  referrer_id: string;
+  referred_id: string;
+}
+
 function UserTransactions({ userId }: { userId: string }) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<ReferralTransaction[]>([]);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -253,6 +263,14 @@ function UserTransactions({ userId }: { userId: string }) {
     
     fetchTransactions();
   }, [userId]);
+
+  const getStatusVariant = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed': return 'success';
+      case 'pending': return 'warning';
+      default: return 'destructive';
+    }
+  };
 
   return (
     <Card>
@@ -275,10 +293,7 @@ function UserTransactions({ userId }: { userId: string }) {
                   ₦{transaction.amount.toLocaleString()}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={
-                    transaction.status === 'COMPLETED' ? "success" :
-                    transaction.status === 'PENDING' ? "warning" : "destructive"
-                  }>
+                  <Badge variant={getStatusVariant(transaction.status)}>
                     {transaction.status}
                   </Badge>
                 </TableCell>
@@ -305,11 +320,4 @@ interface Referral {
   email: string;
   created_at: string;
   is_verified: boolean;
-}
-
-interface Transaction {
-  id: string;
-  created_at: string;
-  amount: number;
-  status: string;
 }

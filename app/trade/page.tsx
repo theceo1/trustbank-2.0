@@ -14,6 +14,8 @@ import { AlertCircle, TrendingUp, TrendingDown, Shield, Users } from 'lucide-rea
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import supabase from '@/lib/supabase/client';
 import { usePlausible } from 'next-plausible'
+import { SUPPORTED_CRYPTOCURRENCIES } from "../lib/constants/crypto";
+import { TradeService } from '@/app/services/TradeService';
 
 type TradeAction = 'buy' | 'sell';
 
@@ -79,16 +81,28 @@ export default function TradePage() {
     const fetchPrices = async () => {
       try {
         const response = await fetch('/api/crypto/prices');
+        if (!response.ok) throw new Error('Failed to fetch prices');
         const data = await response.json();
-        if (Array.isArray(data)) {
-          setCryptoPrices(data);
-        } else {
-          console.error('Invalid price data format:', data);
-          setCryptoPrices([]);
+        
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid price data format');
         }
+
+        const formattedPrices = SUPPORTED_CRYPTOCURRENCIES.map(symbol => ({
+          symbol,
+          price: data[symbol]?.price || 0,
+          change24h: data[symbol]?.change24h || 0
+        }));
+
+        setCryptoPrices(formattedPrices);
       } catch (error) {
         console.error('Failed to fetch crypto prices:', error);
-        setCryptoPrices([]);
+        // Set default empty prices to prevent UI errors
+        setCryptoPrices(SUPPORTED_CRYPTOCURRENCIES.map(symbol => ({
+          symbol,
+          price: 0,
+          change24h: 0
+        })));
       }
     };
 
@@ -105,21 +119,36 @@ export default function TradePage() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const presetAmount = params.get('amount');
+    const presetCurrency = params.get('currency');
+    const presetType = params.get('type') as TradeAction;
+
+    if (presetAmount) setAmount(presetAmount);
+    if (presetCurrency) setCurrency(presetCurrency);
+    if (presetType) setAction(presetType);
+  }, []);
+
   const handleTrade = async () => {
+    if (!user || !amount || !selectedCryptoPrice) {
+      toast({
+        title: "Invalid Trade",
+        description: "Please ensure all trade details are valid",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('trades')
-        .insert([{
-          user_id: user?.id,
-          type: action,
-          currency,
-          amount: parseFloat(amount),
-          status: 'pending',
-          created_at: new Date().toISOString()
-        }]);
-
-      if (error) throw error;
+      await TradeService.executeTrade({
+        userId: user.id,
+        type: action,
+        currency,
+        amount: parseFloat(amount),
+        rate: selectedCryptoPrice.price
+      });
 
       // Track the trade event
       plausible('Trade', {
@@ -131,20 +160,22 @@ export default function TradePage() {
       });
 
       toast({
-        title: "Trade Initiated",
-        description: `Your ${action} order for ${amount} USD of ${currency} is being processed.`,
+        title: "Trade Successful",
+        description: `Your ${action} order for ${amount} USD of ${currency} has been initiated.`,
         duration: 5000,
       });
+
+      // Reset form
+      setAmount('');
+      setIsModalOpen(false);
     } catch (error) {
       toast({
         title: "Trade Failed",
-        description: "Unable to process your trade. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to process your trade",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
-      setIsModalOpen(false);
-      setAmount('');
     }
   };
 

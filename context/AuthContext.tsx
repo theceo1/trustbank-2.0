@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import supabase from '@/lib/supabase/client';
 import { validateReferralCode, generateReferralCode } from '@/utils/referral';
+import { testProfile } from '@/app/lib/test/testProfile';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export interface AuthContextType {
   user: User | null;
@@ -20,7 +22,10 @@ export interface AuthContextType {
     user: User | null;
     error: Error | null;
   }>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{
+    error: Error | null;
+    user: User | null;
+  }>;
   signInWithGoogle: () => Promise<{
     data: { url: string; provider: string } | null;
     error: Error | null;
@@ -35,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
     const getUser = async () => {
@@ -53,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase.auth]);
 
   const signUp = async (
     email: string, 
@@ -102,9 +108,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (process.env.NODE_ENV === 'development' && email === testProfile.email) {
+      setUser(testProfile as unknown as User);
+      router.push('/dashboard');
+      return { user: testProfile as unknown as User, error: null };
+    }
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      return { user: data.user, error: null };
     } catch (error) {
       console.error("Error signing in:", error);
       toast({
@@ -112,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Invalid email or password.",
         variant: "destructive",
       });
-      throw error;
+      return { user: null, error: error as Error };
     }
   };
 

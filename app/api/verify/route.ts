@@ -1,52 +1,38 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
     const { verificationType, data } = await request.json();
     
-    // Log request details
-    console.log('Verification request:', {
-      verificationType,
-      bvn: data.verificationId,
-      apiKey: process.env.DOJAH_SANDBOX_KEY?.substring(0, 10) + '...',
-      appId: process.env.DOJAH_APP_ID
-    });
-
-    // Make sure environment variables are set
     if (!process.env.DOJAH_SANDBOX_KEY || !process.env.DOJAH_APP_ID) {
       throw new Error('Missing Dojah API credentials');
     }
 
-    const response = await fetch('https://sandbox.dojah.io/api/v1/kyc/bvn/basic', {
+    const response = await fetch('https://api.dojah.io/api/v1/kyc/bvn', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.DOJAH_SANDBOX_KEY}`,
+        'Authorization': process.env.DOJAH_SANDBOX_KEY,
         'AppId': process.env.DOJAH_APP_ID,
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        // Add API-Key header as well
-        'API-Key': process.env.DOJAH_SANDBOX_KEY
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         bvn: data.verificationId
-      }),
+      })
     });
 
-    // Log response headers and status
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
     const responseText = await response.text();
-    console.log('Raw response:', responseText);
+    console.log('Dojah API Response:', responseText);
 
     let responseData;
     try {
       responseData = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('Failed to parse response:', parseError);
+    } catch (e) {
+      console.error('Failed to parse Dojah response:', e);
       return NextResponse.json({ 
-        error: 'Invalid API response',
-        details: `Status: ${response.status}, Response: ${responseText.substring(0, 100)}...`
+        error: 'Invalid response from verification service',
+        details: responseText
       }, { status: 500 });
     }
 
@@ -57,20 +43,16 @@ export async function POST(request: Request) {
       }, { status: response.status });
     }
 
-    if (responseData.entity) {
-      return NextResponse.json({
-        entity: {
-          bvn: data.verificationId,
-          verified: true,
-          ...responseData.entity
-        }
-      });
-    }
-
-    return NextResponse.json({ 
-      error: 'Invalid response format',
-      details: responseData
-    }, { status: 400 });
+    return NextResponse.json({
+      entity: {
+        bvn: data.verificationId,
+        verified: true,
+        first_name: responseData.entity?.first_name,
+        last_name: responseData.entity?.last_name,
+        dob: responseData.entity?.dob,
+        phone_number: responseData.entity?.mobile
+      }
+    });
 
   } catch (error) {
     console.error('Verification error:', error);

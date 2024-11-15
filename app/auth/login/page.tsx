@@ -28,14 +28,11 @@ export default function Login() {
     setError('');
 
     try {
-      const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) throw signInError;
-
-      router.push('/dashboard');
+      const { error, user } = await signIn(email, password);
+      if (error) throw error;
+      if (user) {
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       setError('Invalid email or password. Please try again.');
     } finally {

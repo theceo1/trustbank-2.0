@@ -22,7 +22,8 @@ import supabase from '@/lib/supabase/client';
 import WalletPageSkeleton from "@/app/components/skeletons/WalletPageSkeleton";
 import { Badge } from "@/components/ui/badge";
 import BackButton from "@/components/ui/back-button";
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { TransactionService } from '@/app/lib/services/transaction';
+import { Transaction } from "@/app/types/transactions";
 
 export const dynamic = 'force-dynamic';
 
@@ -33,12 +34,10 @@ interface WalletData {
   last_transaction_at: string;
 }
 
-interface Transaction {
+interface Wallet {
   id: string;
-  amount: number;
-  type: 'deposit' | 'withdrawal';
-  status: 'pending' | 'completed' | 'failed';
-  created_at: string;
+  balance: number;
+  // ... other wallet properties
 }
 
 interface PostgresChangesPayload {
@@ -76,6 +75,7 @@ export default function WalletPage() {
   const [depositAmount, setDepositAmount] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
+  const [wallet, setWallet] = useState<Wallet | null>(null);
 
   useEffect(() => {
     if (!user && !isLoading) {
@@ -138,67 +138,54 @@ export default function WalletPage() {
   }, [user]);
 
   const fetchTransactions = useCallback(async () => {
-    if (!user) return;
+    if (!user || !wallet?.id) return;
 
     try {
-      const { data, error: txError } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (txError) throw txError;
+      const data = await TransactionService.getUserTransactions(user.id, wallet.id, 5);
       setTransactions(data || []);
     } catch (err) {
       console.error('Transaction fetch error:', err);
     }
-  }, [user]);
+  }, [user, wallet?.id]);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (user) {
-        setIsLoading(true);
-        await Promise.all([
-          fetchWalletData(),
-          fetchTransactions()
-        ]);
+      if (!user) return;
+      
+      setIsLoading(true);
+      try {
+        await fetchWalletData();
+        if (wallet?.id) {
+          await fetchTransactions();
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
 
-    // Set up real-time subscription for transactions
-    if (user) {
-      const channel = supabase.channel('wallet-updates') as RealtimeChannel;
-
-      channel
-        .on(
-          'postgres_changes' as any,
-          {
-            event: '*',
-            schema: 'public',
-            table: 'wallets',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload: PostgresChangesPayload) => {
-            if (payload.eventType === 'INSERT') {
-              setTransactions(prev => [payload.new, ...prev.slice(0, 4)]);
-              fetchWalletData();
-            }
+    if (user && wallet?.id) {
+      const subscription = TransactionService.subscribeToTransactions(
+        user.id,
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setTransactions(prev => [payload.new, ...prev.slice(0, 4)]);
+            fetchWalletData();
           }
-        )
-        .subscribe();
+        }
+      );
 
       return () => {
-        channel.unsubscribe();
+        subscription.unsubscribe();
       };
     }
-  }, [user, fetchWalletData, fetchTransactions]);
+  }, [user, fetchWalletData, fetchTransactions, wallet?.id]);
 
   const handleDeposit = async () => {
-    if (!user || !depositAmount) return;
+    if (!user || !depositAmount || !wallet?.id) return;
 
     try {
       const amount = parseFloat(depositAmount);
@@ -206,22 +193,15 @@ export default function WalletPage() {
         throw new Error('Please enter a valid amount');
       }
 
-      // Create a pending transaction
-      const { error: txError } = await supabase
-        .from('transactions')
-        .insert([
-          {
-            user_id: user.id,
-            amount,
-            type: 'deposit',
-            status: 'pending',
-            created_at: new Date().toISOString()
-          }
-        ]);
+      await TransactionService.createFiatTransaction({
+        user_id: user.id,
+        wallet_id: wallet.id,
+        amount,
+        type: 'deposit',
+        status: 'pending',
+        currency: 'NGN'
+      });
 
-      if (txError) throw txError;
-
-      // Close modal and show success message
       setIsDepositModalOpen(false);
       setDepositAmount("");
       toast({
@@ -230,7 +210,6 @@ export default function WalletPage() {
         duration: 5000,
       });
 
-      // Refresh data
       await Promise.all([fetchWalletData(), fetchTransactions()]);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to process deposit';
@@ -258,7 +237,7 @@ export default function WalletPage() {
 
   return (
     <motion.div
-      className="container mx-auto py-8 px-4"
+      className="container mx-auto py-8 px-4 mt-12"
       variants={containerVariants}
       initial="hidden"
       animate="visible"

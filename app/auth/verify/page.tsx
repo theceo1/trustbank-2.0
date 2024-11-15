@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,13 +11,30 @@ import supabase from "@/lib/supabase/client";
 export const dynamic = 'force-dynamic';
 
 function VerifyContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   
-  // Your existing verification logic here
+  // Auto verify in development
   const handleVerification = async () => {
-    const token = searchParams.get('token');
-    // ... rest of your verification logic
+    if (process.env.NODE_ENV === 'development') {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.auth.updateUser({
+          data: { 
+            email_verified: true,
+            kyc_level: 0
+          }
+        });
+        
+        toast({
+          title: "Verified",
+          description: "Your account has been verified",
+        });
+        
+        router.push('/dashboard');
+      }
+    }
   };
 
   return (

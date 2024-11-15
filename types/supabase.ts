@@ -55,15 +55,26 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          amount: number;
+          wallet_id: string;
           type: 'deposit' | 'withdrawal' | 'buy' | 'sell';
+          amount: number;
           status: 'pending' | 'completed' | 'failed';
-          created_at: string;
-          fiat_amount: number;
-          fiat_currency: string;
+          currency: string;
+          description?: string;
+          payment_method?: string;
+          reference?: string;
+          external_id?: string;
+          fiat_amount?: number;
+          fiat_currency?: string;
           crypto_amount?: number;
           crypto_currency?: string;
+          rate?: number;
+          payment_reference?: string;
+          created_at: string;
+          updated_at: string;
         };
+        Insert: Omit<Database['public']['Tables']['transactions']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['transactions']['Row']>;
       };
       admin_users: {
         Row: {

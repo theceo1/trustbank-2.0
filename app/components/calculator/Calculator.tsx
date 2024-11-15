@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ interface CalculatedResult {
 }
 
 export default function Calculator() {
+  const router = useRouter();
   const [amount, setAmount] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState<"BTC" | "ETH" | "USDT" | "USDC">("BTC");
   const [transactionType, setTransactionType] = useState<"buy" | "sell">("buy");
@@ -180,6 +182,17 @@ export default function Calculator() {
                   <span>Rate: ₦{calculatedValue.rate.toLocaleString()} / USD</span>
                   <span>Last updated: {calculatedValue.lastUpdated}</span>
                 </div>
+
+                <Button 
+                  className={`w-full mt-4 ${
+                    transactionType === 'buy' 
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                  onClick={() => router.push(`/trade?amount=${calculatedValue.usdAmount}&currency=${selectedCurrency}&type=${transactionType}`)}
+                >
+                  Proceed to Trade
+                </Button>
               </CardContent>
             </Card>
           </motion.div>

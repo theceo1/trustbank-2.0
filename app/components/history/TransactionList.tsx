@@ -4,21 +4,13 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { format } from "date-fns";
 import { Transaction } from "@/app/types/transactions";
+import { TransactionStatusBadge } from "@/app/components/ui/transaction-status-badge";
 
 interface TransactionListProps {
   transactions: Transaction[];
 }
 
 export default function TransactionList({ transactions }: TransactionListProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-green-600';
-      case 'pending': return 'text-yellow-600';
-      case 'failed': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
-
   return (
     <div className="space-y-4">
       {transactions.map((transaction) => (
@@ -44,12 +36,10 @@ export default function TransactionList({ transactions }: TransactionListProps) 
             </div>
             <div className="text-right">
               <p className="font-semibold">
-                {transaction.type === 'deposit' ? '+' : '-'}
+                {transaction.type === 'deposit' || transaction.type === 'sell' ? '+' : '-'}
                 {transaction.currency} {transaction.amount.toFixed(2)}
               </p>
-              <p className={`text-sm capitalize ${getStatusColor(transaction.status)}`}>
-                {transaction.status}
-              </p>
+              <TransactionStatusBadge status={transaction.status} />
             </div>
           </div>
         </motion.div>

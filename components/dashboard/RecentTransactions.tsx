@@ -9,29 +9,12 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { TransactionsSkeleton } from "@/app/components/skeletons";
 import { RealtimeChannel } from '@supabase/supabase-js';
-
-interface Transaction {
-  id: string;
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal';
-  amount: number;
-  fiat_amount: number;
-  fiat_currency: string;
-  crypto_amount?: number;
-  crypto_currency?: string;
-  status: 'completed' | 'pending' | 'failed';
-  created_at: string;
-}
+import { Transaction } from '@/app/types/transactions';
 
 interface TransactionPayload {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-  new: {
-    id: string;
-    amount: number;
-    type: string;
-    status: string;
-    created_at: string;
-  };
-  old: any;
+  new: Transaction;
+  old: Transaction | null;
 }
 
 export default function RecentTransactions() {
@@ -77,11 +60,7 @@ export default function RecentTransactions() {
         (payload: TransactionPayload) => {
           if (payload.eventType === 'INSERT') {
             setTransactions(prev => [
-              {
-                ...payload.new,
-                fiat_amount: payload.new.amount,
-                fiat_currency: '₦'
-              } as Transaction,
+              payload.new,
               ...prev.slice(0, 4)
             ]);
           } else {
@@ -121,10 +100,12 @@ export default function RecentTransactions() {
                 <li key={tx.id} className="flex justify-between items-center">
                   <div className="flex flex-col">
                     <span className="font-medium">
-                      {tx.type === 'buy' ? 'Bought' : 
-                       tx.type === 'sell' ? 'Sold' : 
-                       tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
-                      {tx.crypto_amount && tx.crypto_currency ? ` ${tx.crypto_amount} ${tx.crypto_currency}` : ''}
+                      {(() => {
+                        if ('crypto_amount' in tx && 'crypto_currency' in tx) {
+                          return `${tx.type === 'buy' ? 'Bought' : 'Sold'} ${tx.crypto_amount} ${tx.crypto_currency}`;
+                        }
+                        return tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
+                      })()}
                     </span>
                     <span className="text-sm text-muted-foreground">
                       {format(new Date(tx.created_at), 'MMM d, yyyy HH:mm')}
@@ -133,7 +114,7 @@ export default function RecentTransactions() {
                   <div className="flex items-center gap-2">
                     <span className={tx.type === 'buy' || tx.type === 'deposit' ? 'text-green-500' : 'text-red-500'}>
                       {tx.type === 'buy' || tx.type === 'withdrawal' ? '-' : '+'}
-                      {tx.fiat_currency} {tx.fiat_amount.toLocaleString()}
+                      {tx.currency} {tx.amount.toLocaleString()}
                     </span>
                     <Badge variant={
                       tx.status === 'completed' ? 'default' :

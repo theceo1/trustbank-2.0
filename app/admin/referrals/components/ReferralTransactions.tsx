@@ -39,62 +39,25 @@ import {
 import supabase from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { TransactionsSkeleton } from "../../components/TransactionsSkeleton";
-
-interface Transaction {
-  id: string;
-  referrer_id: string;
-  referred_id: string;
-  amount: number;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED';
-  created_at: string;
-  referrer: {
-    full_name: string;
-    email: string;
-  };
-  referred: {
-    full_name: string;
-    email: string;
-  };
-}
+import { TransactionService } from "@/app/lib/services/transaction";
+import { ReferralTransaction } from "@/app/types/transactions";
+import { TransactionStatusBadge } from "@/app/components/ui/transaction-status-badge";
 
 export default function ReferralTransactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<ReferralTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<ReferralTransaction | null>(null);
   const [dateRange, setDateRange] = useState("all");
 
   const fetchTransactions = useCallback(async () => {
+    setIsLoading(true);
     try {
-      let query = supabase
-        .from('referral_transactions')
-        .select(`
-          *,
-          referrer:profiles!referrer_id(full_name, email),
-          referred:profiles!referred_id(full_name, email)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (status !== 'all') {
-        query = query.eq('status', status.toUpperCase());
-      }
-
-      if (dateRange !== 'all') {
-        const date = new Date();
-        if (dateRange === 'today') {
-          date.setHours(0, 0, 0, 0);
-        } else if (dateRange === 'week') {
-          date.setDate(date.getDate() - 7);
-        } else if (dateRange === 'month') {
-          date.setMonth(date.getMonth() - 1);
-        }
-        query = query.gte('created_at', date.toISOString());
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
+      const data = await TransactionService.getReferralTransactions({
+        status,
+        dateRange
+      });
       setTransactions(data || []);
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -106,39 +69,6 @@ export default function ReferralTransactions() {
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return (
-          <Badge className="bg-green-100 text-green-800">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Completed
-          </Badge>
-        );
-      case 'FAILED':
-        return (
-          <Badge className="bg-red-100 text-red-800">
-            <XCircle className="h-3 w-3 mr-1" />
-            Failed
-          </Badge>
-        );
-      case 'PENDING':
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800">
-            <Clock className="h-3 w-3 mr-1" />
-            Pending
-          </Badge>
-        );
-      default:
-        return (
-          <Badge className="bg-gray-100 text-gray-800">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            Unknown
-          </Badge>
-        );
-    }
-  };
 
   const exportToCSV = () => {
     const headers = ['Date', 'Referrer', 'Referred', 'Amount', 'Status'];
@@ -256,7 +186,7 @@ export default function ReferralTransactions() {
                   <TableCell className="text-right">
                     ₦{transaction.amount.toLocaleString()}
                   </TableCell>
-                  <TableCell>{getStatusBadge(transaction.status)}</TableCell>
+                  <TableCell><TransactionStatusBadge status={transaction.status} /></TableCell>
                   <TableCell className="text-right">
                     <Dialog>
                       <DialogTrigger asChild>

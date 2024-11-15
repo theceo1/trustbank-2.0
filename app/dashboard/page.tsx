@@ -21,6 +21,10 @@ import { useToast } from "@/hooks/use-toast";
 import supabase from "@/lib/supabase/client";
 import CryptoPriceTracker from "@/components/dashboard/CryptoPriceTracker";
 import Announcements from '@/app/components/dashboard/Announcements';
+import TransactionTable from '@/app/components/transactions/TransactionTable';
+import TransactionDetails from '@/app/components/transactions/TransactionDetails';
+import { Transaction } from "@/app/types/transactions";
+import { TransactionHistory } from '@/app/components/dashboard/TransactionHistory';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +38,9 @@ export default function DashboardPage() {
   // Add new loading states
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -71,6 +78,41 @@ export default function DashboardPage() {
     };
 
     fetchUserProfile();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchTransactions = async () => {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setTransactions(data);
+      }
+    };
+
+    fetchTransactions();
+
+    // Subscribe to real-time updates
+    const subscription = supabase
+      .channel('transactions')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'transactions',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        fetchTransactions();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [user]);
 
   // Enhanced loading component
@@ -120,8 +162,22 @@ export default function DashboardPage() {
           <MarketOverview itemsPerPage={4} />
           <Trade />
           <RecentTransactions />
+          <TransactionTable 
+            transactions={transactions}
+            onViewDetails={(transaction: Transaction) => setSelectedTransaction(transaction)}
+          />
         </motion.div>
       </div>
+
+      <TransactionDetails
+        transaction={selectedTransaction}
+        open={!!selectedTransaction}
+        onOpenChange={(open) => {
+          if (!open) setSelectedTransaction(null);
+        }}
+      />
+
+      <TransactionHistory />
     </div>
   );
 }

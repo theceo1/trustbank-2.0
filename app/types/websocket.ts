@@ -16,7 +16,13 @@ export interface BinanceTickerMessage {
   q: string;          // Total traded quote asset volume
 }
 
-export type WebSocketMessage = BinanceTickerMessage;
+export interface WebSocketMessage {
+  pair: string;
+  rate: number;
+  fee: number;
+  amount?: number;
+  timestamp: number;
+}
 
 export interface WebSocketState {
   isConnected: boolean;

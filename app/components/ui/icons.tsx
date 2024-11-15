@@ -1,4 +1,5 @@
 import { SVGProps } from 'react';
+import { CreditCard, Wallet, Building } from "lucide-react";
 
 export const Icons = {
   bitcoin: (props: SVGProps<SVGSVGElement>) => (
@@ -41,4 +42,7 @@ export const Icons = {
       <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 4.5v15c-4.078 0-7.5-3.422-7.5-7.5 0-4.078 3.422-7.5 7.5-7.5z" />
     </svg>
   ),
+  creditCard: CreditCard,
+  wallet: Wallet,
+  bank: Building,
 };

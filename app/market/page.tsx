@@ -15,6 +15,7 @@ const AVAILABLE_CURRENCIES = [
   { id: 'BTC', name: 'Bitcoin', symbol: 'BTC' },
   { id: 'ETH', name: 'Ethereum', symbol: 'ETH' },
   { id: 'USDT', name: 'Tether', symbol: 'USDT' },
+  { id: 'USDC', name: 'USD Coin', symbol: 'USDC' },
 ];
 
 // Define available timeframes

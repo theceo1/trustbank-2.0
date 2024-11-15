@@ -1,87 +1,62 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import supabase from "@/lib/supabase/client";
-import { format } from "date-fns";
-import { ArrowUpRight, ArrowDownRight, Filter } from "lucide-react";
-import LoadingHistory from "@/app/components/history/LoadingHistory";
-import TransactionList from "@/app/components/history/TransactionList";
-import type { Transaction } from '@/app/types/transactions';
+import { Transaction, TransactionType } from "@/app/types/transactions";
+import TransactionList from "@/app/components/transactions/TransactionList";
+import TransactionFilters from "@/app/components/transactions/TransactionFilters";
+import LoadingHistory from "@/app/components/skeletons/LoadingHistory";
+import { useRealtimeTransactions } from "@/app/hooks/useRealtimeTransactions";
+
+const ITEMS_PER_PAGE = 10;
+
+interface TransactionFilters {
+  type?: TransactionType;
+  startDate?: Date;
+  endDate?: Date;
+}
 
 export default function HistoryPage() {
   const { user } = useAuth();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState<TransactionFilters>({});
+  
+  const { transactions, isLoading } = useRealtimeTransactions(user?.id);
 
-  useEffect(() => {
-    async function fetchTransactions() {
-      if (!user) return;
+  // Apply filters and pagination
+  const filteredTransactions = transactions.filter(tx => {
+    if (filters.type && tx.type !== filters.type) return false;
+    if (filters.startDate && new Date(tx.created_at) < filters.startDate) return false;
+    if (filters.endDate && new Date(tx.created_at) > filters.endDate) return false;
+    return true;
+  });
 
-      try {
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
-        if (error) throw error;
-        setTransactions(data || []);
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchTransactions();
-  }, [user]);
+  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
 
   if (isLoading) return <LoadingHistory />;
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-20">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="text-2xl font-bold mb-6">Transaction History</h1>
-        
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList>
-            <TabsTrigger value="all">All Transactions</TabsTrigger>
-            <TabsTrigger value="deposits">Deposits</TabsTrigger>
-            <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
-            <TabsTrigger value="trades">Trades</TabsTrigger>
-          </TabsList>
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <h1 className="text-2xl font-bold mb-6">Transaction History</h1>
+      
+      <TransactionFilters
+        onFilterChange={(newFilters: TransactionFilters) => {
+          setFilters(newFilters);
+          setCurrentPage(1);
+        }}
+      />
 
-          <TabsContent value="all">
-            <TransactionList transactions={transactions} />
-          </TabsContent>
-          
-          <TabsContent value="deposits">
-            <TransactionList 
-              transactions={transactions.filter(t => t.type === 'deposit')} 
-            />
-          </TabsContent>
-
-          <TabsContent value="withdrawals">
-            <TransactionList 
-              transactions={transactions.filter(t => t.type === 'withdrawal')} 
-            />
-          </TabsContent>
-
-          <TabsContent value="trades">
-            <TransactionList 
-              transactions={transactions.filter(t => t.type === 'trade')} 
-            />
-          </TabsContent>
-        </Tabs>
-      </motion.div>
+      <TransactionList
+        transactions={paginatedTransactions}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }
