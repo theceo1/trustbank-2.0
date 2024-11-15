@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import BackButton from "@/components/ui/back-button";
 import { TransactionService } from '@/app/lib/services/transaction';
 import { Transaction } from "@/app/types/transactions";
+import { WalletService } from '@/app/lib/services/wallet';
+import { WalletBalance } from '@/app/types/market';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +78,7 @@ export default function WalletPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [walletBalances, setWalletBalances] = useState<Wallet[]>([]);
 
   useEffect(() => {
     if (!user && !isLoading) {
@@ -88,52 +91,14 @@ export default function WalletPage() {
     if (!user) return;
     
     try {
-      const { data: existingWallet, error: fetchError } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (fetchError) {
-        if (fetchError.code === 'PGRST116') {
-          // Create new wallet if none exists
-          const { data: newWallet, error: createError } = await supabase
-            .from('wallets')
-            .insert([
-              {
-                user_id: user.id,
-                balance: 0,
-                total_deposits: 0,
-                total_withdrawals: 0,
-                pending_balance: 0,
-                last_transaction_at: new Date().toISOString()
-              }
-            ])
-            .select()
-            .single();
-
-          if (createError) throw createError;
-          setWalletData(newWallet || {
-            balance: 0,
-            total_deposits: 0,
-            total_withdrawals: 0,
-            pending_balance: 0
-          });
-        } else {
-          throw fetchError;
-        }
-      } else {
-        setWalletData(existingWallet || {
-          balance: 0,
-          total_deposits: 0,
-          total_withdrawals: 0,
-          pending_balance: 0
-        });
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch wallet data';
-      setError(errorMessage);
-      console.error('Wallet fetch error:', err);
+      const balances: WalletBalance[] = await WalletService.getWalletBalance(user.id);
+      const formattedBalances: Wallet[] = balances.map(balance => ({
+        id: balance.currency,
+        balance: balance.available
+      }));
+      setWalletBalances(formattedBalances);
+    } catch (error) {
+      console.error('Error fetching wallet data:', error);
     }
   }, [user]);
 
@@ -220,6 +185,25 @@ export default function WalletPage() {
       });
     }
   };
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchWalletBalances = async () => {
+      try {
+        const balances: WalletBalance[] = await WalletService.getWalletBalance(user.id);
+        const formattedBalances: Wallet[] = balances.map(balance => ({
+          id: balance.id || '',
+          balance: balance.available
+        }));
+        setWalletBalances(formattedBalances);
+      } catch (error) {
+        console.error('Error fetching wallet balances:', error);
+      }
+    };
+
+    fetchWalletBalances();
+  }, [user]);
 
   if (!user || isLoading) {
     return <WalletPageSkeleton />;

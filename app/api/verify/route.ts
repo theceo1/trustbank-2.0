@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
@@ -9,10 +8,10 @@ export async function POST(request: Request) {
       throw new Error('Missing Dojah API credentials');
     }
 
-    const response = await fetch('https://api.dojah.io/api/v1/kyc/bvn', {
+    const response = await fetch('https://sandbox.dojah.io/api/v1/kyc/bvn/full', {
       method: 'POST',
       headers: {
-        'Authorization': process.env.DOJAH_SANDBOX_KEY,
+        'Authorization': `Bearer ${process.env.DOJAH_SANDBOX_KEY}`,
         'AppId': process.env.DOJAH_APP_ID,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
@@ -22,35 +21,35 @@ export async function POST(request: Request) {
       })
     });
 
-    const responseText = await response.text();
-    console.log('Dojah API Response:', responseText);
-
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-    } catch (e) {
-      console.error('Failed to parse Dojah response:', e);
-      return NextResponse.json({ 
-        error: 'Invalid response from verification service',
-        details: responseText
-      }, { status: 500 });
-    }
-
     if (!response.ok) {
+      console.error('Dojah API error:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+      
       return NextResponse.json({ 
         error: 'Verification service error',
-        details: responseData
+        details: `API Error: ${response.status} ${response.statusText}`
       }, { status: response.status });
+    }
+
+    const responseData = await response.json();
+    
+    if (!responseData.entity) {
+      return NextResponse.json({
+        error: 'Invalid response format from verification service',
+        details: responseData
+      }, { status: 400 });
     }
 
     return NextResponse.json({
       entity: {
         bvn: data.verificationId,
         verified: true,
-        first_name: responseData.entity?.first_name,
-        last_name: responseData.entity?.last_name,
-        dob: responseData.entity?.dob,
-        phone_number: responseData.entity?.mobile
+        first_name: responseData.entity.firstName,
+        last_name: responseData.entity.lastName,
+        dob: responseData.entity.dateOfBirth,
+        phone_number: responseData.entity.phoneNumber1
       }
     });
 

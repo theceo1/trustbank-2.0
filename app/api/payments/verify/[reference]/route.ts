@@ -6,14 +6,15 @@ export async function GET(
   { params }: { params: { reference: string } }
 ) {
   try {
-    const { status, payment_reference } = await QuidaxService.checkPaymentStatus(params.reference);
-    
-    return NextResponse.json({ 
-      status,
-      payment_reference,
-      verified: status === 'completed'
-    });
+    const { reference } = params;
+
+    // Call the QuidaxService to check the payment status
+    const paymentStatus = await QuidaxService.checkPaymentStatus(reference);
+
+    // Return the payment status
+    return NextResponse.json({ status: 'success', paymentStatus });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to verify payment' }, { status: 500 });
+    console.error('Error verifying payment:', error);
+    return NextResponse.json({ error: 'Verification failed' }, { status: 500 });
   }
 }

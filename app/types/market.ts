@@ -86,4 +86,5 @@ export interface WalletBalance {
   currency: string;
   available: number;
   pending: number;
+  id?: string; 
 }

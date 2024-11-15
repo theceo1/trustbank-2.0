@@ -76,6 +76,35 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['transactions']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Database['public']['Tables']['transactions']['Row']>;
       };
+      kyc_verifications: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          status: 'pending' | 'verified' | 'rejected' | 'unverified' | null;
+          level: number | null;
+          created_at: string;
+          updated_at: string;
+          verification_type: string | null;
+          verification_id: string | null;
+          verification_data: Json | null;
+          verified_at: string | null;
+        };
+        Insert: Omit<Database['public']['Tables']['kyc_verifications']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['kyc_verifications']['Row']>;
+      };
+      payments: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          currency: string;
+          status: 'pending' | 'completed' | 'failed';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['payments']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['payments']['Row']>;
+      };
       admin_users: {
         Row: {
           id: string

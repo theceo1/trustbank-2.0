@@ -26,10 +26,7 @@ export class TradeService {
     }
 
     // Validate transaction limits
-    const limitValidation = TransactionLimitService.validateCryptoAmount(
-      currency,
-      amount
-    );
+    const limitValidation = await TransactionLimitService.validateTransaction(userId, amount);
     if (!limitValidation.valid) {
       throw new Error(limitValidation.reason);
     }
