@@ -37,7 +37,7 @@ const VERIFICATION_TYPES: Record<string, VerificationTypeInfo> = {
     label: "Bank Verification Number (BVN)",
     placeholder: "Enter your 11-digit BVN",
     helperText: "Your 11-digit Bank Verification Number",
-    pattern: "^[0-9]{11}$"
+    pattern: "^\\d{11}$"
   },
   nin: {
     label: "National Identity Number (NIN)",
@@ -49,6 +49,7 @@ const VERIFICATION_TYPES: Record<string, VerificationTypeInfo> = {
     label: "Driver's License",
     placeholder: "Enter your license number",
     helperText: "Your Driver's License number as shown on the card",
+    pattern: "^[A-Z0-9-]+$"
   },
   international_passport: {
     label: "International Passport",
@@ -58,9 +59,17 @@ const VERIFICATION_TYPES: Record<string, VerificationTypeInfo> = {
   }
 };
 
+const COUNTRIES = [
+  { code: 'NG', name: 'Nigeria' },
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  // Add more countries as needed
+];
+
 export default function VerificationPage() {
   const [verificationId, setVerificationId] = useState('');
   const [verificationType, setVerificationType] = useState('bvn');
+  const [country, setCountry] = useState('NG'); // Default to Nigeria
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClientComponentClient();
   const { toast } = useToast();
@@ -83,7 +92,11 @@ export default function VerificationPage() {
       }
 
       if (!validateVerificationId(verificationType, verificationId)) {
-        throw new Error(`Invalid ${VERIFICATION_TYPES[verificationType].label} format`);
+        if (verificationType === 'bvn') {
+          throw new Error("BVN must be exactly 11 digits long");
+        } else {
+          throw new Error(`Invalid ${VERIFICATION_TYPES[verificationType].label} format`);
+        }
       }
 
       const response = await fetch('/api/verify', {
@@ -94,9 +107,10 @@ export default function VerificationPage() {
         body: JSON.stringify({
           verificationType,
           data: {
-            verificationId: verificationId.trim()
+            verificationId: verificationId.trim(),
+            country
           }
-        }),
+        })
       });
 
       const data = await response.json();
@@ -121,10 +135,11 @@ export default function VerificationPage() {
           title: "Verification Successful",
           description: "Your identity has been verified successfully.",
         });
-      } else {
-        throw new Error("The provided information could not be verified. Please check your details and try again.");
+        
+        router.push('/dashboard');
       }
     } catch (error) {
+      console.error('Verification error:', error);
       toast({
         title: "Verification Failed",
         description: error instanceof Error ? error.message : "An error occurred during verification",
@@ -133,7 +148,7 @@ export default function VerificationPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
     <motion.div 
@@ -153,6 +168,22 @@ export default function VerificationPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              <div>
+                <Label>Country</Label>
+                <Select onValueChange={setCountry} defaultValue={country}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country.code} value={country.code}>
+                        {country.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div>
                 <Label>Verification Type</Label>
                 <Select onValueChange={setVerificationType} defaultValue={verificationType}>

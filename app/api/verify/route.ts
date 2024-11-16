@@ -8,61 +8,69 @@ export async function POST(request: Request) {
       throw new Error('Missing Dojah API credentials');
     }
 
-    console.log('Dojah Sandbox Key:', process.env.DOJAH_SANDBOX_KEY);
-    console.log('Dojah App ID:', process.env.DOJAH_APP_ID);
-    console.log('Sending request to Dojah API with data:', data);
+    const endpoint = verificationType === 'bvn'
+      ? 'https://sandbox.dojah.io/api/v1/kyc/bvn'
+      : verificationType === 'nin'
+      ? 'https://sandbox.dojah.io/api/v1/kyc/nin/verify'
+      : verificationType === 'drivers_license'
+      ? 'https://sandbox.dojah.io/api/v1/kyc/dl'
+      : 'https://sandbox.dojah.io/api/v1/kyc/passport';
 
-    const response = await fetch('https://sandbox.dojah.io/api/v1/kyc/nin/full', {
+    console.log('Making request to:', endpoint);
+
+    const requestBody = verificationType === 'nin'
+      ? {
+          nin: data.verificationId,
+          first_name: "John",
+          last_name: "Doe"
+        }
+      : {
+          [verificationType]: data.verificationId
+        };
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.DOJAH_SANDBOX_KEY}`,
+        'Authorization': process.env.DOJAH_SANDBOX_KEY,
         'AppId': process.env.DOJAH_APP_ID,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        nin: data.verificationId
-      })
+      body: JSON.stringify(requestBody)
     });
 
-    console.log('Dojah API response status:', response.status);
-    console.log('Dojah API response statusText:', response.statusText);
+    const responseText = await response.text();
+    console.log('Response text:', responseText);
 
-    if (!response.ok) {
-      console.error('Dojah API error:', {
-        status: response.status,
-        statusText: response.statusText
-      });
-      
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (error) {
+      console.error('Parse error:', error);
       return NextResponse.json({ 
-        error: 'Verification service error',
-        details: `API Error: ${response.status} ${response.statusText}`
-      }, { status: response.status });
+        error: 'Invalid response format',
+        details: responseText.substring(0, 100)
+      }, { status: 500 });
     }
 
-    const responseData = await response.json();
-    console.log('Dojah API response data:', responseData);
-
-    if (!responseData.entity) {
-      return NextResponse.json({
-        error: 'Invalid response format from verification service',
+    if (!response.ok || responseData.error) {
+      return NextResponse.json({ 
+        error: responseData.error || 'Verification service error',
         details: responseData
-      }, { status: 400 });
+      }, { status: response.status });
     }
 
     return NextResponse.json({
       entity: {
-        nin: data.verificationId,
         verified: true,
-        first_name: responseData.entity.firstName,
-        last_name: responseData.entity.lastName,
-        dob: responseData.entity.dateOfBirth,
-        phone_number: responseData.entity.phoneNumber1
+        ...responseData.entity
       }
     });
 
   } catch (error) {
     console.error('Error in verification process:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Internal server error' 
+    }, { status: 500 });
   }
 }
