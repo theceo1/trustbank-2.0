@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Authorization': process.env.DOJAH_SANDBOX_KEY,
+        'x-api-key': process.env.DOJAH_SANDBOX_KEY,
         'AppId': process.env.DOJAH_APP_ID,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
