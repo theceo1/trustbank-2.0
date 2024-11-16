@@ -1,13 +1,16 @@
+// app/api/payments/verify/[reference]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { QuidaxService } from '@/app/lib/services/quidax';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { reference: string } }
-) {
-  try {
-    const { reference } = params;
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const reference = searchParams.get('reference');
 
+  if (!reference) {
+    return NextResponse.json({ error: 'Reference parameter is required' }, { status: 400 });
+  }
+
+  try {
     // Call the QuidaxService to check the payment status
     const paymentStatus = await QuidaxService.checkPaymentStatus(reference);
 

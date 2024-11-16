@@ -8,7 +8,11 @@ export async function POST(request: Request) {
       throw new Error('Missing Dojah API credentials');
     }
 
-    const response = await fetch('https://sandbox.dojah.io/api/v1/kyc/bvn/full', {
+    console.log('Dojah Sandbox Key:', process.env.DOJAH_SANDBOX_KEY);
+    console.log('Dojah App ID:', process.env.DOJAH_APP_ID);
+    console.log('Sending request to Dojah API with data:', data);
+
+    const response = await fetch('https://sandbox.dojah.io/api/v1/kyc/nin/full', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.DOJAH_SANDBOX_KEY}`,
@@ -17,9 +21,13 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
+        nin: data.verificationId,
         bvn: data.verificationId
       })
     });
+
+    console.log('Dojah API response status:', response.status);
+    console.log('Dojah API response statusText:', response.statusText);
 
     if (!response.ok) {
       console.error('Dojah API error:', {
@@ -34,7 +42,8 @@ export async function POST(request: Request) {
     }
 
     const responseData = await response.json();
-    
+    console.log('Dojah API response data:', responseData);
+
     if (!responseData.entity) {
       return NextResponse.json({
         error: 'Invalid response format from verification service',
@@ -44,7 +53,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       entity: {
-        bvn: data.verificationId,
+        nin: data.verificationId,
         verified: true,
         first_name: responseData.entity.firstName,
         last_name: responseData.entity.lastName,
@@ -54,10 +63,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Verification error:', error);
-    return NextResponse.json({ 
-      error: 'Verification failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    console.error('Error in verification process:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
