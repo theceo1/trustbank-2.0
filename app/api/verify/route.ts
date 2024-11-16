@@ -21,8 +21,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        nin: data.verificationId,
-        bvn: data.verificationId
+        nin: data.verificationId
       })
     });
 

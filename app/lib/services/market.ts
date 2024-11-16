@@ -11,6 +11,13 @@ interface MarketData {
   price_change_percentage_24h: number;
 }
 
+interface MarketOverview {
+  totalMarketCap: number;
+  totalVolume24h: number;
+  btcDominance: number;
+  marketCapChange24h: number;
+}
+
 export class MarketService {
   private static cache: Map<string, { data: MarketData; timestamp: number }> = new Map();
   private static CACHE_DURATION = 60 * 1000; // 1 minute
@@ -60,5 +67,13 @@ export class MarketService {
 
     if (error) throw error;
     return data;
+  }
+
+  static async getMarketOverview(): Promise<MarketOverview> {
+    const response = await fetch('https://api.example.com/market-overview');
+    if (!response.ok) {
+      throw new Error('Failed to fetch market overview');
+    }
+    return response.json();
   }
 }
