@@ -9,12 +9,12 @@ export async function POST(request: Request) {
     }
 
     const endpoint = verificationType === 'bvn'
-      ? 'https://sandbox.dojah.io/api/v1/kyc/bvn'
+      ? 'https://api.dojah.io/api/v1/kyc/bvn'
       : verificationType === 'nin'
-      ? 'https://sandbox.dojah.io/api/v1/kyc/nin/verify'
+      ? 'https://api.dojah.io/api/v1/kyc/nin/verify'
       : verificationType === 'drivers_license'
-      ? 'https://sandbox.dojah.io/api/v1/kyc/dl'
-      : 'https://sandbox.dojah.io/api/v1/kyc/passport';
+      ? 'https://api.dojah.io/api/v1/kyc/dl'
+      : 'https://api.dojah.io/api/v1/kyc/passport';
 
     console.log('Making request to:', endpoint);
 
@@ -32,7 +32,6 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Authorization': process.env.DOJAH_SANDBOX_KEY,
-        'x-api-key': process.env.DOJAH_SANDBOX_KEY,
         'AppId': process.env.DOJAH_APP_ID,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
