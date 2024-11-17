@@ -9,16 +9,13 @@ import supabase from '@/lib/supabase/client';
 import { validateReferralCode, generateReferralCode } from '@/utils/referral';
 import { testProfile } from '@/app/lib/test/testProfile';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { KYCInfo } from '@/app/types/kyc';
 
 export interface AuthContextType {
   user: User | null;
-  isLoading: boolean;
-  signUp: (
-    email: string, 
-    password: string, 
-    fullName: string, 
-    referralCode?: string
-  ) => Promise<{
+  kycInfo: KYCInfo | null;
+  loading: boolean;
+  signUp: (email: string, password: string, fullName: string, referralCode?: string) => Promise<{
     user: User | null;
     error: Error | null;
   }>;
@@ -37,7 +34,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [kycInfo, setKycInfo] = useState<KYCInfo | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClientComponentClient();
@@ -46,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-      setIsLoading(false);
+      setLoading(false);
     };
 
     getUser();
@@ -55,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      setIsLoading(false);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -183,7 +181,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value: AuthContextType = {
     user,
-    isLoading,
+    kycInfo,
+    loading,
     signUp,
     signIn,
     signInWithGoogle,

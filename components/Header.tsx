@@ -22,7 +22,7 @@ import { useAdminAuth } from '@/app/admin/context/AdminAuthContext';
 
 export default function Header() {
   const pathname = usePathname();
-  const { user, isLoading, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -95,7 +95,7 @@ export default function Header() {
   }
 
   // Early return for loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <header className="bg-background border-b fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto flex justify-between items-center py-4 px-4 md:px-0">
@@ -115,7 +115,7 @@ export default function Header() {
           trustBank
         </Link>
         <nav className="hidden md:flex space-x-4 items-center">
-          {!isLoading && (
+          {!loading && (
             <>
               {menuItems.map((item) => (
                 <Link
@@ -214,7 +214,7 @@ export default function Header() {
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
-            {!isLoading && (
+            {!loading && (
               <>
                 {user ? (
                   <Button

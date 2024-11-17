@@ -13,7 +13,7 @@ export default function WithdrawalPage() {
   const [amount, setAmount] = useState('');
   const router = useRouter();
   const { toast } = useToast();
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     const checkVerificationStatus = async () => {

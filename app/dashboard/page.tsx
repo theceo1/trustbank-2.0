@@ -29,7 +29,7 @@ import { TransactionHistory } from '@/app/components/dashboard/TransactionHistor
 export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [isVerified, setIsVerified] = useState(false);
   const { toast } = useToast();
@@ -43,10 +43,10 @@ export default function DashboardPage() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!loading && !user) {
       router.push('/auth/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, loading, router]);
 
   useEffect(() => {
     const checkVerificationStatus = async () => {
@@ -116,7 +116,7 @@ export default function DashboardPage() {
   }, [user]);
 
   // Enhanced loading component
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-20">
         <LoadingDashboard />
