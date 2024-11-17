@@ -57,3 +57,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media (max-width: 640px) {
+  .dashboard-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .dashboard-card {
+    @apply p-3;
+  }
+  
+  .dashboard-card-title {
+    @apply text-sm;
+  }
+  
+  .dashboard-card-value {
+    @apply text-lg;
+  }
+}

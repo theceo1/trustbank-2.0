@@ -211,10 +211,9 @@ export class QuidaxService {
 
   static verifyWebhookSignature(payload: any, signature: string | null): boolean {
     if (!signature) return false;
-    const secret = process.env.QUIDAX_WEBHOOK_SECRET;
-    if (!secret) throw new Error('Webhook secret not configured');
+    const config = ConfigService.getQuidaxConfig();
     
-    const hmac = createHmac('sha256', secret);
+    const hmac = createHmac('sha256', config.apiKey);
     const computedSignature = hmac.update(JSON.stringify(payload)).digest('hex');
     
     return signature === computedSignature;
@@ -227,11 +226,10 @@ export class QuidaxService {
     return response;
   }
 
-  static async getWalletBalance(userId: string): Promise<WalletBalance[]> {
-    const response = await this.makeRequest<WalletBalance[]>(`/users/${userId}/wallets`, {
+  static async getWalletBalance(userId: string) {
+    return this.makeRequest<WalletBalance>(`/users/${userId}/wallets`, {
       method: 'GET'
     });
-    return response;
   }
 }
 

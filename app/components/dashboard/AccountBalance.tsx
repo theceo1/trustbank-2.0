@@ -30,7 +30,7 @@ export default function AccountBalance() {
     currency: '₦'
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [showBalance, setShowBalance] = useState(true);
+  const [showBalance, setShowBalance] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
 

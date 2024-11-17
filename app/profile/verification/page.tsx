@@ -24,6 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import BackButton from "@/components/ui/back-button";
+import { KYCService } from "@/app/lib/services/kyc";
+import { useAuth } from "@/context/AuthContext";
 
 interface VerificationTypeInfo {
   label: string;
@@ -75,27 +77,44 @@ export default function VerificationPage() {
   const supabase = createClientComponentClient();
   const { toast } = useToast();
   const router = useRouter();
+  const { user } = useAuth();
 
-  const validateImage = (file: File): boolean => {
+  const validateImage = async (file: File): Promise<boolean> => {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const minDimension = 1080; // minimum 1080p
     
     if (!validTypes.includes(file.type)) {
       throw new Error('Please upload a JPG or PNG image');
     }
     
     if (file.size > maxSize) {
-      throw new Error('Image size should be less than 5MB');
+      throw new Error('Image size should be less than 10MB');
     }
     
-    return true;
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      
+      img.onload = () => {
+        if (img.width < minDimension || img.height < minDimension) {
+          reject(new Error('Image resolution should be at least 1080p'));
+        }
+        resolve(true);
+      };
+
+      img.onerror = () => {
+        reject(new Error('Failed to load image'));
+      };
+    });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       try {
         const file = e.target.files[0];
-        if (validateImage(file)) {
+        const isValid = await validateImage(file);
+        if (isValid) {
           setSelfieImage(file);
         }
       } catch (error) {
@@ -131,6 +150,15 @@ export default function VerificationPage() {
   };
 
   const handleVerification = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to verify your identity",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -139,7 +167,7 @@ export default function VerificationPage() {
       }
 
       // Validate image before processing
-      validateImage(selfieImage);
+      await validateImage(selfieImage);
 
       // Convert to base64 and send
       const selfieBase64 = await convertToBase64(selfieImage);
@@ -166,12 +194,20 @@ export default function VerificationPage() {
       }
 
       if (data.entity?.verified) {
+        // Update KYC status in database
+        await KYCService.updateUserKYCStatus(user.id, verificationType, verificationId, 'pending');
+        
+        // Get KYC tier before updating user metadata
+        const kycTier = await KYCService.determineKYCTier(user.id, verificationType);
+        
+        // Update user metadata
         const { error: updateError } = await supabase.auth.updateUser({
           data: { 
             is_verified: true,
             verification_type: verificationType,
             verification_date: new Date().toISOString(),
-            verification_details: data.entity
+            verification_details: data.entity,
+            kyc_tier: kycTier
           }
         });
 
@@ -185,7 +221,6 @@ export default function VerificationPage() {
         router.push('/dashboard');
       }
     } catch (error) {
-      console.error('Verification error:', error);
       toast({
         title: "Verification Failed",
         description: error instanceof Error ? error.message : "An error occurred during verification",
@@ -194,6 +229,52 @@ export default function VerificationPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const ImageUploadSection = () => {
+    const [useCamera, setUseCamera] = useState(false);
+    
+    return (
+      <div className="space-y-2">
+        <Label>Selfie Image</Label>
+        <div className="flex space-x-2 mb-2">
+          <Button
+            type="button"
+            variant={useCamera ? "default" : "outline"}
+            onClick={() => setUseCamera(true)}
+          >
+            Take Photo
+          </Button>
+          <Button
+            type="button"
+            variant={!useCamera ? "default" : "outline"}
+            onClick={() => setUseCamera(false)}
+          >
+            Upload Photo
+          </Button>
+        </div>
+        
+        {useCamera ? (
+          <Input
+            type="file"
+            accept="image/*"
+            capture="user"
+            onChange={handleFileChange}
+            className="mt-1"
+          />
+        ) : (
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="mt-1"
+          />
+        )}
+        <p className="text-sm text-gray-500">
+          Please provide a clear photo for verification (max 10MB)
+        </p>
+      </div>
+    );
   };
 
   return (
@@ -258,19 +339,7 @@ export default function VerificationPage() {
                 />
               </div>
 
-              <div>
-                <Label>Selfie Image</Label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  capture="user"
-                  onChange={handleFileChange}
-                  className="mt-1"
-                />
-                <p className="text-sm text-gray-500">
-                  Please provide a clear selfie photo for verification
-                </p>
-              </div>
+              <ImageUploadSection />
 
               <Button onClick={handleVerification} disabled={isLoading} className="w-full bg-green-600 hover:bg-green-300 text-white dark:bg-green-600 dark:hover:bg-green-300 transition duration-200">
                 {isLoading ? <Loader2 className="animate-spin" /> : "Verify"}

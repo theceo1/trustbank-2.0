@@ -249,9 +249,18 @@ export default function WalletPage() {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-3xl font-bold">
-                    {showBalance ? `₦${(walletData?.balance || 0).toLocaleString()}` : '****'}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-bold">
+                      {showBalance ? `₦${(walletData?.balance || 0).toLocaleString()}` : '•••••••'}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowBalance(!showBalance)}
+                    >
+                      {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
                   <p className="text-sm text-gray-500">Available Balance</p>
                 </div>
                 <Button onClick={() => setIsDepositModalOpen(true)}>
@@ -259,8 +268,8 @@ export default function WalletPage() {
                   Deposit
                 </Button>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
                 <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <ArrowUpRight className="text-green-600" />
