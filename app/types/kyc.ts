@@ -15,6 +15,15 @@ export interface KYCLevel {
   name: string;
   daily_limit: number;
   monthly_limit: number;
-  annual_limit: number;
   requirements: string[];
+}
+
+export interface KYCInfo {
+  status: KYCStatus;
+  currentTier: string;
+  completedRequirements: string[];
+  limits: {
+    daily: number;
+    monthly: number;
+  };
 }

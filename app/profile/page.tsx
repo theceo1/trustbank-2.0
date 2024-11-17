@@ -25,6 +25,9 @@ import supabase from "@/lib/supabase/client";
 import { User } from '@supabase/supabase-js';
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileSkeleton from "../components/profile/ProfileSkeleton";
+import { KYCTierInfo } from "../components/profile/KYCTierInfo";
+import { KYCService } from "../lib/services/kyc";
+import { useQuery } from "@tanstack/react-query";
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +86,17 @@ const menuItems = [
   }
 ];
 
+// Update the KYCInfo interface to match the service return type
+interface KYCInfo {
+  status: string;
+  currentTier: string;
+  completedRequirements: string[];
+  limits: {
+    daily: number;
+    monthly: number;
+  };
+}
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -129,6 +143,18 @@ export default function ProfilePage() {
     }
   };
 
+  const { data: kycInfo, isLoading: kycLoading } = useQuery<KYCInfo>({
+    queryKey: ['kycInfo'],
+    queryFn: async () => {
+      if (!user?.id) {
+        throw new Error('User not found');
+      }
+      const data = await KYCService.getUserKYCInfo(user.id);
+      return data as KYCInfo;
+    },
+    enabled: !!user?.id
+  });
+
   if (isLoading) {
     return <ProfileSkeleton />;
   }
@@ -166,6 +192,13 @@ export default function ProfilePage() {
           Sign Out
         </Button>
       </motion.div>
+      {kycInfo && !kycLoading && (
+        <KYCTierInfo
+          currentTier={kycInfo.currentTier}
+          verificationStatus={kycInfo.status}
+          completedRequirements={kycInfo.completedRequirements}
+        />
+      )}
     </div>
   );
 }

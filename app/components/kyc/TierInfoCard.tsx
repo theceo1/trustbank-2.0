@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { KYC_TIERS } from "@/app/lib/services/kyc";
+import { KYC_TIERS } from "@/app/lib/constants/kyc-tiers";
 import { CheckCircle, XCircle } from "lucide-react";
 
 interface TierInfoProps {
@@ -55,7 +55,6 @@ export function TierInfoCard({ currentTier, userVerifications }: TierInfoProps) 
                 <ul className="text-sm space-y-1">
                   <li>Daily: ₦{tier.limits.dailyLimit.toLocaleString()}</li>
                   <li>Monthly: ₦{tier.limits.monthlyLimit.toLocaleString()}</li>
-                  <li>Annual: ₦{tier.limits.annualLimit.toLocaleString()}</li>
                 </ul>
               </div>
             </div>

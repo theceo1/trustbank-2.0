@@ -42,13 +42,15 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <AuthProvider>
-              <AdminAuthProvider>
-                <Header />
-                {children}
-                <Footer />
-              </AdminAuthProvider>
-            </AuthProvider>
+            <Providers>
+              <AuthProvider>
+                <AdminAuthProvider>
+                  <Header />
+                  {children}
+                  <Footer />
+                </AdminAuthProvider>
+              </AuthProvider>
+            </Providers>
             <Toaster />
           </ThemeProvider>
         </AnalyticsProvider>

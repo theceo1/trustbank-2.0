@@ -1,5 +1,6 @@
 import supabase from '@/lib/supabase/client';
 import { handleError } from '@/app/lib/utils/errorHandler';
+import { KYCService } from './kyc';
 
 
 interface TransactionLimits {
@@ -173,35 +174,39 @@ export class TransactionLimitService {
     }
   }
 
-  static async validateTransaction(userId: string, amount: number) {
-    // Check individual transaction limits
-    if (amount < this.MIN_AMOUNT) {
+  static async validateTransaction(userId: string, amount: number): Promise<{ valid: boolean; reason?: string }> {
+    const kycInfo = await KYCService.getUserKYCInfo(userId);
+    
+    // Get user's transaction history for the day/month/year
+    const dailyTotal = await this.getDailyTotal(userId);
+    const monthlyTotal = await this.getMonthlyTotal(userId);
+    const annualTotal = await this.getAnnualTotal(userId);
+    
+    if (dailyTotal + amount > kycInfo.limits.daily) {
       return {
         valid: false,
-        reason: `Minimum transaction amount is ₦${this.MIN_AMOUNT.toLocaleString()}`
+        reason: `Daily limit of ₦${kycInfo.limits.daily.toLocaleString()} exceeded`
       };
     }
-
-    if (amount > this.MAX_AMOUNT) {
+    
+    if (monthlyTotal + amount > kycInfo.limits.monthly) {
       return {
         valid: false,
-        reason: `Maximum transaction amount is ₦${this.MAX_AMOUNT.toLocaleString()}`
+        reason: `Monthly limit of ₦${kycInfo.limits.monthly.toLocaleString()} exceeded`
       };
     }
-
-    // Check daily limit
-    const dailyTotal = await this.getDailyTransactionTotal(userId);
-    if (dailyTotal + amount > this.DAILY_LIMIT) {
-      return {
-        valid: false,
-        reason: `Daily transaction limit of ₦${this.DAILY_LIMIT.toLocaleString()} exceeded`
-      };
-    }
-
+    
+    // if (annualTotal + amount > kycInfo.limits.annual) {
+    //   return {
+    //     valid: false,
+    //     reason: `Annual limit of ₦${kycInfo.limits.annual.toLocaleString()} exceeded`
+    //   };
+    // }
+    
     return { valid: true };
   }
 
-  private static async getDailyTransactionTotal(userId: string): Promise<number> {
+  private static async getAnnualTotal(userId: string): Promise<number> {
     const today = new Date().toISOString().split('T')[0];
     const { data, error } = await supabase
       .from('transactions')

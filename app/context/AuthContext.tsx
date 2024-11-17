@@ -3,19 +3,25 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import supabase from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { KYCInfo } from "@/app/types/kyc";
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  kycInfo: KYCInfo | null;
+  signOut: () => Promise<void>;
+  // ... other auth methods
 }
 
-const AuthContext = createContext<AuthContextType>({
+export const AuthContext = createContext<AuthContextType>({
   user: null,
-  loading: true,
+  kycInfo: null,
+  signOut: async () => {},
+  // ... other default values
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [kycInfo, setKycInfo] = useState<AuthContextType['kycInfo'] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, kycInfo, signOut: async () => {} }}>
       {children}
     </AuthContext.Provider>
   );
