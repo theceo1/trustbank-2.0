@@ -2,6 +2,8 @@ import supabase from '@/lib/supabase/client';
 import { KYCDocument, KYCLevel, KYCStatus } from '@/app/types/kyc';
 import { KYC_TIERS } from "@/app/lib/constants/kyc-tiers";
 
+export type KYCStatusType = KYCStatus;
+
 export class KYCService {
   static async getUserKYCStatus(userId: string): Promise<KYCStatus> {
     try {
