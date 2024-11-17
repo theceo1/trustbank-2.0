@@ -69,11 +69,58 @@ const COUNTRIES = [
 export default function VerificationPage() {
   const [verificationId, setVerificationId] = useState('');
   const [verificationType, setVerificationType] = useState('bvn');
-  const [country, setCountry] = useState('NG'); // Default to Nigeria
+  const [country, setCountry] = useState('NG');
   const [isLoading, setIsLoading] = useState(false);
+  const [selfieImage, setSelfieImage] = useState<File | null>(null);
   const supabase = createClientComponentClient();
   const { toast } = useToast();
   const router = useRouter();
+
+  const validateImage = (file: File): boolean => {
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    if (!validTypes.includes(file.type)) {
+      throw new Error('Please upload a JPG or PNG image');
+    }
+    
+    if (file.size > maxSize) {
+      throw new Error('Image size should be less than 5MB');
+    }
+    
+    return true;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      try {
+        const file = e.target.files[0];
+        if (validateImage(file)) {
+          setSelfieImage(file);
+        }
+      } catch (error) {
+        toast({
+          title: "Invalid Image",
+          description: error instanceof Error ? error.message : "Please upload a valid image",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const convertToBase64 = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        // Ensure we're sending just the base64 data without the prefix
+        const base64Data = base64String.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const validateVerificationId = (type: string, id: string): boolean => {
     const typeInfo = VERIFICATION_TYPES[type];
@@ -87,18 +134,16 @@ export default function VerificationPage() {
     setIsLoading(true);
     
     try {
-      if (!verificationId) {
-        throw new Error("Please enter your verification ID.");
+      if (!verificationId || !selfieImage) {
+        throw new Error("Please provide both ID and selfie image.");
       }
 
-      if (!validateVerificationId(verificationType, verificationId)) {
-        if (verificationType === 'bvn') {
-          throw new Error("BVN must be exactly 11 digits long");
-        } else {
-          throw new Error(`Invalid ${VERIFICATION_TYPES[verificationType].label} format`);
-        }
-      }
+      // Validate image before processing
+      validateImage(selfieImage);
 
+      // Convert to base64 and send
+      const selfieBase64 = await convertToBase64(selfieImage);
+      
       const response = await fetch('/api/verify', {
         method: 'POST',
         headers: {
@@ -108,7 +153,8 @@ export default function VerificationPage() {
           verificationType,
           data: {
             verificationId: verificationId.trim(),
-            country
+            country,
+            selfie_image: selfieBase64
           }
         })
       });
@@ -210,6 +256,20 @@ export default function VerificationPage() {
                   value={verificationId}
                   onChange={(e) => setVerificationId(e.target.value)}
                 />
+              </div>
+
+              <div>
+                <Label>Selfie Image</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  onChange={handleFileChange}
+                  className="mt-1"
+                />
+                <p className="text-sm text-gray-500">
+                  Please provide a clear selfie photo for verification
+                </p>
               </div>
 
               <Button onClick={handleVerification} disabled={isLoading} className="w-full bg-green-600 hover:bg-green-300 text-white dark:bg-green-600 dark:hover:bg-green-300 transition duration-200">

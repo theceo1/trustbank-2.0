@@ -22,10 +22,12 @@ export async function POST(request: Request) {
       ? {
           nin: data.verificationId,
           first_name: "John",
-          last_name: "Doe"
+          last_name: "Doe",
+          selfie_image: data.selfie_image
         }
       : {
-          [verificationType]: data.verificationId
+          [verificationType]: data.verificationId,
+          selfie_image: data.selfie_image
         };
 
     const response = await fetch(endpoint, {
