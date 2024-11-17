@@ -105,42 +105,26 @@ export const KYCService = {
     return data;
   },
 
-  verifyNIN: async (userId: string, ninNumber: string) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_DOJAH_API_URL}/kyc/nin/verify`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.DOJAH_SANDBOX_KEY}`,
-          'AppId': process.env.DOJAH_APP_ID!,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ nin: ninNumber })
-      });
+  verifyNIN: async (userId: string, nin: string, selfieImage: string) => {
+    // Convert base64 string to blob
+    const base64Response = await fetch(selfieImage);
+    const blob = await base64Response.blob();
+    
+    const formData = new FormData();
+    formData.append('nin', nin);
+    formData.append('selfie', blob, 'selfie.jpg');
 
-      if (!response.ok) {
-        throw new Error('NIN verification failed');
-      }
+    const response = await fetch('/api/kyc/verify-nin', {
+      method: 'POST',
+      body: formData
+    });
 
-      const verificationData = await response.json();
-
-      const { error } = await supabase
-        .from('kyc_verifications')
-        .insert({
-          user_id: userId,
-          level: 1,
-          status: 'pending',
-          verification_type: 'nin',
-          verification_data: verificationData,
-          verification_id: ninNumber
-        });
-
-      if (error) throw error;
-
-      return verificationData;
-    } catch (error) {
-      console.error('NIN verification error:', error);
-      throw error;
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Verification failed');
     }
+
+    return response.json();
   },
 
   getKYCInfo: async (userId: string): Promise<KYCInfo> => {
