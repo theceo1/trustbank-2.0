@@ -41,9 +41,20 @@ export function KYCTierInfo({ currentTier, verificationStatus, completedRequirem
                     </li>
                   ))}
                 </ul>
-                <Link href="/profile/verification">
-                  <Button className="mt-4">Upgrade to {nextTier.name}</Button>
-                </Link>
+                {nextTier.key !== "unverified" && (
+                  <Link href={`/profile/verification/${nextTier.key.toLowerCase()}`}>
+                    <Button 
+                      className="w-full"
+                      disabled={
+                        currentTier === nextTier.key || // Disable if already on this tier
+                        (nextTier.key === "intermediate" && currentTier === "unverified") || // Disable intermediate if not basic
+                        (nextTier.key === "advanced" && currentTier !== "intermediate") // Disable advanced if not intermediate
+                      }
+                    >
+                      {currentTier === nextTier.key ? "Already Verified" : "Upgrade to " + nextTier.name}
+                    </Button>
+                  </Link>
+                )}
               </div>
             )}
           </div>

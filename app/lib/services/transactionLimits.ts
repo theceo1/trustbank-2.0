@@ -1,6 +1,6 @@
 import supabase from '@/lib/supabase/client';
 import { handleError } from '@/app/lib/utils/errorHandler';
-import { KYCService } from './kyc';
+import { KYCService } from '@/app/lib/services/kyc';
 
 
 interface TransactionLimits {
@@ -175,12 +175,11 @@ export class TransactionLimitService {
   }
 
   static async validateTransaction(userId: string, amount: number): Promise<{ valid: boolean; reason?: string }> {
-    const kycInfo = await KYCService.getUserKYCInfo(userId);
+    const kycInfo = await KYCService.getKYCInfo(userId);
     
     // Get user's transaction history for the day/month/year
     const dailyTotal = await this.getDailyTotal(userId);
     const monthlyTotal = await this.getMonthlyTotal(userId);
-    const annualTotal = await this.getAnnualTotal(userId);
     
     if (dailyTotal + amount > kycInfo.limits.daily) {
       return {
@@ -195,13 +194,6 @@ export class TransactionLimitService {
         reason: `Monthly limit of ₦${kycInfo.limits.monthly.toLocaleString()} exceeded`
       };
     }
-    
-    // if (annualTotal + amount > kycInfo.limits.annual) {
-    //   return {
-    //     valid: false,
-    //     reason: `Annual limit of ₦${kycInfo.limits.annual.toLocaleString()} exceeded`
-    //   };
-    // }
     
     return { valid: true };
   }

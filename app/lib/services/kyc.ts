@@ -1,215 +1,180 @@
-import supabase from '@/lib/supabase/client';
-import { KYCDocument, KYCLevel, KYCStatus } from '@/app/types/kyc';
-import { KYC_TIERS } from "@/app/lib/constants/kyc-tiers";
+import { createClient } from '@supabase/supabase-js';
+import { KYCVerification, KYCDocument, KYCInfo } from '@/app/types/kyc';
+import { Database } from '@/types/supabase';
+import { KYC_TIERS } from '@/app/lib/constants/kyc-tiers';
 
-export type KYCStatusType = KYCStatus;
+const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-export class KYCService {
-  static async getUserKYCStatus(userId: string): Promise<KYCStatus> {
+export const KYCService = {
+  uploadDocument: async (file: File): Promise<string> => {
+    const fileName = `${Date.now()}-${file.name}`;
+    const filePath = `kyc-documents/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('documents')
+      .upload(filePath, file);
+
+    if (error) throw new Error('Failed to upload document');
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('documents')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  },
+
+  submitBasicVerification: async (userId: string, data: any) => {
     try {
-      const { data, error } = await supabase
-        .from('kyc_documents')
-        .select('status')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) {
-        console.error('Error fetching KYC status:', error);
-        throw error;
-      }
-
-      // If no documents exist, return unverified
-      if (!data || data.length === 0) {
-        return 'unverified';
-      }
-
-      // Return the status of the most recent document
-      return data[0].status;
-    } catch (error) {
-      console.error('Error in getUserKYCStatus:', error);
-      return 'unverified'; // Default to unverified on error
-    }
-  }
-
-  static async updateUserKYCStatus(
-    userId: string, 
-    documentType: string, 
-    documentNumber: string, 
-    status: KYCStatus = 'pending'
-  ): Promise<void> {
-    const { error } = await supabase
-      .from('kyc_documents')
-      .insert({
+      const verificationData = {
         user_id: userId,
-        document_type: documentType,
-        document_number: documentNumber,
-        status: status,
-      });
+        level: 1,
+        status: 'pending' as const,
+        verification_type: 'basic',
+        verification_data: data,
+      };
 
-    if (error) throw error;
-  }
+      const { error } = await supabase
+        .from('kyc_verifications')
+        .insert(verificationData);
 
-  static async determineKYCTier(
-    userId: string, 
-    documentType: string
-  ): Promise<KYCLevel> {
-    const verifiedDocs = await this.getUserVerifiedDocuments(userId);
-    const { data: levels, error } = await supabase
-      .from('kyc_levels')
-      .select('*')
-      .order('daily_limit', { ascending: true });
+      if (error) throw error;
 
-    if (error) throw error;
-
-    // Add the current document type to verified documents
-    const verifiedTypes = new Set([
-      ...verifiedDocs.map(doc => doc.document_type),
-      documentType
-    ]);
-
-    // Find the highest level where requirements are met
-    for (let i = levels.length - 1; i >= 0; i--) {
-      const level = levels[i];
-      const requirements = level.requirements as string[];
-      if (requirements.every(req => verifiedTypes.has(req))) {
-        return level;
-      }
+    } catch (error) {
+      console.error('Basic verification error:', error);
+      throw error;
     }
+  },
 
-    return levels[0]; // Return base level if no higher tier is matched
-  }
+  submitIntermediateVerification: async (userId: string, data: any) => {
+    try {
+      const verificationData = {
+        user_id: userId,
+        level: 2,
+        status: 'pending' as const,
+        verification_type: 'intermediate',
+        verification_data: data,
+      };
 
-  static async getUserKYCLevel(userId: string): Promise<KYCLevel> {
-    const status = await this.getUserKYCStatus(userId);
-    
-    const { data: levels, error } = await supabase
-      .from('kyc_levels')
-      .select('*')
-      .order('daily_limit', { ascending: true });
+      const { error } = await supabase
+        .from('kyc_verifications')
+        .insert(verificationData);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    if (status === 'verified') {
-      const verifiedDocs = await this.getUserVerifiedDocuments(userId);
-      const verifiedTypes = new Set(verifiedDocs.map(doc => doc.document_type));
-      
-      for (let i = levels.length - 1; i >= 0; i--) {
-        const level = levels[i];
-        const requirements = level.requirements as string[];
-        if (requirements.every(req => verifiedTypes.has(req))) {
-          return level;
-        }
-      }
+    } catch (error) {
+      console.error('Intermediate verification error:', error);
+      throw error;
     }
+  },
 
-    return levels[0];
-  }
+  submitAdvancedVerification: async (userId: string, data: any) => {
+    try {
+      const verificationData = {
+        user_id: userId,
+        level: 3,
+        status: 'pending' as const,
+        verification_type: 'advanced',
+        verification_data: data,
+      };
 
-  private static async getUserVerifiedDocuments(userId: string): Promise<KYCDocument[]> {
+      const { error } = await supabase
+        .from('kyc_verifications')
+        .insert(verificationData);
+
+      if (error) throw error;
+
+    } catch (error) {
+      console.error('Advanced verification error:', error);
+      throw error;
+    }
+  },
+
+  getUserKYCInfo: async (userId: string): Promise<KYCVerification | null> => {
     const { data, error } = await supabase
-      .from('kyc_documents')
+      .from('kyc_verifications')
       .select('*')
       .eq('user_id', userId)
-      .eq('status', 'verified');
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
     if (error) throw error;
     return data;
-  }
+  },
 
-  static async isEligibleForTrade(userId: string): Promise<{ eligible: boolean; reason?: string }> {
+  verifyNIN: async (userId: string, ninNumber: string) => {
     try {
-      const status = await this.getUserKYCStatus(userId);
-      const kycLevel = await this.getUserKYCLevel(userId);
-
-      switch (status) {
-        case 'unverified':
-          return {
-            eligible: false,
-            reason: 'Please complete your KYC verification to trade.'
-          };
-        case 'pending':
-          return {
-            eligible: false,
-            reason: 'Your KYC verification is pending. Please wait for approval.'
-          };
-        case 'rejected':
-          return {
-            eligible: false,
-            reason: 'Your KYC verification was rejected. Please submit new documents.'
-          };
-        case 'verified':
-          return {
-            eligible: true
-          };
-        default:
-          return {
-            eligible: false,
-            reason: 'Invalid KYC status. Please contact support.'
-          };
-      }
-    } catch (error) {
-      console.error('Error checking trade eligibility:', error);
-      return {
-        eligible: false,
-        reason: 'Unable to verify KYC status. Please try again later.'
-      };
-    }
-  }
-
-  static async getUserKYCInfo(userId: string): Promise<{
-    status: KYCStatus;
-    currentTier: string;
-    completedRequirements: string[];
-    limits: {
-      daily: number;
-      monthly: number;
-    };
-  }> {
-    const status = await this.getUserKYCStatus(userId);
-    const verifiedDocs = await this.getUserVerifiedDocuments(userId);
-    const completedRequirements = verifiedDocs.map(doc => doc.document_type);
-    
-    let currentTier = 'unverified';
-    const tiers = Object.entries(KYC_TIERS);
-    
-    for (const [tierName, tierData] of tiers) {
-      if (tierData.requirements.every(req => completedRequirements.includes(req))) {
-        currentTier = tierName;
-      }
-    }
-    
-    const tierLimits = KYC_TIERS[currentTier as keyof typeof KYC_TIERS];
-    
-    return {
-      status,
-      currentTier,
-      completedRequirements,
-      limits: {
-        daily: tierLimits.dailyLimit,
-        monthly: tierLimits.monthlyLimit
-      }
-    };
-  }
-
-  static async verifyNIN(userId: string, nin: string): Promise<boolean> {
-    try {
-      // Add your NIN verification logic here
-      const response = await fetch('/api/kyc/verify-nin', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_DOJAH_API_URL}/kyc/nin/verify`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.DOJAH_SANDBOX_KEY}`,
+          'AppId': process.env.DOJAH_APP_ID!,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ userId, nin }),
+        body: JSON.stringify({ nin: ninNumber })
       });
-      
+
       if (!response.ok) {
         throw new Error('NIN verification failed');
       }
-      
-      return true;
+
+      const verificationData = await response.json();
+
+      const { error } = await supabase
+        .from('kyc_verifications')
+        .insert({
+          user_id: userId,
+          level: 1,
+          status: 'pending',
+          verification_type: 'nin',
+          verification_data: verificationData,
+          verification_id: ninNumber
+        });
+
+      if (error) throw error;
+
+      return verificationData;
     } catch (error) {
-      throw new Error('Failed to verify NIN');
+      console.error('NIN verification error:', error);
+      throw error;
     }
+  },
+
+  getKYCInfo: async (userId: string): Promise<KYCInfo> => {
+    const verification = await KYCService.getUserKYCInfo(userId);
+    
+    if (!verification) {
+      return {
+        status: 'unverified',
+        currentTier: 'unverified',
+        completedRequirements: [],
+        limits: {
+          daily: 0,
+          monthly: 0
+        }
+      };
+    }
+
+    const tierMap = {
+      1: 'tier1',
+      2: 'tier2',
+      3: 'tier3'
+    } as const;
+
+    const currentTier = tierMap[verification.level as keyof typeof tierMap] || 'unverified';
+    const tier = KYC_TIERS[currentTier];
+
+    return {
+      status: verification.status || 'pending',
+      currentTier,
+      completedRequirements: verification.verification_data?.completedRequirements || [],
+      limits: {
+        daily: tier.dailyLimit,
+        monthly: tier.monthlyLimit
+      }
+    };
   }
-}
+};

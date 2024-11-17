@@ -143,14 +143,11 @@ export default function ProfilePage() {
     }
   };
 
-  const { data: kycInfo, isLoading: kycLoading } = useQuery<KYCInfo>({
-    queryKey: ['kycInfo'],
+  const { data: kycInfo, isLoading: kycLoading } = useQuery({
+    queryKey: ['kycInfo', user?.id],
     queryFn: async () => {
-      if (!user?.id) {
-        throw new Error('User not found');
-      }
-      const data = await KYCService.getUserKYCInfo(user.id);
-      return data as KYCInfo;
+      if (!user?.id) throw new Error('No user ID');
+      return KYCService.getKYCInfo(user.id);
     },
     enabled: !!user?.id
   });
