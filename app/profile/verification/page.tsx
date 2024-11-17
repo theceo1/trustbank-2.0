@@ -12,9 +12,13 @@ import Link from "next/link";
 import BackButton from "@/components/ui/back-button";
 
 export default function VerificationPage() {
-  const { user, kycInfo } = useAuth();
+  const { user, kycInfo, loading } = useAuth();
   const currentTier = kycInfo?.currentTier ?? "unverified";
   const completedRequirements = kycInfo?.completedRequirements ?? [];
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   const getVerificationProgress = () => {
     const totalRequirements = KYC_TIERS.tier3.requirements.length;
