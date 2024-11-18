@@ -17,8 +17,8 @@ export default function KYCStatus({ userId, showAction = true }: KYCStatusProps)
 
   useEffect(() => {
     const fetchStatus = async () => {
-      const kycStatus = await KYCService.getUserKYCStatus(userId);
-      setStatus(kycStatus);
+      const eligibility = await KYCService.isEligibleForTrade(userId);
+      setStatus(eligibility.eligible ? 'verified' : 'unverified');
       setIsLoading(false);
     };
 

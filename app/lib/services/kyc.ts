@@ -8,6 +8,13 @@ const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+export type KYCStatusType = 'unverified' | 'pending' | 'verified' | 'rejected';
+
+interface EligibilityResponse {
+  eligible: boolean;
+  reason?: string;
+}
+
 export const KYCService = {
   uploadDocument: async (file: File): Promise<string> => {
     const fileName = `${Date.now()}-${file.name}`;
@@ -159,6 +166,45 @@ export const KYCService = {
         daily: tier.dailyLimit,
         monthly: tier.monthlyLimit
       }
+    };
+  },
+
+  isEligibleForTrade: async (userId: string): Promise<EligibilityResponse> => {
+    const kycInfo = await KYCService.getUserKYCInfo(userId);
+    
+    if (!kycInfo) {
+      return {
+        eligible: false,
+        reason: "Please complete KYC verification to start trading"
+      };
+    }
+
+    // Check if KYC is pending
+    if (kycInfo.status === 'pending') {
+      return {
+        eligible: false,
+        reason: "Your KYC verification is pending. Please wait for approval."
+      };
+    }
+
+    // Check if KYC is rejected
+    if (kycInfo.status === 'rejected') {
+      return {
+        eligible: false,
+        reason: "Your KYC verification was rejected. Please submit again."
+      };
+    }
+
+    // Check minimum tier requirement (at least basic/tier1)
+    if (kycInfo.level === 0) {
+      return {
+        eligible: false,
+        reason: "Please complete at least basic verification to start trading"
+      };
+    }
+
+    return {
+      eligible: true
     };
   }
 };
