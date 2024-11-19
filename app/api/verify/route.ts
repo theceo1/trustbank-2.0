@@ -12,24 +12,10 @@ export async function POST(request: Request) {
     }
 
     const endpoint = 'https://api.dojah.io/api/v1/kyc/nin/verify';
-
     const requestBody = {
       nin: data.nin,
       selfie_image: data.selfie_image
     };
-
-    console.log('Making Dojah request:', {
-      endpoint,
-      hasCredentials: {
-        apiKey: process.env.DOJAH_API_KEY?.substring(0, 10) + '...',
-        appId: process.env.DOJAH_APP_ID
-      },
-      requestData: {
-        hasNin: !!data.nin,
-        hasSelfie: !!data.selfie_image,
-        ninLength: data.nin?.length
-      }
-    });
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -42,72 +28,51 @@ export async function POST(request: Request) {
       body: JSON.stringify(requestBody)
     });
 
-    const responseText = await response.text();
-    console.log('Raw Dojah Response:', responseText);
-
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-    } catch (e) {
-      console.error('Failed to parse response:', e);
-      return NextResponse.json({ error: 'Invalid API response' }, { status: 500 });
-    }
-
-    console.log('Dojah Response:', {
-      status: response.status,
-      data: responseData
-    });
-
-    if (!response.ok || !responseData) {
-      console.error('Dojah API Error:', {
-        status: response.status,
-        data: responseData
-      });
-      return NextResponse.json({ 
-        error: responseData?.error || 'Verification failed' 
-      }, { status: response.status });
-    }
-
+    const responseData = await response.json();
+    
     // Store verification attempt in Supabase
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user } } = await supabase.auth.getUser();
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (user) {
-      try {
-        // First, store the verification attempt
-        const { error: attemptError } = await supabase
-          .from('verification_attempts')
-          .insert({
-            user_id: user.id,
-            verification_type: 'nin',
-            status: responseData.entity?.verified ? 'success' : 'failed',
-            response_data: responseData
-          });
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-        if (attemptError) {
-          console.error('Error storing verification attempt:', attemptError);
-        }
+    const isVerified = responseData.entity && Object.keys(responseData.entity).length > 0;
+    const verificationStatus = isVerified ? 'verified' as const : 'failed' as const;
 
-        // Then, update or insert KYC verification
-        const { error: verificationError } = await supabase
-          .from('kyc_verifications')
-          .upsert({
-            user_id: user.id,
-            level: 1,
-            status: responseData.entity?.verified ? 'verified' : 'failed',
-            verification_type: 'nin',
-            verification_data: responseData,
-            verified_at: responseData.entity?.verified ? new Date().toISOString() : null
-          }, {
-            onConflict: 'user_id'
-          });
+    try {
+      // First, store the verification attempt
+      await supabase
+        .from('verification_attempts')
+        .insert({
+          user_id: user.id,
+          verification_type: 'nin',
+          status: verificationStatus,
+          response_data: responseData
+        });
 
-        if (verificationError) {
-          console.error('Error updating KYC verification:', verificationError);
-        }
-      } catch (error) {
-        console.error('Database operation error:', error);
+      // Then, update KYC verification
+      const { error: verificationError } = await supabase
+        .from('kyc_verifications')
+        .upsert({
+          user_id: user.id,
+          level: 1,
+          status: verificationStatus,
+          verification_type: 'nin',
+          verification_data: responseData,
+          verified_at: isVerified ? new Date().toISOString() : null
+        });
+
+      if (verificationError) {
+        console.error('Error updating KYC verification:', verificationError);
+        throw verificationError;
       }
+
+    } catch (error) {
+      console.error('Database operation error:', error);
+      return NextResponse.json({ error: 'Database operation failed' }, { status: 500 });
     }
 
     return NextResponse.json(responseData);
