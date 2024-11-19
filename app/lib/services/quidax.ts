@@ -18,21 +18,23 @@ export class QuidaxError extends Error {
 }
 
 export class QuidaxService {
-  private static API_URL = process.env.NEXT_PUBLIC_QUIDAX_API_URL;
-  private static API_KEY = process.env.QUIDAX_SECRET_KEY;
-
   private static async makeRequest<T>(
     endpoint: string,
     options: RequestInit
   ): Promise<T> {
-    const config = ConfigService.getQuidaxConfig();
+    const apiUrl = process.env.NEXT_PUBLIC_QUIDAX_API_URL;
+    const apiKey = process.env.QUIDAX_SECRET_KEY;
+
+    if (!apiUrl || !apiKey) {
+      throw new Error('Missing Quidax configuration');
+    }
     
     try {
-      const response = await fetch(`${config.apiUrl}${endpoint}`, {
+      const response = await fetch(`${apiUrl}${endpoint}`, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
           ...options.headers,
         },
       });
@@ -52,7 +54,6 @@ export class QuidaxService {
       if (error instanceof QuidaxError) {
         throw error;
       }
-      
       throw new QuidaxError(
         error instanceof Error ? error.message : 'Unknown error occurred'
       );

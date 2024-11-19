@@ -73,13 +73,15 @@ export interface MarketOverview {
 }
 
 export interface MarketData {
-  pair: string;
-  last_price: number;
-  high_24h: number;
-  low_24h: number;
-  volume_24h: number;
-  price_change_24h: number;
-  price_change_percentage_24h: number;
+  ticker: {
+    buy: string;
+    sell: string;
+    low: string;
+    high: string;
+    last: string;
+    vol: string;
+    change: string;
+  }
 }
 
 export interface WalletBalance {

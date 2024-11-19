@@ -9,6 +9,10 @@ import { DollarSign, ArrowRight, RefreshCcw, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MarketComparisonService } from "@/app/lib/services/marketComparison";
+import { ExchangeRate } from "@/app/lib/services/marketComparison";
+import AnimatedNumber from "@/app/components/calculator/AnimatedNumber";
+import ComparisonTable from "@/app/components/calculator/ComparisonTable";
 
 const CRYPTO_OPTIONS = [
   { value: "BTC", label: "Bitcoin", icon: "₿", color: "bg-orange-500" },
@@ -21,7 +25,8 @@ interface CalculatedResult {
   ngnAmount: number;
   cryptoAmount: number;
   rate: number;
-  usdAmount: number;
+  competitorRates: ExchangeRate[];
+  feesByMethod: any[];
   lastUpdated: string;
 }
 
@@ -44,31 +49,49 @@ export default function Calculator() {
     try {
       setLoading(true);
       setError(null);
+      setRefreshing(true);
       
-      const response = await fetch(`/api/crypto/rate/${selectedCurrency}`);
-      if (!response.ok) throw new Error('Failed to fetch rate');
-      const data = await response.json();
-      
-      const usdAmount = parseFloat(amount);
-      const cryptoAmount = usdAmount / data.usdPrice;
-      // Apply 2.5% spread for buy/sell
-      const adjustedRate = transactionType === 'buy' ? 
-        data.rate * 1.025 : // 2.5% markup for buying
-        data.rate * 0.975;  // 2.5% markdown for selling
-      const ngnAmount = usdAmount * adjustedRate;
+      const [rateResponse, competitorRates] = await Promise.all([
+        fetch('/api/crypto/quidax/rates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currency: selectedCurrency,
+            type: transactionType,
+            amount: parseFloat(amount)
+          })
+        }),
+        MarketComparisonService.getCompetitorRates(selectedCurrency)
+      ]);
+
+      if (!rateResponse.ok) {
+        throw new Error('Failed to fetch TrustBank rate');
+      }
+
+      const { buyRate, sellRate, feesByMethod } = await rateResponse.json();
+
+      const cryptoAmount = parseFloat(amount);
+      const rate = transactionType === 'buy' ? buyRate : sellRate;
+      const ngnAmount = cryptoAmount * rate;
+
+      if (competitorRates.length === 0) {
+        console.warn('No competitor rates available');
+      }
 
       setCalculatedValue({
         ngnAmount,
         cryptoAmount,
-        rate: adjustedRate,
-        usdAmount,
+        rate,
+        competitorRates,
+        feesByMethod,
         lastUpdated: new Date().toLocaleTimeString()
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to calculate rate');
-      setCalculatedValue(null);
+    } catch (error) {
+      console.error('Calculation error:', error);
+      setError(error instanceof Error ? error.message : "Failed to calculate rate. Please try again.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -157,25 +180,31 @@ export default function Calculator() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">You Pay (NGN)</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      ₦{calculatedValue.ngnAmount.toLocaleString('en-NG', { 
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2 
-                      })}
-                    </p>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">You Pay (NGN)</p>
+                      <AnimatedNumber 
+                        value={calculatedValue.ngnAmount}
+                        prefix="₦"
+                      />
+                    </div>
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        You {transactionType === 'buy' ? 'Get' : 'Send'} ({selectedCurrency})
+                      </p>
+                      <AnimatedNumber 
+                        value={calculatedValue.cryptoAmount}
+                        precision={8}
+                      />
+                    </div>
                   </div>
 
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">
-                      You {transactionType === 'buy' ? 'Get' : 'Send'} ({selectedCurrency})
-                    </p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {calculatedValue.cryptoAmount.toFixed(8)}
-                    </p>
-                  </div>
+                  <ComparisonTable 
+                    competitorRates={calculatedValue.competitorRates}
+                    ourRate={calculatedValue.rate}
+                    type={transactionType}
+                  />
                 </div>
 
                 <div className="flex justify-between text-sm text-muted-foreground">
@@ -189,7 +218,7 @@ export default function Calculator() {
                       ? 'bg-green-600 hover:bg-green-700' 
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
-                  onClick={() => router.push(`/trade?amount=${calculatedValue.usdAmount}&currency=${selectedCurrency}&type=${transactionType}`)}
+                  onClick={() => router.push(`/trade?amount=${calculatedValue.cryptoAmount}&currency=${selectedCurrency}&type=${transactionType}`)}
                 >
                   Proceed to Trade
                 </Button>

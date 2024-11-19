@@ -1,17 +1,21 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import BackButton from "@/components/ui/back-button";
-import { motion } from "framer-motion";
-import { KYC_TIERS } from "@/app/lib/constants/kyc-tiers";
-import { Shield, CheckCircle, XCircle, ArrowRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+'use client'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { KYCService } from '@/app/lib/services/kyc';
+import { KYC_TIERS } from '@/app/lib/constants/kyc-tiers';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
+import Webcam from 'react-webcam';
+import { ArrowRight } from 'lucide-react';
+import BackButton from '@/components/ui/back-button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function VerificationPage() {
   const router = useRouter();
-  const { kycInfo } = useAuth();
+  const { kycInfo, user } = useAuth();
+  const { toast } = useToast();
   
   const tiers = [
     {
@@ -43,6 +47,40 @@ export default function VerificationPage() {
     }
   ];
 
+  const handleStartVerification = (tier: typeof tiers[0]) => {
+    // Check if user can proceed to this tier
+    if (tier.key === 'tier2' && (!kycInfo || kycInfo.currentTier === 'unverified')) {
+      toast({
+        title: "Complete Tier 1 First",
+        description: "Please complete basic verification before proceeding to intermediate",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (tier.key === 'tier3' && (!kycInfo || kycInfo.currentTier !== 'tier2')) {
+      toast({
+        title: "Complete Tier 2 First",
+        description: "Please complete intermediate verification before proceeding to advanced",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // If already verified this tier
+    if (kycInfo?.currentTier === tier.key) {
+      toast({
+        title: "Already Verified",
+        description: "You have already completed this verification level",
+        variant: "default"
+      });
+      return;
+    }
+
+    // Proceed with verification
+    router.push(tier.route);
+  };
+
   return (
     <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 pt-20">
       <BackButton />
@@ -51,40 +89,28 @@ export default function VerificationPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Choose Your Verification Level</h1>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {tiers.map((tier) => (
-              <Card 
-                key={tier.key}
-                className={`relative ${kycInfo?.currentTier === tier.key ? 'border-green-500' : ''}`}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-center mb-2">
-                    <Shield className="h-5 w-5 text-primary" />
-                    {kycInfo?.currentTier === tier.key && (
-                      <span className="text-xs font-medium text-green-500">Current Tier</span>
-                    )}
-                  </div>
-                  <CardTitle className="text-lg">{tier.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">{tier.description}</p>
-                  
+        <h1 className="text-2xl font-bold mb-6">Account Verification</h1>
+        <div className="grid gap-6 md:grid-cols-3">
+          {tiers.map((tier) => (
+            <Card key={tier.key} className="relative">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className={KYC_TIERS[tier.key as keyof typeof KYC_TIERS].color}>
+                    {tier.name}
+                  </span>
+                  {kycInfo?.currentTier === tier.key && (
+                    <span className="text-sm text-green-500">✓ Verified</span>
+                  )}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">{tier.description}</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   <div>
                     <h4 className="text-sm font-medium mb-2">Requirements:</h4>
-                    <ul className="text-sm space-y-1">
-                      {tier.requirements.map((req) => (
-                        <li key={req} className="flex items-center gap-2">
-                          {req === "or" ? (
-                            <span className="text-muted-foreground ml-4">{req}</span>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                              {req}
-                            </>
-                          )}
-                        </li>
+                    <ul className="text-sm space-y-1 list-disc list-inside">
+                      {tier.requirements.map((req, index) => (
+                        <li key={index}>{req}</li>
                       ))}
                     </ul>
                   </div>
@@ -92,18 +118,22 @@ export default function VerificationPage() {
                   <div>
                     <h4 className="text-sm font-medium mb-2">Transaction Limits:</h4>
                     <ul className="text-sm space-y-1">
-                      <li>Daily: ₦{tier.limits.dailyLimit.toLocaleString()}</li>
-                      <li>Monthly: ₦{tier.limits.monthlyLimit.toLocaleString()}</li>
+                      <li>Daily: ₦{KYC_TIERS[tier.key as keyof typeof KYC_TIERS].dailyLimit.toLocaleString()}</li>
+                      <li>Monthly: {
+                        tier.key === 'tier3' 
+                          ? 'Unlimited' 
+                          : `₦${KYC_TIERS[tier.key as keyof typeof KYC_TIERS].monthlyLimit.toLocaleString()}`
+                      }</li>
                     </ul>
                   </div>
 
                   <Button 
-                    onClick={() => router.push(tier.route)}
+                    onClick={() => handleStartVerification(tier)}
                     className="w-full mt-4"
                     variant={kycInfo?.currentTier === tier.key ? "outline" : "default"}
                     disabled={
-                      (tier.key === "tier2" && kycInfo?.currentTier === "unverified") ||
-                      (tier.key === "tier3" && kycInfo?.currentTier !== "tier2") ||
+                      (tier.key === "tier2" && (!kycInfo || kycInfo.currentTier === "unverified")) ||
+                      (tier.key === "tier3" && (!kycInfo || kycInfo.currentTier !== "tier2")) ||
                       kycInfo?.currentTier === tier.key
                     }
                   >
@@ -111,15 +141,15 @@ export default function VerificationPage() {
                       "Already Verified"
                     ) : (
                       <>
-                        Proceed to Verification
+                        Start Verification
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </>
                     )}
                   </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </motion.div>
     </div>

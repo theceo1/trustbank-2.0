@@ -12,7 +12,7 @@ export const KYC_TIERS = {
       name: "Basic",
       description: "Start trading with basic verification",
       dailyLimit: 100000,
-      monthlyLimit: 500000,
+      monthlyLimit: 1000000,
       requirements: ["NIN Verification", "Selfie Verification"],
       color: "text-blue-500",
       benefits: [
@@ -25,8 +25,8 @@ export const KYC_TIERS = {
     tier2: {
       name: "Intermediate",
       description: "Enhanced features with BVN verification",
-      dailyLimit: 500000,
-      monthlyLimit: 2000000,
+      dailyLimit: 1000000,
+      monthlyLimit: 50000000,
       requirements: ["NIN Verification", "Selfie Verification", "BVN Verification"],
       color: "text-purple-500",
       benefits: [
@@ -39,15 +39,15 @@ export const KYC_TIERS = {
     tier3: {
       name: "Advanced",
       description: "Full access with government ID verification",
-      dailyLimit: 2000000,
-      monthlyLimit: 10000000,
+      dailyLimit: 10000000,
+      monthlyLimit: Number.MAX_SAFE_INTEGER,
       requirements: [
         "NIN Verification",
         "Selfie Verification",
         "BVN Verification",
         "Government ID (Driver's License or International Passport)"
       ],
-      color: "text-gold-500",
+      color: "text-gold-600",
       benefits: [
         "All Intermediate features",
         "Highest transaction limits",
