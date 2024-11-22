@@ -1,36 +1,8 @@
-import supabase from "@/lib/supabase/client";
-import { QuidaxService } from './quidax';
-
-interface WalletBalance {
-  currency: string;
-  available: number;
-  pending: number;
-}
+import supabase from '@/app/lib/supabase/client';
+import { WalletBalance } from '@/app/types/market';
 
 export class WalletService {
-  static async getWalletBalance(userId: string): Promise<WalletBalance[]> {
-    try {
-      // Get local wallet balance
-      const { data: localWallet, error: localError } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (localError) throw localError;
-
-      // Get exchange wallet balance
-      const exchangeWallet = await QuidaxService.getWalletBalance(userId);
-
-      // Combine and normalize balances
-      return this.normalizeBalances(localWallet, exchangeWallet);
-    } catch (error) {
-      console.error('Error fetching wallet balance:', error);
-      throw error;
-    }
-  }
-
-  static async transferToExchange(userId: string, amount: number): Promise<void> {
+    static async transferToExchange(userId: string, amount: number) {
     const { data: wallet, error: walletError } = await supabase
       .from('wallets')
       .select('balance')
@@ -38,36 +10,44 @@ export class WalletService {
       .single();
 
     if (walletError) throw walletError;
-    if (wallet.balance < amount) {
+    if (!wallet || wallet.balance < amount) {
       throw new Error('Insufficient balance');
     }
 
-    // Start transaction
-    const { error: txError } = await supabase.rpc('transfer_to_exchange', {
-      p_user_id: userId,
-      p_amount: amount
-    });
+    const { error: transferError } = await supabase
+      .from('wallets')
+      .update({ 
+        balance: wallet.balance - amount,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId);
 
-    if (txError) throw txError;
+    if (transferError) throw transferError;
   }
 
-  private static normalizeBalances(local: any, exchange: any): WalletBalance[] {
-    const balances: WalletBalance[] = [];
-    const currencies = new Set([
-      ...Object.keys(local?.balances || {}),
-      ...Object.keys(exchange?.balances || {})
-    ]);
+  static async getBalance(userId: string): Promise<number> {
+    const { data: wallet, error } = await supabase
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', userId)
+      .single();
 
-    currencies.forEach(currency => {
-      balances.push({
-        currency,
-        available: (local?.balances?.[currency]?.available || 0) + 
-                  (exchange?.balances?.[currency]?.available || 0),
-        pending: (local?.balances?.[currency]?.pending || 0) + 
-                (exchange?.balances?.[currency]?.pending || 0)
-      });
-    });
+    if (error) throw error;
+    return wallet?.balance || 0;
+  }
 
-    return balances;
+  static async getWalletBalance(userId: string): Promise<WalletBalance[]> {
+    try {
+      const { data, error } = await supabase
+        .from('wallet_balances')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching wallet balance:', error);
+      throw error;
+    }
   }
 }

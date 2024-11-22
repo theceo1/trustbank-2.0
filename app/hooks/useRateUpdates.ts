@@ -27,9 +27,10 @@ export function useRateUpdates({ cryptoCurrency, onRateExpired }: UseRateUpdates
 
     try {
       const rateResponse = await QuidaxService.getRate({
-        pair: `${cryptoCurrency.toLowerCase()}_ngn`,
         amount: 1,
-        type: 'buy'
+        currency: cryptoCurrency.toLowerCase(),
+        type: 'buy',
+        pair: `${cryptoCurrency.toLowerCase()}_ngn`
       });
       setRate(rateResponse.rate);
       setLastUpdateTime(Date.now());

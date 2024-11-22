@@ -1,25 +1,23 @@
 import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
-
-const QUIDAX_API_KEY = process.env.QUIDAX_API_KEY;
-const QUIDAX_API_URL = process.env.QUIDAX_API_URL;
+import { ConfigService } from '@/app/lib/services/config';
 
 export async function POST(request: Request) {
   try {
+    const config = ConfigService.getQuidaxConfig();
     const body = await request.json();
     const { amount, currency, type, userId } = body;
 
-    const response = await fetch(`${QUIDAX_API_URL}/instant_order`, {
+    const response = await fetch(`${config.apiUrl}/instant_order`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${QUIDAX_API_KEY}`,
+        'Authorization': `Bearer ${config.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         amount,
         currency_pair: `${currency}_ngn`,
         side: type,
-        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/quidax/webhook`,
+        callback_url: `${config.appUrl}/api/quidax/webhook`,
         metadata: {
           user_id: userId
         }

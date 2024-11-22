@@ -23,7 +23,7 @@ interface TradeRate {
   fee: number;
   total: number;
   cryptoAmount: number;
-}
+} 
 
 export default function Trade() {
   const router = useRouter();
@@ -107,10 +107,11 @@ export default function Trade() {
       // Proceed with trade
       const transaction = await QuidaxService.createTrade({
         amount: Number(amount),
-        cryptoCurrency,
+        currency: cryptoCurrency,
         type: tradeType,
-        userId: user.id,
-        paymentMethod: selectedPaymentMethod
+        payment_method: selectedPaymentMethod,
+        trade_id: crypto.randomUUID(),
+        
       });
 
       // Handle payment method specific logic

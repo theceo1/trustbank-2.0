@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import BackButton from "@/components/ui/back-button";
 import { KYCAdvancedForm } from "@/app/components/verification/KYCAdvancedForm";
+import { KYCTier } from "@/app/types/kyc";
 
 export default function AdvancedVerificationPage() {
   const { user, kycInfo, loading } = useAuth();
@@ -15,8 +16,8 @@ export default function AdvancedVerificationPage() {
 
   useEffect(() => {
     if (!loading && kycInfo) {
-      // Check if user has completed intermediate tier
-      if (kycInfo.currentTier !== "intermediate") {
+      // Check if user has completed tier2 (intermediate)
+      if (kycInfo.currentTier as KYCTier !== 'tier2') {
         toast({
           title: "Complete Previous Tiers",
           description: "Please complete intermediate verification before proceeding",
@@ -26,8 +27,8 @@ export default function AdvancedVerificationPage() {
         return;
       }
       
-      // Prevent re-verification if already completed
-      if (["advanced"].includes(kycInfo.currentTier)) {
+      // Prevent re-verification if already at tier3
+      if ((kycInfo.currentTier as KYCTier) === 'tier3') {
         toast({
           title: "Already Verified",
           description: "You have already completed advanced verification",

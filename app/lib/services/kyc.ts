@@ -214,13 +214,9 @@ export const KYCService = {
     
     if (!verification) {
       return {
-        status: 'unverified',
+        status: 'pending',
         currentTier: 'unverified',
-        completedRequirements: [],
-        limits: {
-          daily: 0,
-          monthly: 0
-        }
+        updatedAt: new Date().toISOString()
       };
     }
 
@@ -231,16 +227,11 @@ export const KYCService = {
     } as const;
 
     const currentTier = tierMap[verification.level as keyof typeof tierMap] || 'unverified';
-    const tier = KYC_TIERS[currentTier];
 
     return {
-      status: verification.status || 'pending',
+      status: verification.status === 'verified' ? 'approved' : verification.status || 'pending',
       currentTier,
-      completedRequirements: verification.verification_data?.completedRequirements || [],
-      limits: {
-        daily: tier.dailyLimit,
-        monthly: tier.monthlyLimit
-      }
+      updatedAt: verification.updated_at
     };
   },
 

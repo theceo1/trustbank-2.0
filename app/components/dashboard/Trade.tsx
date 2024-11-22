@@ -1,138 +1,143 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from 'next/navigation';
+import { ArrowRight } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 import { KYCService } from "@/app/lib/services/kyc";
 import { WalletService } from '@/app/lib/services/wallet';
-import { QuidaxService } from '@/app/lib/services/quidax';
-import { TransactionLimitService } from '@/app/lib/services/transactionLimits';
-import { FraudDetectionService } from '@/app/lib/services/fraudDetection';
+import { UnifiedTradeService } from '@/app/lib/services/unifiedTrade';
 import { PaymentMethodType } from '@/app/types/payment';
 import { WalletBalance } from '@/app/types/market';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { KYCInfo } from '@/app/types/kyc';
+import { ErrorBoundary } from "../ErrorBoundary";
+import { QuidaxService } from "@/app/lib/services/quidax";
+import { TradeRateRequest, UnifiedTradeParams } from "@/app/types/trade";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
+import { Spinner } from "@/app/components/ui/spinner";
+import { formatCurrency } from "@/app/lib/utils";
+import { TradeDetailsModal } from "./TradeDetailsModal";
 
-interface TradeRate {
-  rate: number;
-  fee: number;
-  total: number;
-  cryptoAmount: number;
-}
+// Constants
+const SUPPORTED_CRYPTOCURRENCIES = [
+  { symbol: 'btc', name: 'Bitcoin' },
+  { symbol: 'eth', name: 'Ethereum' },
+  { symbol: 'usdt', name: 'USDT' },
+  { symbol: 'usdc', name: 'USDC' }
+];
 
 export default function Trade() {
   const router = useRouter();
+  const [kycStatus, setKycStatus] = useState<KYCInfo | null>(null);
+  const [isKYCLoading, setIsKYCLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const [amount, setAmount] = useState<string>("");
-  const [cryptoCurrency, setCryptoCurrency] = useState<string>("btc");
+  const [amount, setAmount] = useState('');
+  const [cryptoCurrency, setCryptoCurrency] = useState('btc');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
-  const [rate, setRate] = useState<TradeRate | null>(null);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>('bank');
   const [isLoading, setIsLoading] = useState(false);
-  const [isKYCChecking, setIsKYCChecking] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>('card');
-  const [showPreview, setShowPreview] = useState(false);
-  const [rateExpiry, setRateExpiry] = useState<Date | null>(null);
-  const [isRateExpired, setIsRateExpired] = useState(false);
-  const [fees, setFees] = useState({ network: 0, service: 0 });
-  const [walletBalances, setWalletBalances] = useState<WalletBalance[]>([]);
+  const [rate, setRate] = useState<{ rate: number; total: number } | null>(null);
+  const [showTradeDetails, setShowTradeDetails] = useState(false);
 
-  const handleTrade = async () => {
-    if (!user || !rate) return;
+  const handleError = useCallback((error: any, message: string) => {
+    console.error(message, error);
+    toast({
+      title: "Error",
+      description: message,
+      variant: "destructive",
+    });
+  }, [toast]);
 
-    try {
-      setIsLoading(true);
-
-      // Check KYC status
-      const isEligible = await checkKYCAndProceed();
-      if (!isEligible) return;
-
-      // 1. Rate expiry check
-      if (isRateExpired) {
-        toast({
-          title: "Rate Expired",
-          description: "Please refresh the rate to continue",
-          variant: "destructive"
-        });
-        return;
+  useEffect(() => {
+    const checkKYCStatus = async () => {
+      if (!user) return;
+      try {
+        const kycInfo = await KYCService.getKYCInfo(user.id);
+        setKycStatus(kycInfo);
+      } catch (error) {
+        console.error('Failed to fetch KYC status:', error);
+      } finally {
+        setIsKYCLoading(false);
       }
+    };
 
-      // 2. Transaction limit check
-      const limitCheck = await TransactionLimitService.validateTransaction(user.id, Number(amount));
-      if (!limitCheck.valid) {
-        toast({
-          title: "Limit Exceeded",
-          description: limitCheck.reason,
-          variant: "destructive"
-        });
-        return;
+    checkKYCStatus();
+  }, [user]);
+
+  if (isKYCLoading) {
+    return <div className="flex justify-center p-8"><Spinner /></div>;
+  }
+
+  if (!kycStatus?.currentTier || kycStatus.currentTier === 'unverified') {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-bold mb-4">KYC Required</h2>
+        <p className="mb-4">Please complete KYC verification to start trading.</p>
+        <Button onClick={() => router.push('/profile/kyc')}>
+          Complete Verification
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <TradeContent />
+    </ErrorBoundary>
+  );
+}
+
+function TradeContent() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [amount, setAmount] = useState('');
+  const [cryptoCurrency, setCryptoCurrency] = useState('btc');
+  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>('bank');
+  const [isLoading, setIsLoading] = useState(false);
+  const [rate, setRate] = useState<{ rate: number; total: number } | null>(null);
+  const [showTradeDetails, setShowTradeDetails] = useState(false);
+
+  const handleError = useCallback((error: any, message: string) => {
+    console.error(message, error);
+    toast({
+      title: "Error",
+      description: message,
+      variant: "destructive",
+    });
+  }, [toast]);
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      if (!amount || Number(amount) <= 0) return;
+      
+      try {
+        const rateParams: TradeRateRequest = {
+          amount: Number(amount),
+          currency: cryptoCurrency,
+          type: tradeType
+        };
+        
+        const rateData = await QuidaxService.getRate(rateParams);
+        setRate(rateData);
+      } catch (error) {
+        handleError(error, 'Failed to fetch rate');
       }
+    };
 
-      // 3. Fraud detection check
-      const fraudCheck = await FraudDetectionService.analyzeTransaction({
-        userId: user.id,
-        amount: Number(amount),
-        ipAddress: window.location.hostname,
-        deviceId: navigator.userAgent
-      });
-
-      if (!fraudCheck.approved) {
-        toast({
-          title: "Security Check Failed",
-          description: fraudCheck.reason,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // 4. Wallet balance check for wallet payments
-      if (selectedPaymentMethod === 'wallet') {
-        const walletBalance = walletBalances.find(b => b.currency === 'NGN')?.available || 0;
-        if (walletBalance < Number(amount)) {
-          toast({
-            title: "Insufficient Balance",
-            description: "Please fund your wallet to continue",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-
-      // Proceed with trade
-      const transaction = await QuidaxService.createTrade({
-        amount: Number(amount),
-        cryptoCurrency,
-        type: tradeType,
-        userId: user.id,
-        paymentMethod: selectedPaymentMethod
-      });
-
-      // Handle payment method specific logic
-      if (selectedPaymentMethod === 'wallet') {
-        await handleWalletPayment(transaction);
-      } else {
-        if (transaction.payment_url) {
-          window.location.href = transaction.payment_url;
-        } else {
-          router.push(`/transaction/${transaction.id}`);
-        }
-      }
-    } catch (error) {
-      handleError(error, 'Unable to create trade');
-    } finally {
-      setIsLoading(false);
-      setIsConfirmOpen(false);
-    }
-  };
+    const timer = setTimeout(fetchRate, 500);
+    return () => clearTimeout(timer);
+  }, [amount, cryptoCurrency, tradeType, handleError]);
 
   const checkKYCAndProceed = async (): Promise<boolean> => {
     if (!user) return false;
-    setIsKYCChecking(true);
+    setIsLoading(true);
     try {
       const { eligible, reason } = await KYCService.isEligibleForTrade(user.id);
       if (!eligible) {
@@ -146,78 +151,172 @@ export default function Trade() {
       }
       return true;
     } catch (error) {
-      console.error('KYC check error:', error);
+      handleError(error, 'KYC check failed');
       return false;
     } finally {
-      setIsKYCChecking(false);
+      setIsLoading(false);
     }
   };
 
-  const handleWalletPayment = async (transaction: { id: string }) => {
+  const handleTrade = async () => {
+    if (!user || !rate) return;
+
     try {
-      if (selectedPaymentMethod === 'wallet') {
-        await WalletService.transferToExchange(user!.id, Number(amount));
+      setIsLoading(true);
+      setShowTradeDetails(false);
+
+      // Check KYC status first
+      const isEligible = await checkKYCAndProceed();
+      if (!isEligible) {
+        setShowTradeDetails(false);
+        return;
       }
-      await QuidaxService.processWalletPayment(transaction.id);
-      router.push(`/transaction/${transaction.id}`);
+
+      const tradeParams = {
+        userId: user.id,
+        type: tradeType,
+        currency: cryptoCurrency,
+        amount: Number(amount),
+        rate: rate.rate,
+        paymentMethod: selectedPaymentMethod
+      };
+
+      const response = await fetch('/api/trades/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tradeParams)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create trade');
+      }
+
+      const trade = await response.json();
+
+      // Handle payment method specific logic
+      if (selectedPaymentMethod === 'wallet') {
+        await handleWalletPayment(trade);
+      } else if (trade.payment_url) {
+        window.location.href = trade.payment_url;
+      } else {
+        router.push(`/transaction/${trade.id}`);
+      }
+    } catch (error: any) {
+      handleError(error, 'Unable to process trade');
+      setShowTradeDetails(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleWalletPayment = async (trade: UnifiedTradeService.TradeDetails) => {
+    try {
+      await WalletService.transferToExchange(user!.id, Number(amount));
+      await UnifiedTradeService.updateTradeStatus(trade.id, 'completed');
+      router.push(`/transaction/${trade.id}`);
     } catch (error) {
       handleError(error, 'Unable to process wallet payment');
+      throw error;
     }
-  };
-
-  const handleError = (error: any, message: string) => {
-    console.error(message, error);
-    toast({
-      title: "Error",
-      description: message,
-      variant: "destructive",
-    });
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card>
-        <CardHeader>
-          <CardTitle>Trade</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Select onValueChange={(value) => setTradeType(value as 'buy' | 'sell')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select trade type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="buy">Buy</SelectItem>
-                <SelectItem value="sell">Sell</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select onValueChange={(value) => setCryptoCurrency(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select cryptocurrency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="BTC">Bitcoin</SelectItem>
-                <SelectItem value="ETH">Ethereum</SelectItem>
-                <SelectItem value="USDT">Tether</SelectItem>
-                <SelectItem value="USDC">USD Coin</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              placeholder="Amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-            <Button onClick={handleTrade} className="w-full">
-              {tradeType === "buy" ? "Buy" : "Sell"} {cryptoCurrency}
-            </Button>
+    <div className="max-w-md mx-auto space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        <Button 
+          variant={tradeType === 'buy' ? 'default' : 'outline'}
+          onClick={() => setTradeType('buy')}
+        >
+          Buy
+        </Button>
+        <Button
+          variant={tradeType === 'sell' ? 'default' : 'outline'}
+          onClick={() => setTradeType('sell')}
+        >
+          Sell
+        </Button>
+      </div>
+
+      <div className="space-y-4">
+        <Input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="Enter amount"
+        />
+        
+        <Select                                                                                                                         
+          value={cryptoCurrency}
+          onValueChange={setCryptoCurrency}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select currency" />
+          </SelectTrigger>
+          <SelectContent>
+            {SUPPORTED_CRYPTOCURRENCIES.map((currency) => (
+              <SelectItem key={currency.symbol} value={currency.symbol}>
+                {currency.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={selectedPaymentMethod}
+          onValueChange={(value: PaymentMethodType) => setSelectedPaymentMethod(value)}
+          required
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select payment method" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="bank">Bank Transfer</SelectItem>
+            <SelectItem value="wallet">Wallet</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {rate && (
+          <div className="p-4 border rounded-lg">
+            <div className="flex justify-between mb-2">
+              <span>Rate:</span>
+              <span>{formatCurrency(rate.rate)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Total:</span>
+              <span>{formatCurrency(rate.total)}</span>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+        )}
+
+        <Button 
+          className="w-full" 
+          onClick={handleTrade}
+          disabled={!amount || Number(amount) <= 0 || isLoading}
+        >
+          {isLoading ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${cryptoCurrency.toUpperCase()}`}
+        </Button>
+      </div>
+
+      <TradeDetailsModal
+        isOpen={showTradeDetails}
+        onClose={() => setShowTradeDetails(false)}
+        onProceed={handleTrade}
+        tradeDetails={{
+          type: tradeType,
+          currency: cryptoCurrency,
+          amount: Number(amount),
+          rate: rate?.rate || 0,
+          total: rate?.total || 0,
+          paymentMethod: selectedPaymentMethod,
+          fees: {
+            service: (rate?.total || 0) * 0.01,
+            network: 1000
+          }
+        }}
+      />
+    </div>
   );
 }

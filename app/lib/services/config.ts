@@ -1,17 +1,37 @@
 export class ConfigService {
     static getQuidaxConfig() {
+      // Server-side environment variables
+      const serverApiKey = process.env.QUIDAX_SECRET_KEY;
+      // Client-side environment variables
+      const clientApiKey = process.env.NEXT_PUBLIC_QUIDAX_SECRET_KEY;
+      
+      const apiKey = serverApiKey || clientApiKey;
       const apiUrl = process.env.NEXT_PUBLIC_QUIDAX_API_URL;
-      const secretKey = process.env.QUIDAX_SECRET_KEY;
-      const publicKey = process.env.QUIDAX_PUBLIC_KEY;
+      const webhookSecret = process.env.QUIDAX_WEBHOOK_SECRET;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   
-      if (!apiUrl || !secretKey || !publicKey) {
-        console.error('Config values:', { apiUrl, secretKey, publicKey });
-        throw new Error('Missing Quidax configuration');
+      // Debug logging
+      console.debug('Quidax Config:', {
+        hasServerApiKey: !!serverApiKey,
+        hasClientApiKey: !!clientApiKey,
+        apiUrl,
+        hasWebhookSecret: !!webhookSecret,
+        appUrl,
+        envKeys: Object.keys(process.env).filter(key => key.includes('QUIDAX'))
+      });
+  
+      if (!apiKey) {
+        console.error('Missing Quidax API key. Available env vars:', 
+          Object.keys(process.env).filter(key => key.includes('QUIDAX'))
+        );
+        throw new Error('Missing Quidax API key');
       }
   
       return {
-        apiUrl: apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl,
-        apiKey: secretKey
+        apiKey,
+        apiUrl: apiUrl || 'https://api.quidax.com/v1',
+        webhookSecret,
+        appUrl: appUrl || 'http://localhost:3000'
       };
     }
   }

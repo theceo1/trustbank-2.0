@@ -8,10 +8,10 @@ import Link from "next/link";
 interface KYCTierInfoProps {
   currentTier: string;
   verificationStatus: string;
-  completedRequirements: string[];
+  completedRequirements?: string[];
 }
 
-export function KYCTierInfo({ currentTier, verificationStatus, completedRequirements }: KYCTierInfoProps) {
+export function KYCTierInfo({ currentTier, verificationStatus, completedRequirements = [] }: KYCTierInfoProps) {
   const tier = KYC_TIERS[currentTier as keyof typeof KYC_TIERS];
   const nextTier = getNextTier(currentTier);
   

@@ -34,12 +34,10 @@ export interface KYCLevel {
   max_transaction_amount: number;
 }
 
+export type KYCTier = 'unverified' | 'tier1' | 'tier2' | 'tier3';
+
 export interface KYCInfo {
-  status: KYCStatus;
-  currentTier: string;
-  completedRequirements: string[];
-  limits: {
-    daily: number;
-    monthly: number;
-  };
+  currentTier: KYCTier;
+  status: 'pending' | 'approved' | 'rejected';
+  updatedAt: string;
 }

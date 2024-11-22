@@ -1,41 +1,47 @@
-import { NextResponse } from "next/server";
-import { QuidaxService } from "@/app/lib/services/quidax";
-import { TransactionStatusService } from "@/app/lib/services/transaction-status";
-import supabase from "@/lib/supabase/client";
+import { NextResponse } from 'next/server';
+import { QuidaxService } from '@/app/lib/services/quidax';
+import supabase from '@/lib/supabase/client';
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json();
-    const signature = req.headers.get('x-quidax-signature');
+    const body = await request.json();
+    const signature = request.headers.get('x-quidax-signature');
 
-    // Verify webhook signature
     if (!QuidaxService.verifyWebhookSignature(body, signature)) {
-      return new NextResponse('Invalid signature', { status: 401 });
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    const { reference, status, payment_reference } = body;
+    const { event, data } = body;
 
-    // Find transaction by Quidax reference
-    const { data: transaction } = await supabase
-      .from('transactions')
-      .select('id')
-      .eq('quidax_reference', reference)
-      .single();
+    if (event === 'order.done') {
+      const tradeId = data.metadata?.trade_id;
+      if (!tradeId) {
+        console.error('No trade_id in webhook metadata');
+        return NextResponse.json({ error: 'No trade ID found' }, { status: 400 });
+      }
 
-    if (!transaction) {
-      return new NextResponse('Transaction not found', { status: 404 });
+      const status = data.status === 'done' ? 'completed' : 'failed';
+      
+      const { error } = await supabase
+        .from('trades')
+        .update({
+          status,
+          quidax_reference: data.id,
+          executed_amount: data.executed_volume.amount,
+          executed_price: data.avg_price.amount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tradeId);
+
+      if (error) {
+        console.error('Error updating trade:', error);
+        return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
+      }
     }
 
-    // Update transaction status
-    await TransactionStatusService.updateStatus(
-      transaction.id,
-      status,
-      payment_reference
-    );
-
-    return new NextResponse('OK', { status: 200 });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Webhook error:', error);
-    return new NextResponse('Internal server error', { status: 500 });
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }

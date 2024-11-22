@@ -1,6 +1,7 @@
 import { QuidaxService } from './quidax';
 import { DetailedCryptoPrice, MarketOverview } from '@/app/types/market';
 import { handleError } from '@/app/lib/utils/errorHandler';
+import { OrderResponse, CreateOrderRequest } from '@/app/types/trade';
 
 interface TradeParams {
   amount: number;
@@ -19,8 +20,9 @@ export class CryptoTradeService {
     try {
       const response = await QuidaxService.getRate({
         amount,
-        pair: `${cryptoCurrency}_ngn`,
-        type
+        currency: cryptoCurrency,
+        type,
+        pair: `${cryptoCurrency}_ngn`
       });
 
       return {
@@ -34,15 +36,27 @@ export class CryptoTradeService {
     }
   }
 
-  static async createOrder({ amount, cryptoCurrency, type }: TradeParams) {
+  static async createOrder({ amount, cryptoCurrency, type }: TradeParams): Promise<OrderResponse> {
     try {
-      const order = await QuidaxService.createOrder({
+      const tradeId = crypto.randomUUID();
+      const orderParams: CreateOrderRequest = {
         amount,
-        pair: `${cryptoCurrency}_ngn`,
-        type
-      });
+        currency: cryptoCurrency,
+        type,
+        payment_method: 'bank',
+        trade_id: tradeId,
+        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/trade`
+      };
 
-      return order;
+      const response = await QuidaxService.createOrder(orderParams);
+      
+      return {
+        id: response.id,
+        status: response.status,
+        payment_url: response.payment_url,
+        amount: amount,
+        currency: cryptoCurrency
+      };
     } catch (error) {
       console.error('Error creating order:', error);
       throw new Error('Unable to create order');

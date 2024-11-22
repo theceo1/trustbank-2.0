@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import supabase from '@/lib/supabase/client';
 import { usePlausible } from 'next-plausible'
 import { SUPPORTED_CRYPTOCURRENCIES } from "../lib/constants/crypto";
-import { TradeService } from '@/app/services/TradeService';
+import { UnifiedTradeService } from '@/app/lib/services/unifiedTrade';
 
 type TradeAction = 'buy' | 'sell';
 
@@ -142,12 +142,13 @@ export default function TradePage() {
 
     setIsLoading(true);
     try {
-      await TradeService.executeTrade({
+      await UnifiedTradeService.createTrade({
         userId: user.id,
         type: action,
         currency,
         amount: parseFloat(amount),
-        rate: selectedCryptoPrice.price
+        rate: selectedCryptoPrice.price,
+        paymentMethod: 'wallet'
       });
 
       // Track the trade event

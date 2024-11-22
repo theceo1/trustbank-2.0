@@ -1,7 +1,8 @@
 import supabase from '@/lib/supabase/client';
 import { QuidaxService } from './quidax';
+import { MarketData as ImportedMarketData } from '@/app/types/market';
 
-interface MarketData {
+interface LocalMarketData {
   pair: string;
   last_price: number;
   high_24h: number;
@@ -19,17 +20,32 @@ interface MarketOverview {
 }
 
 export class MarketService {
-  private static cache: Map<string, { data: MarketData; timestamp: number }> = new Map();
+  private static cache: Map<string, { data: LocalMarketData; timestamp: number }> = new Map();
   private static CACHE_DURATION = 60 * 1000; // 1 minute
 
-  static async getMarketData(pair: string): Promise<MarketData> {
+  private static transformMarketData(data: ImportedMarketData): LocalMarketData {
+    const ticker = data.ticker;
+    return {
+      pair: data.market?.id || '',
+      last_price: Number(ticker.last || 0),
+      high_24h: Number(ticker.high || 0),
+      low_24h: Number(ticker.low || 0),
+      volume_24h: Number(ticker.vol || 0),
+      price_change_24h: Number(ticker.change || 0),
+      price_change_percentage_24h: Number(ticker.change || 0) * 100
+    };
+  }
+
+  static async getMarketData(pair: string): Promise<LocalMarketData> {
     const cached = this.cache.get(pair);
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
       return cached.data;
     }
 
     try {
-      const data = await QuidaxService.getMarketData(pair);
+      const rawData = await QuidaxService.getMarketData(pair);
+      const data = this.transformMarketData(rawData);
+      
       this.cache.set(pair, { data, timestamp: Date.now() });
       
       // Store in database for historical tracking
@@ -42,7 +58,7 @@ export class MarketService {
     }
   }
 
-  private static async storeMarketData(data: MarketData) {
+  private static async storeMarketData(data: LocalMarketData) {
     const { error } = await supabase
       .from('market_history')
       .insert({

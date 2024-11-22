@@ -28,6 +28,7 @@ import ProfileSkeleton from "../components/profile/ProfileSkeleton";
 import { KYCTierInfo } from "../components/profile/KYCTierInfo";
 import { KYCService } from "../lib/services/kyc";
 import { useQuery } from "@tanstack/react-query";
+import { KYCInfo } from "@/app/types/kyc";
 
 export const dynamic = 'force-dynamic';
 
@@ -85,17 +86,6 @@ const menuItems = [
     color: "text-indigo-600"
   }
 ];
-
-// Update the KYCInfo interface to match the service return type
-interface KYCInfo {
-  status: string;
-  currentTier: string;
-  completedRequirements: string[];
-  limits: {
-    daily: number;
-    monthly: number;
-  };
-}
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -193,7 +183,7 @@ export default function ProfilePage() {
         <KYCTierInfo
           currentTier={kycInfo.currentTier}
           verificationStatus={kycInfo.status}
-          completedRequirements={kycInfo.completedRequirements}
+          completedRequirements={[]}
         />
       )}
     </div>

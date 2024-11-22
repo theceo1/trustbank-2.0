@@ -73,6 +73,11 @@ export interface MarketOverview {
 }
 
 export interface MarketData {
+  market?: {
+    id: string;
+    base_unit: string;
+    quote_unit: string;
+  };
   ticker: {
     buy: string;
     sell: string;

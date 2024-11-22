@@ -2,17 +2,19 @@ import { QuidaxService } from '@/app/lib/services/quidax';
 import { NextResponse } from 'next/server';
 import { FeeService } from '@/app/lib/services/fees';
 import { PaymentMethodType } from '@/app/types/payment';
+import { TradeRateRequest } from '@/app/types/trade';
 
 export async function POST(request: Request) {
   try {
     const { currency, type, amount } = await request.json();
     
-    // Get direct rate from Quidax instead of market data
-    const quote = await QuidaxService.getRate({
+    const rateRequest: TradeRateRequest = {
       amount: amount || 1,
-      pair: `${currency.toLowerCase()}_ngn`,
+      currency,
       type: type || 'buy'
-    });
+    };
+    
+    const quote = await QuidaxService.getRate(rateRequest);
 
     // Calculate rates including our spread
     const spread = 0.005; // 0.5%
