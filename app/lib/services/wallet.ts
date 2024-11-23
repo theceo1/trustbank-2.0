@@ -39,12 +39,20 @@ export class WalletService {
   static async getWalletBalance(userId: string): Promise<WalletBalance[]> {
     try {
       const { data, error } = await supabase
-        .from('wallet_balances')
-        .select('*')
+        .from('wallets')
+        .select('id, balance, pending_balance')
         .eq('user_id', userId);
 
       if (error) throw error;
-      return data || [];
+
+      // Transform wallet data to match WalletBalance interface
+      return data.map(wallet => ({
+        id: wallet.id,
+        total: wallet.balance,
+        available: wallet.balance - (wallet.pending_balance || 0),
+        pending: wallet.pending_balance || 0,
+        currency: '₦'
+      })) || [];
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
       throw error;

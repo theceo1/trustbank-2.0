@@ -21,10 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import supabase from "@/lib/supabase/client";
 import CryptoPriceTracker from "@/components/dashboard/CryptoPriceTracker";
 import Announcements from '@/app/components/dashboard/Announcements';
-import TransactionTable from '@/app/components/transactions/TransactionTable';
 import TransactionDetails from '@/app/components/transactions/TransactionDetails';
 import { Transaction } from "@/app/types/transactions";
-import { TransactionHistory } from '@/app/components/dashboard/TransactionHistory';
 
 export const dynamic = 'force-dynamic';
 
@@ -162,10 +160,6 @@ export default function DashboardPage() {
           <MarketOverview itemsPerPage={4} />
           <Trade />
           <RecentTransactions />
-          <TransactionTable 
-            transactions={transactions}
-            onViewDetails={(transaction: Transaction) => setSelectedTransaction(transaction)}
-          />
         </motion.div>
       </div>
 
@@ -176,8 +170,6 @@ export default function DashboardPage() {
           if (!open) setSelectedTransaction(null);
         }}
       />
-
-      <TransactionHistory />
     </div>
   );
 }

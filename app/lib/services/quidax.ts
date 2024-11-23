@@ -20,42 +20,44 @@ export class QuidaxError extends Error {
   
 export class QuidaxService {
   private static getConfig() {
-    const config = ConfigService.getQuidaxConfig();
-    if (!config.apiKey) {
-      throw new Error('Missing Quidax API key');
-    }
-    return config;
+    return {
+      apiUrl: process.env.NEXT_PUBLIC_QUIDAX_API_URL || 'https://api.quidax.com',
+      apiKey: process.env.NEXT_PUBLIC_QUIDAX_API_KEY || '',
+      secretKey: process.env.QUIDAX_SECRET_KEY || ''
+    };
   }
 
   private static async makeRequest(endpoint: string, options: RequestInit = {}) {
     const config = this.getConfig();
-    const url = `${config.apiUrl}${endpoint}`;
+    const cleanEndpoint = endpoint.replace(/^\/?(v1\/)?/, '');
+    const url = new URL(`${config.apiUrl}/v1/${cleanEndpoint}`).toString();
 
     const headers = {
       'Authorization': `Bearer ${config.apiKey}`,
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...options.headers
     };
 
     try {
       const response = await fetch(url, {
         ...options,
-        headers
+        headers,
+        mode: 'cors',
+        credentials: 'omit'
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        console.error('Quidax API error:', {
-          status: response.status,
-          statusText: response.statusText,
-          data
-        });
-        throw new Error(data.message || 'Failed to make Quidax API request');
+        const errorData = await response.json().catch(() => ({}));
+        throw new QuidaxError(
+          errorData.message || 'Failed to make Quidax API request',
+          'API_ERROR',
+          response.status
+        );
       }
 
-      return data;
-    } catch (error: any) {
+      return response.json();
+    } catch (error) {
       console.error('Quidax request failed:', error);
       throw error;
     }
@@ -179,8 +181,6 @@ export class QuidaxService {
     payment_method: string;
     trade_id: string;
   }) {
-    const config = this.getConfig();
-    
     const requestBody = {
       bid: 'ngn',
       ask: params.currency.toLowerCase(),
@@ -193,15 +193,24 @@ export class QuidaxService {
       }
     };
 
-    console.debug('Creating Quidax trade:', {
-      url: `${config.apiUrl}/users/me/instant_orders`,
-      body: requestBody
-    });
+    try {
+      const response = await this.makeRequest('instant_orders', {
+        method: 'POST',
+        body: JSON.stringify(requestBody)
+      });
 
-    return this.makeRequest('/users/me/instant_orders', {
-      method: 'POST',
-      body: JSON.stringify(requestBody)
-    });
+      if (!response.data || !response.data.instant_order) {
+        throw new QuidaxError('Invalid response from Quidax', 'INVALID_RESPONSE');
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Trade creation error:', error);
+      throw new QuidaxError(
+        error instanceof QuidaxError ? error.message : 'Failed to create trade',
+        'TRADE_CREATE_ERROR'
+      );
+    }
   }
 
   static async checkPaymentStatus(reference: string): Promise<{
@@ -216,10 +225,28 @@ export class QuidaxService {
   }
 
   static async processWalletPayment(tradeId: string) {
-    return this.makeRequest(`/instant_orders/${tradeId}/pay`, {
-      method: 'POST',
-      body: JSON.stringify({ payment_method: 'wallet' })
-    });
+    try {
+      const response = await this.makeRequest(`/v1/instant_orders/${tradeId}/pay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ payment_method: 'wallet' })
+      });
+
+      if (!response.ok) {
+        throw new QuidaxError('Failed to process wallet payment', 'PAYMENT_ERROR', response.status);
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Wallet payment error:', error);
+      throw new QuidaxError(
+        error instanceof QuidaxError ? error.message : 'Failed to process wallet payment',
+        'PAYMENT_ERROR'
+      );
+    }
   }
 
   static mapQuidaxStatus(status: string): TransactionStatus {

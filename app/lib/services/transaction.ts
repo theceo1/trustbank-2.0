@@ -1,8 +1,16 @@
 import supabase from '@/lib/supabase/client';
 import { Transaction, FiatTransaction, CryptoTransaction, ReferralTransaction } from '@/app/types/transactions';
 
+export interface TransactionFilters {
+  status: string;
+  dateRange: string;
+}
+
 export class TransactionService {
-  static async getUserTransactions(userId: string, walletId?: string, limit?: number): Promise<Transaction[]> {
+  static async getUserTransactions(
+    userId: string, 
+    filters?: TransactionFilters
+  ): Promise<Transaction[]> {
     try {
       let query = supabase
         .from('transactions')
@@ -10,12 +18,26 @@ export class TransactionService {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (walletId) {
-        query = query.eq('wallet_id', walletId);
-      }
+      if (filters) {
+        if (filters.status && filters.status !== 'all') {
+          query = query.eq('status', filters.status.toUpperCase());
+        }
 
-      if (limit) {
-        query = query.limit(limit);
+        if (filters.dateRange && filters.dateRange !== 'all') {
+          const date = new Date();
+          switch(filters.dateRange) {
+            case 'today':
+              date.setHours(0, 0, 0, 0);
+              break;
+            case 'week':
+              date.setDate(date.getDate() - 7);
+              break;
+            case 'month':
+              date.setMonth(date.getMonth() - 1);
+              break;
+          }
+          query = query.gte('created_at', date.toISOString());
+        }
       }
 
       const { data, error } = await query;
