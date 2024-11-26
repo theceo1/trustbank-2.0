@@ -1,255 +1,130 @@
-import supabase from '@/lib/supabase/client';
-import { ConfigService } from './config';
-import { QuidaxInitiateResponse, QuidaxTransaction } from '../types/quidax';
-import { TransactionStatus } from '@/app/types/transactions';
-import { PaymentMethodType } from '@/app/types/payment';
+//app/lib/services/quidax.ts
+import { CreateTradeParams, QuidaxTradeResponse, QuidaxRateParams, TradeDetails, OrderStatus } from '@/app/types/trade';
 import { createHmac } from 'crypto';
-import { MarketData, WalletBalance } from '@/app/types/market';
-import {  TradeDetails, QuidaxRateParams, TradeRateRequest, CreateOrderRequest } from '@/app/types/trade';
+import { CONFIG } from './config';
 
 export class QuidaxError extends Error {
   constructor(
     message: string,
-    public code?: string,
-    public status?: number
+    public code: string,
+    public statusCode?: number
   ) {
     super(message);
     this.name = 'QuidaxError';
   }
 }
-  
+
 export class QuidaxService {
-  private static getConfig() {
-    return {
-      apiUrl: process.env.NEXT_PUBLIC_QUIDAX_API_URL || 'https://api.quidax.com',
-      apiKey: process.env.NEXT_PUBLIC_QUIDAX_API_KEY || '',
-      secretKey: process.env.QUIDAX_SECRET_KEY || ''
+  private static async makeRequest(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    const url = `${CONFIG.QUIDAX_API_URL}${endpoint}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${CONFIG.QUIDAX_API_KEY}`,
+      ...options.headers,
     };
+
+    const response = await fetch(url, { ...options, headers });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Quidax API request failed');
+    }
+    return response;
   }
 
-  private static async makeRequest(endpoint: string, options: RequestInit = {}) {
-    const config = this.getConfig();
-    const cleanEndpoint = endpoint.replace(/^\/?(v1\/)?/, '');
-    const url = new URL(`${config.apiUrl}/v1/${cleanEndpoint}`).toString();
-
-    const headers = {
-      'Authorization': `Bearer ${config.apiKey}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...options.headers
-    };
-
+  static async getRate(params: QuidaxRateParams) {
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-        mode: 'cors',
-        credentials: 'omit'
+      const response = await this.makeRequest('/v1/instant_orders/quote', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: params.amount,
+          currency_pair: params.currency_pair,
+          type: params.type,
+        })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new QuidaxError(
-          errorData.message || 'Failed to make Quidax API request',
-          'API_ERROR',
-          response.status
-        );
-      }
+      const data = await response.json();
+      return {
+        rate: Number(data.rate),
+        total: Number(data.total),
+        fee: Number(data.fee),
+        expiresAt: new Date(Date.now() + 30000).toISOString() // 30 seconds from now
+      };
+    } catch (error) {
+      console.error('Rate fetch error:', error);
+      throw error;
+    }
+  }
 
+  static async createTrade(params: CreateTradeParams): Promise<QuidaxTradeResponse> {
+    try {
+      const response = await this.makeRequest('/v1/trades', {
+        method: 'POST',
+        body: JSON.stringify(params)
+      });
       return response.json();
     } catch (error) {
-      console.error('Quidax request failed:', error);
-      throw error;
-    }
-  }
-
-  static async createOrder(params: CreateOrderRequest): Promise<OrderResponse> {
-    try {
-      const requestBody = {
-        market: `${params.currency.toLowerCase()}ngn`,
-        side: params.type,
-        ord_type: 'market',
-        volume: params.amount.toString(),
-        metadata: {
-          trade_id: params.trade_id,
-          payment_method: params.payment_method
-        }
-      };
-
-      const response = await this.makeRequest('/orders', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to create order');
-      }
-
-      return response.data;
-    } catch (error: any) {
-      console.error('Order creation error:', error);
-      throw error;
-    }
-  }
-
-  static async getPaymentDetails(orderId: string) {
-    const config = this.getConfig();
-    try {
-      const response = await this.makeRequest(`/instant_orders/${orderId}/payment`);
-      return await response.json();
-    } catch (error) {
-      console.error('Quidax payment details error:', error);
-      throw error;
-    }
-  }
-
-  static async verifyPayment(reference: string) {
-    try {
-      const response = await this.makeRequest(`/payments/verify/${reference}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Payment verification error:', error);
-      throw error;
-    }
-  }
-
-    static async getRate(params: TradeRateRequest) {
-    const rateParams: RateParams = {
-      amount: params.amount,
-      currency_pair: `${params.currency.toLowerCase()}_ngn`,
-      type: params.type
-    };
-
-    return this.makeRequest('/instant_orders/quote', {
-      method: 'POST',
-      body: JSON.stringify(rateParams)
-    });
-  }
-
-  static async getOrderStatus(orderId: string): Promise<OrderStatus> {
-    return this.makeRequest(`/instant_order/${orderId}`, {
-      method: 'GET'
-    });
-  }
-
-  static async getTransactionStatus(reference: string): Promise<OrderStatus> {
-    return this.makeRequest(`/transactions/${reference}/status`, {
-      method: 'GET'
-    });
-  }
-
-  static async updateTransactionStatus(transactionId: string, status: OrderStatus) {
-    const { data, error } = await supabase
-      .from('transactions')
-      .update({
-        status: status.status,
-        payment_reference: status.payment_reference,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', transactionId);
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async createTransaction(params: {
-    amount: number;
-    currency: string;
-    type: 'buy' | 'sell';
-    callback_url: string;
-    payment_method?: PaymentMethodType;
-  }): Promise<QuidaxTransaction> {
-    const response = await this.makeRequest('/transactions', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...params,
-        currency_pair: `${params.currency.toLowerCase()}_ngn`
-      })
-    });
-
-    if (!response.data || !response.data.transaction) {
-      throw new QuidaxError('Failed to create transaction: No transaction data received');
-    }
-
-    return response.data.transaction;
-  }
-
-  static async createTrade(params: {
-    amount: number;
-    currency: string;
-    type: 'buy' | 'sell';
-    payment_method: string;
-    trade_id: string;
-  }) {
-    const requestBody = {
-      bid: 'ngn',
-      ask: params.currency.toLowerCase(),
-      type: params.type,
-      total: params.amount.toString(),
-      unit: 'ngn',
-      metadata: {
-        trade_id: params.trade_id,
-        payment_method: params.payment_method
-      }
-    };
-
-    try {
-      const response = await this.makeRequest('instant_orders', {
-        method: 'POST',
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.data || !response.data.instant_order) {
-        throw new QuidaxError('Invalid response from Quidax', 'INVALID_RESPONSE');
-      }
-
-      return response;
-    } catch (error) {
       console.error('Trade creation error:', error);
-      throw new QuidaxError(
-        error instanceof QuidaxError ? error.message : 'Failed to create trade',
-        'TRADE_CREATE_ERROR'
-      );
+      throw error;
     }
   }
 
-  static async checkPaymentStatus(reference: string): Promise<{
-    status: TransactionStatus;
-    payment_reference?: string;
-  }> {
-    const status = await this.getTransactionStatus(reference);
-    return {
-      status: this.mapQuidaxStatus(status.status),
-      payment_reference: status.payment_reference
-    };
+  static async getTradeDetails(tradeId: string) {
+    try {
+      const response = await this.makeRequest(`/v1/trades/${tradeId}`);
+      return response.json();
+    } catch (error) {
+      console.error('Trade details fetch error:', error);
+      throw error;
+    }
+  }
+
+  static async getTradeStatus(tradeId: string) {
+    try {
+      const response = await this.makeRequest(`/v1/trades/${tradeId}/status`);
+      return response.json();
+    } catch (error) {
+      console.error('Trade status fetch error:', error);
+      throw error;
+    }
   }
 
   static async processWalletPayment(tradeId: string) {
     try {
-      const response = await this.makeRequest(`/v1/instant_orders/${tradeId}/pay`, {
+      const response = await this.makeRequest(`/v1/trades/${tradeId}/pay`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
         body: JSON.stringify({ payment_method: 'wallet' })
       });
-
-      if (!response.ok) {
-        throw new QuidaxError('Failed to process wallet payment', 'PAYMENT_ERROR', response.status);
-      }
-
       return response.json();
     } catch (error) {
       console.error('Wallet payment error:', error);
-      throw new QuidaxError(
-        error instanceof QuidaxError ? error.message : 'Failed to process wallet payment',
-        'PAYMENT_ERROR'
-      );
+      throw error;
     }
   }
 
-  static mapQuidaxStatus(status: string): TransactionStatus {
+  static async getPaymentDetails(tradeId: string) {
+    try {
+      const response = await this.makeRequest(`/v1/trades/${tradeId}/payment`);
+      return response.json();
+    } catch (error) {
+      console.error('Payment details fetch error:', error);
+      throw error;
+    }
+  }
+
+  static verifyWebhookSignature(payload: any, signature: string | null): boolean {
+    if (!signature) return false;
+    
+    const webhookSecret = process.env.QUIDAX_WEBHOOK_SECRET || '';
+    const hmac = createHmac('sha256', webhookSecret);
+    const computedSignature = hmac.update(JSON.stringify(payload)).digest('hex');
+    
+    return signature === computedSignature;
+  }
+
+  static mapQuidaxStatus(status: string): 'pending' | 'completed' | 'failed' {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'success':
@@ -262,47 +137,97 @@ export class QuidaxService {
     }
   }
 
-  static verifyWebhookSignature(payload: any, signature: string | null): boolean {
-    if (!signature) return false;
-    const config = ConfigService.getQuidaxConfig();
-    
-    const hmac = createHmac('sha256', config.apiKey);
-    const computedSignature = hmac.update(JSON.stringify(payload)).digest('hex');
-    
-    return signature === computedSignature;
+  static async processPayment(trade: TradeDetails) {
+    try {
+      const response = await this.makeRequest(`/v1/trades/${trade.id}/pay`, {
+        method: 'POST',
+        body: JSON.stringify({ payment_method: trade.paymentMethod })
+      });
+      return response.json();
+    } catch (error) {
+      throw new Error('Failed to process payment');
+    }
   }
 
-  static async getMarketData(pair: string): Promise<MarketData> {
-    const response = await this.makeRequest(`/markets/${pair}/ticker`, {
-      method: 'GET'
-    });
-    return response;
+  static async verifyPayment(reference: string) {
+    try {
+      const response = await this.makeRequest(`/v1/trades/${reference}/verify`);
+      return response.json();
+    } catch (error) {
+      console.error('Payment verification error:', error);
+      throw error;
+    }
   }
 
-  static async getWalletBalance(userId: string) {
-    return this.makeRequest(`/users/${userId}/wallets`, {
-      method: 'GET'
-    });
+  static async getOrderStatus(orderId: string): Promise<OrderStatus> {
+    try {
+      const response = await this.makeRequest(`/v1/orders/${orderId}`);
+      return response.json();
+    } catch (error) {
+      console.error('Order status fetch error:', error);
+      throw error;
+    }
   }
-}
 
-interface RateResponse {
-  rate: number;
-  fee: number;
-  total: number;
-}
+  static async initializeBankTransfer(params: {
+    amount: number;
+    currency: string;
+    reference: string;
+  }) {
+    try {
+      const response = await this.makeRequest('/v1/bank_transfers/initialize', {
+        method: 'POST',
+        body: JSON.stringify(params)
+      });
+      return response.json();
+    } catch (error) {
+      console.error('Bank transfer initialization error:', error);
+      throw error;
+    }
+  }
 
-interface OrderResponse {
-  id: string;
-  status: 'pending' | 'completed' | 'failed';
-  payment_url?: string;
-}
+  static async initializeCardPayment(params: {
+    amount: number;
+    currency: string;
+    tradeId: string;
+    reference: string;
+  }) {
+    try {
+      const response = await this.makeRequest('/v1/card_payments/initialize', {
+        method: 'POST',
+        body: JSON.stringify(params)
+      });
+      return response.json();
+    } catch (error) {
+      console.error('Card payment initialization error:', error);
+      throw error;
+    }
+  }
 
-interface OrderStatus {
-  status: 'pending' | 'completed' | 'failed';
-  payment_reference?: string;
-}
+  private static baseUrl = process.env.NEXT_PUBLIC_QUIDAX_API_URL;
+  private static apiKey = process.env.QUIDAX_SECRET_KEY;
 
-interface RateParams extends QuidaxRateParams {
-  paymentMethodId?: string;
+  static async getMarketStats(pair: string) {
+    try {
+      const response = await fetch(`${this.baseUrl}/markets/${pair}/stats`, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        last_price: data.last_price,
+        price_change_24h: data.price_change_24h
+      };
+    } catch (error) {
+      console.error('QuidaxService getMarketStats error:', error);
+      throw error;
+    }
+  }
 }

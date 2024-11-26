@@ -1,92 +1,68 @@
 "use client";
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Icons } from '@/app/components/ui/icons';
-import { PaymentMethodType } from '@/app/types/payment';
-import { formatCurrency } from '@/app/lib/utils';
+import { Card } from '@/components/ui/card';
+import { RadioGroup } from '@/components/ui/radio-group';
+import { PaymentMethod } from '@/app/types/payment';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface PaymentMethodSelectorProps {
-  onSelect: (method: PaymentMethodType) => void;
-  selectedMethod: PaymentMethodType;
-  amount: number;
-  walletBalance?: number;
-  disabled?: boolean;
+  methods: PaymentMethod[];
+  onSelect: (method: PaymentMethod) => void;
+  selectedMethod: PaymentMethod;
 }
 
-export function PaymentMethodSelector({
+export function PaymentMethodSelector({ 
+  methods,
   onSelect,
-  selectedMethod,
-  amount,
-  walletBalance = 0,
-  disabled = false
+  selectedMethod
 }: PaymentMethodSelectorProps) {
-  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState(selectedMethod);
 
-  const handleMethodSelect = (method: PaymentMethodType) => {
-    setError(null);
-    
-    if (method === 'wallet' && amount > walletBalance) {
-      setError('Insufficient wallet balance');
-      return;
-    }
-    
+  const handleSelect = (method: PaymentMethod) => {
+    setSelected(method);
     onSelect(method);
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <RadioGroup
-          value={selectedMethod}
-          onValueChange={(value) => handleMethodSelect(value as PaymentMethodType)}
-          disabled={disabled}
+    <RadioGroup
+      className="grid grid-cols-1 md:grid-cols-2 gap-4"
+      value={selected.id}
+      onValueChange={(value) => handleSelect(methods.find(m => m.id === value)!)}
+    >
+      {methods.map((method) => (
+        <Card
+          key={method.id}
+          className={cn(
+            "relative p-4 cursor-pointer transition-all",
+            "hover:shadow-md",
+            "border-2",
+            selected?.id === method.id 
+              ? "border-primary bg-primary/5" 
+              : "border-transparent"
+          )}
+          onClick={() => handleSelect(method)}
         >
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <RadioGroupItem value="card" id="card" />
-              <Label htmlFor="card" className="flex items-center space-x-2">
-                <Icons.creditCard className="h-4 w-4" />
-                <span>Card Payment</span>
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <RadioGroupItem value="bank" id="bank" />
-              <Label htmlFor="bank" className="flex items-center space-x-2">
-                <Icons.bank className="h-4 w-4" />
-                <span>Bank Transfer</span>
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <RadioGroupItem 
-                value="wallet" 
-                id="wallet"
-                disabled={amount > walletBalance}
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0">
+              <Image
+                src={`/images/payment/${method.type}.svg`}
+                alt={method.title}
+                width={32}
+                height={32}
+                className="w-8 h-8"
               />
-              <Label 
-                htmlFor="wallet" 
-                className="flex items-center justify-between flex-1"
-              >
-                <div className="flex items-center space-x-2">
-                  <Icons.wallet className="h-4 w-4" />
-                  <span>Wallet Balance</span>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {formatCurrency(walletBalance, 'NGN')}
-                </span>
-              </Label>
+            </div>
+            <div className="flex-grow">
+              <h4 className="font-medium text-gray-900">{method.title}</h4>
+              <p className="text-sm text-gray-500">
+                {method.description}
+              </p>
             </div>
           </div>
-        </RadioGroup>
-
-        {error && (
-          <p className="text-sm text-destructive mt-2">{error}</p>
-        )}
-      </CardContent>
-    </Card>
+        </Card>
+      ))}
+    </RadioGroup>
   );
 }

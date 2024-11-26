@@ -9,7 +9,6 @@ import { Loader2, Bell, Wallet, ArrowUpRight, Settings, Shield } from "lucide-re
 import AccountBalance from '@/components/dashboard/AccountBalance';
 import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import MarketOverview from '@/components/dashboard/MarketOverview';
-import Trade from '@/components/dashboard/Trade';
 // import CryptoPriceTracker from '@/components/common/CryptoPriceTracker';
 import DashboardHeader from '@/app/components/dashboard/DashboardHeader';
 import LoadingDashboard from '@/app/components/dashboard/LoadingDashboard';
@@ -23,6 +22,7 @@ import CryptoPriceTracker from "@/components/dashboard/CryptoPriceTracker";
 import Announcements from '@/app/components/dashboard/Announcements';
 import TransactionDetails from '@/app/components/transactions/TransactionDetails';
 import { Transaction } from "@/app/types/transactions";
+import { Trade } from "../components/dashboard/Trade";
 
 export const dynamic = 'force-dynamic';
 

@@ -62,3 +62,15 @@ export interface ChartConfig {
     '30D': { interval: '4h', limit: 180 },
     'ALL': { interval: '1d', limit: 365 }
   };
+
+import { ChartData, ChartOptions } from 'chart.js';
+import { TradeDetails } from './trade';
+
+export interface TradeChartProps {
+  trades: TradeDetails[];
+  period?: 'day' | 'week' | 'month';
+  height?: number;
+}
+
+export type TradeChartData = ChartData<'line'>;
+export type TradeChartOptions = ChartOptions<'line'>;

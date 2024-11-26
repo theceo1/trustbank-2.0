@@ -12,6 +12,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from "@/components/ui/toaster";
 import { AdminAuthProvider } from './admin/context/AdminAuthContext';
 import AnalyticsProvider from '@/app/components/PlausibleProvider';
+import { ToastProvider } from "@/app/context/ToastContext";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -46,7 +47,9 @@ export default function RootLayout({
               <AuthProvider>
                 <AdminAuthProvider>
                   <Header />
-                  {children}
+                  <ToastProvider>
+                    {children}
+                  </ToastProvider>
                   <Footer />
                 </AdminAuthProvider>
               </AuthProvider>

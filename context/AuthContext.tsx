@@ -1,196 +1,99 @@
 // context/AuthContext.tsx
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Session, User } from "@supabase/auth-helpers-nextjs";
-import { useRouter } from 'next/navigation';
-import { useToast } from "@/hooks/use-toast";
+import { createContext, useContext, useEffect, useState } from 'react';
+import { User } from '@supabase/supabase-js';
 import supabase from '@/lib/supabase/client';
-import { validateReferralCode, generateReferralCode } from '@/utils/referral';
-import { testProfile } from '@/app/lib/test/testProfile';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { KYCInfo } from '@/app/types/kyc';
 
-export interface AuthContextType {
+export type AuthContextType = {
   user: User | null;
-  kycInfo: KYCInfo | null;
+  signUp: (email: string, password: string) => Promise<{ user: User | null; error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ user: User | null; error: Error | null }>;
+  signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<any>;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, referralCode?: string) => Promise<{
-    user: User | null;
-    error: Error | null;
-  }>;
-  signIn: (email: string, password: string) => Promise<{
-    error: Error | null;
-    user: User | null;
-  }>;
-  signInWithGoogle: () => Promise<{
-    data: { url: string; provider: string } | null;
-    error: Error | null;
-  }>;
-  logout: () => Promise<void>;
-}
+  kycInfo?: KYCInfo;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [kycInfo, setKycInfo] = useState<KYCInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
-  const { toast } = useToast();
-  const supabase = createClientComponentClient();
+  const [kycInfo, setKYCInfo] = useState<KYCInfo>();
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Check active sessions and sets the user
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
-    };
+    });
 
-    getUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Listen for changes on auth state
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
-
-  const signUp = async (
-    email: string, 
-    password: string, 
-    fullName: string, 
-    referralCode?: string
-  ): Promise<{ user: User | null; error: Error | null }> => {
-    try {
-      const { data: { user }, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      if (user) {
-        // Create profile record
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              user_id: user.id,
-              email: email,
-              full_name: fullName,
-              referral_code: generateReferralCode(),
-              referred_by: referralCode || null,
-            },
-          ]);
-
-        if (profileError) throw profileError;
-      }
-
-      return { user, error: null };
-    } catch (error) {
-      console.error('Error signing up:', error);
-      return { 
-        user: null, 
-        error: error instanceof Error ? error : new Error('An unknown error occurred') 
-      };
-    }
-  };
+  }, []);
 
   const signIn = async (email: string, password: string) => {
-    if (process.env.NODE_ENV === 'development' && email === testProfile.email) {
-      setUser(testProfile as unknown as User);
-      router.push('/dashboard');
-      return { user: testProfile as unknown as User, error: null };
-    }
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       return { user: data.user, error: null };
     } catch (error) {
-      console.error("Error signing in:", error);
-      toast({
-        title: "Sign in failed",
-        description: "Invalid email or password.",
-        variant: "destructive",
-      });
       return { user: null, error: error as Error };
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  };
+
+  const signUp = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
-
-      if (error) throw error;
       
+      if (error) throw error;
+      return { user: data.user, error: null };
+    } catch (error) {
+      console.error('SignUp error:', error);
       return { 
-        data: {
-          url: data.url,
-          provider: data.provider
-        },
-        error: null 
-      };
-    } catch (error) {
-      console.error("Error signing in with Google:", error);
-      toast({
-        title: "Sign in failed",
-        description: "Could not sign in with Google.",
-        variant: "destructive",
-      });
-      return {
-        data: null,
-        error: error as Error
+        user: null, 
+        error: error instanceof Error ? error : new Error('Failed to sign up') 
       };
     }
   };
 
-  const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
-      if (error) throw error;
-      
-      // Clear any local storage or state
-      setUser(null);
-      
-      // Force a hard redirect to clear all state
-      window.location.href = '/auth/login';
-    } catch (error) {
-      console.error('Error signing out:', error);
-      toast({
-        title: "Error signing out",
-        description: "There was a problem signing out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const value: AuthContextType = {
-    user,
-    kycInfo,
-    loading,
-    signUp,
-    signIn,
-    signInWithGoogle,
-    logout: signOut
+  const signInWithGoogle = async () => {
+    return await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      signIn, 
+      signOut, 
+      signUp, 
+      signInWithGoogle,
+      kycInfo 
+    }}>
       {children}
     </AuthContext.Provider>
   );

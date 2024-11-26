@@ -1,78 +1,75 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import { TradeStatus as TStatus } from "@/app/types/trade";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, XCircle, Clock } from "lucide-react";
-import { UnifiedTradeService } from '@/app/lib/services/unifiedTrade';
-import { useToast } from '@/hooks/use-toast';
-
-const statusIcons = {
-  pending: Clock,
-  completed: CheckCircle2,
-  failed: XCircle
-} as const;
-
-const statusColors = {
-  pending: 'text-yellow-500',
-  completed: 'text-green-500',
-  failed: 'text-red-500'
-} as const;
+import { Spinner } from "@/app/components/ui/spinner";
+import { CheckCircle, XCircle, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { UnifiedTradeService } from "@/app/lib/services/unifiedTrade";
 
 interface TradeStatusProps {
   tradeId: string;
-  onStatusChange?: (status: string) => void;
+  onStatusChange?: (status: TStatus) => void;
 }
 
 export function TradeStatus({ tradeId, onStatusChange }: TradeStatusProps) {
-  const [trade, setTrade] = useState<UnifiedTradeService.TradeDetails | null>(null);
+  const [status, setStatus] = useState<TStatus>("pending");
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const tradeData = await UnifiedTradeService.getTrade(tradeId);
-        setTrade(tradeData);
-        
-        if (onStatusChange && tradeData.status !== 'pending') {
-          onStatusChange(tradeData.status);
-        }
+        const { status: newStatus } = await UnifiedTradeService.getTradeStatus(tradeId);
+        setStatus(newStatus as TStatus);
+        onStatusChange?.(newStatus as TStatus);
       } catch (error) {
         toast({
-          title: 'Error',
-          description: 'Failed to fetch trade status',
-          variant: 'destructive'
+          title: "Error",
+          description: "Failed to fetch trade status",
+          variant: "destructive",
         });
+      } finally {
+        setLoading(false);
       }
     };
 
-    const interval = setInterval(checkStatus, 5000);
     checkStatus();
-
+    const interval = setInterval(checkStatus, 5000);
     return () => clearInterval(interval);
   }, [tradeId, onStatusChange, toast]);
 
-  if (!trade) return null;
-
-  const StatusIcon = statusIcons[trade.status as keyof typeof statusIcons];
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-6">
+          <Spinner />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <StatusIcon className={`h-5 w-5 ${statusColors[trade.status as keyof typeof statusColors]}`} />
-          Trade Status
-        </CardTitle>
+        <CardTitle>Trade Status</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-center">
-          <p className={`text-lg font-medium ${statusColors[trade.status as keyof typeof statusColors]}`}>
-            {trade.status.charAt(0).toUpperCase() + trade.status.slice(1)}
-          </p>
-          {trade.status === 'pending' && (
-            <p className="text-sm text-muted-foreground mt-2">
-              Waiting for payment confirmation...
-            </p>
-          )}
+        <div className="flex items-center gap-2">
+          {getStatusIcon(status)}
+          <span className="capitalize">{status}</span>
         </div>
       </CardContent>
     </Card>
   );
+}
+
+function getStatusIcon(status: TStatus) {
+  switch (status) {
+    case "completed":
+      return <CheckCircle className="h-6 w-6 text-green-500" />;
+    case "failed":
+      return <XCircle className="h-6 w-6 text-red-500" />;
+    default:
+      return <Clock className="h-6 w-6 text-yellow-500" />;
+  }
 }

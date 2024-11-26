@@ -1,137 +1,204 @@
-import { v4 as uuidv4 } from 'uuid';
-import supabase from '@/lib/supabase/client';
+// app/lib/services/unifiedTrade.ts
 import { QuidaxService } from './quidax';
-import { KYCService } from './kyc';
-import { TransactionLimitService } from './transactionLimits';
-import { TradeDetails, UnifiedTradeParams } from '@/app/types/trade';
+import { WalletService } from './wallet';
+import { 
+  TradeParams, 
+  TradeDetails, 
+  TradeStatus, 
+  CreateTradeParams, 
+  QuidaxTradeResponse, 
+  QuidaxRateParams
+} from '@/app/types/trade';
+import { handleError } from '@/app/lib/utils/errorHandler';
 
-// Create namespace and export service
-export namespace UnifiedTradeService {
-  export type TradeDetails = {
-    id: string;
-    user_id: string;
-    type: 'buy' | 'sell';
-    currency: string;
-    amount: number;
-    rate: number;
-    status: 'pending' | 'completed' | 'failed';
-    payment_method: 'bank' | 'wallet';
-    payment_url?: string;
-    quidax_reference?: string;
-    created_at: string;
-    updated_at?: string;
-  };
-
-  export const createTrade = async (params: UnifiedTradeParams) => {
-    console.debug('UnifiedTradeService.createTrade params:', params);
-    // 1. Validate KYC
-    const kycStatus = await KYCService.isEligibleForTrade(params.userId);
-    if (!kycStatus.eligible) {
-      throw new Error(kycStatus.reason);
-    }
-
-    // 2. Validate transaction limits
-    const limitValidation = await TransactionLimitService.validateCryptoAmount(
-      params.currency,
-      params.amount
-    );
-    if (!limitValidation.valid) {
-      throw new Error(limitValidation.reason);
-    }
-
-    // 1. Create local trade record first
-    const tradeData = {
-      user_id: params.userId,
-      type: params.type,
-      currency: params.currency.toLowerCase(),
-      amount: Number(params.amount),
-      rate: Number(params.rate),
-      payment_method: params.paymentMethod,
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    const { data: trade, error: tradeError } = await supabase
-      .from('trades')
-      .insert(tradeData)
-      .select('*')
-      .single();
-
-    if (tradeError) throw new Error(`Failed to create trade record: ${tradeError.message}`);
-    if (!trade) throw new Error('No trade data returned after creation');
-
+export class UnifiedTradeService {
+  static async createTrade(params: TradeParams): Promise<TradeDetails> {
     try {
-      // 2. Create Quidax order through backend API
-      const quidaxOrder = await QuidaxService.createTrade({
+      const quidaxParams: CreateTradeParams = {
         amount: params.amount,
-        currency: params.currency,
+        currency: `${params.currency.toLowerCase()}_ngn`,
         type: params.type,
-        payment_method: params.paymentMethod,
-        trade_id: trade.id
+        paymentMethod: params.paymentMethod,
+        user_id: '',
+        rate: 0,
+        total: 0,
+        fees: {
+          service: 0,
+          network: 0
+        }
+      };
+
+      const quidaxTrade: QuidaxTradeResponse = await QuidaxService.createTrade(quidaxParams);
+      
+      const tradeDetails: TradeDetails = {
+        id: quidaxTrade.id,
+        status: this.mapQuidaxStatus(quidaxTrade.status),
+        type: params.type,
+        currency: params.currency,
+        amount: params.amount,
+        rate: params.rate,
+        total: params.amount * params.rate,
+        fees: {
+          service: params.amount * 0.01,
+          network: 0.0005
+        },
+        paymentMethod: params.paymentMethod,
+        quidax_reference: quidaxTrade.reference,
+        reference: params.reference,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: params.user_id
+      };
+
+      return tradeDetails;
+    } catch (error) {
+      throw handleError(error, 'Failed to create trade');
+    }
+  }
+
+  private static mapQuidaxStatus(status: string): TradeStatus {
+    const statusMap: Record<string, TradeStatus> = {
+      'pending': TradeStatus.PENDING,
+      'processing': TradeStatus.PROCESSING,
+      'completed': TradeStatus.COMPLETED,
+      'failed': TradeStatus.FAILED
+    };
+    return statusMap[status.toLowerCase()] || TradeStatus.FAILED;
+  }
+
+  static async getTrade(tradeId: string): Promise<TradeDetails> {
+    try {
+      const trade = await QuidaxService.getTradeDetails(tradeId);
+      return this.mapQuidaxTradeToTradeDetails(trade);
+    } catch (error) {
+      throw handleError(error, 'Failed to get trade details');
+    }
+  }
+
+  static async getTradeStatus(tradeId: string): Promise<{ status: TradeStatus }> {
+    try {
+      const { status } = await QuidaxService.getTradeStatus(tradeId);
+      return { status: status.toLowerCase() as TradeStatus };
+    } catch (error) {
+      throw handleError(error, 'Failed to get trade status');
+    }
+  }
+
+  static async cancelTrade(tradeId: string): Promise<void> {
+    try {
+      const response = await fetch(`/api/trades/${tradeId}/cancel`, {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      throw new Error('Failed to cancel trade');
+    }
+  }
+
+  static async getTradeHistory(userId: string): Promise<TradeDetails[]> {
+    try {
+      const response = await fetch('/api/trades/history');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+      return response.json();
+    } catch (error) {
+      throw new Error('Failed to fetch trade history');
+    }
+  }
+
+  static async validateTradeParams(params: TradeParams): Promise<boolean> {
+    // Add validation logic here
+    if (params.amount <= 0) {
+      throw new Error('Amount must be greater than 0');
+    }
+
+    if (!['buy', 'sell'].includes(params.type)) {
+      throw new Error('Invalid trade type');
+    }
+
+    return true;
+  }
+
+  static async getRate(params: QuidaxRateParams) {
+    try {
+      const response = await fetch('/api/trade/rate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params),
       });
 
-      if (!quidaxOrder.data || !quidaxOrder.data.instant_order) {
-        throw new Error('Invalid response from Quidax');
+      if (!response.ok) {
+        throw new Error('Failed to fetch rate');
       }
 
-      const { error: updateError } = await supabase
-        .from('trades')
-        .update({
-          quidax_reference: quidaxOrder.data.instant_order.id,
-          payment_url: quidaxOrder.data.payment_url,
-          status: quidaxOrder.data.instant_order.status
-        })
-        .eq('id', trade.id);
-
-      if (updateError) throw new Error(`Failed to update trade: ${updateError.message}`);
-
-      return {
-        ...trade,
-        quidax_reference: quidaxOrder.data.instant_order.id,
-        payment_url: quidaxOrder.data.payment_url
-      };
+      return await response.json();
     } catch (error) {
-      // Rollback trade record if Quidax order fails
-      await supabase
-        .from('trades')
-        .update({ status: 'failed' })
-        .eq('id', trade.id);
-      
-      throw error;
+      throw new Error('Rate fetch failed');
     }
-  };
+  }
 
-  export const getTrade = async (id: string): Promise<TradeDetails> => {
-    const { data, error } = await supabase
-      .from('trades')
-      .select('*')
-      .eq('id', id)
-      .single();
+  private static mapQuidaxTradeToTradeDetails(quidaxTrade: any): TradeDetails {
+    return {
+      id: quidaxTrade.id,
+      status: quidaxTrade.status.toLowerCase(),
+      type: quidaxTrade.type,
+      currency: quidaxTrade.currency,
+      amount: parseFloat(quidaxTrade.amount),
+      rate: parseFloat(quidaxTrade.rate),
+      total: parseFloat(quidaxTrade.total),
+      fees: {
+        service: parseFloat(quidaxTrade.quidax_fee),
+        network: parseFloat(quidaxTrade.network_fee)
+      },
+      paymentMethod: quidaxTrade.payment_method,
+      quidax_reference: quidaxTrade.reference,
+      reference: quidaxTrade.internal_reference,
+      created_at: quidaxTrade.created_at,
+      updated_at: quidaxTrade.updated_at,
+      user_id: quidaxTrade.user_id
+    };
+  }
 
-    if (error) throw error;
-    return data;
-  };
+  static async validatePaymentMethod(method: string, amount: number) {
+    const response = await fetch('/api/trades/validate-payment', {
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method, amount }),
+    });
 
-  export const updateTradeStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from('trades')
-      .update({ status })
-      .eq('id', id);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message);
+    }
 
-    if (error) throw error;
-  };
+    return response.json();
+  }
 
-  export const getUserTrades = async (userId: string): Promise<TradeDetails[]> => {
-    const { data, error } = await supabase
-      .from('trades')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+  static async updateTradeStatus(
+    tradeId: string, 
+    status: TradeStatus, 
+    metadata?: any
+  ): Promise<void> {
+    try {
+      const response = await fetch(`/api/trades/${tradeId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, metadata })
+      });
 
-    if (error) throw error;
-    return data;
-  };
+      if (!response.ok) {
+        throw new Error('Failed to update trade status');
+      }
+    } catch (error) {
+      throw handleError(error, 'Failed to update trade status');
+    }
+  }
 }
-
-export type { TradeDetails };

@@ -4,95 +4,92 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuidaxService } from '@/app/lib/services/quidax';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TransactionStatusBadge } from "@/app/components/ui/transaction-status-badge";
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
+import { TrustBankLogo } from '@/app/components/brand/TrustBankLogo';
+import type { PaymentStatusProps, PaymentStatus as PaymentStatusType } from '@/app/types/payment';
+import { formatCurrency } from '@/app/utils/formatCurrency';
+import { CheckCircle, XCircle, Clock } from 'lucide-react';
 
-interface PaymentStatusProps {
-  reference: string;
-  transactionId: string;
+interface StatusConfig {
+  icon: React.ReactNode;
+  message: string;
+  color: string;
 }
 
-export default function PaymentStatus({ reference, transactionId }: PaymentStatusProps) {
+const getStatusConfig = (status: PaymentStatusType): StatusConfig => {
+  const configs: Record<PaymentStatusType, StatusConfig> = {
+    completed: {
+      icon: <CheckCircle className="h-6 w-6 text-green-500" />,
+      message: 'Payment Successful',
+      color: 'text-green-500'
+    },
+    failed: {
+      icon: <XCircle className="h-6 w-6 text-red-500" />,
+      message: 'Payment Failed',
+      color: 'text-red-500'
+    },
+    pending: {
+      icon: <Clock className="h-6 w-6 text-yellow-500" />,
+      message: 'Processing Payment',
+      color: 'text-yellow-500'
+    },
+    processing: {
+      icon: <Clock className="h-6 w-6 text-blue-500" />,
+      message: 'Processing Payment',
+      color: 'text-blue-500'
+    },
+    initiated: {
+      icon: <Clock className="h-6 w-6 text-gray-500" />,
+      message: 'Initiating Payment',
+      color: 'text-gray-500'
+    },
+    confirming: {
+      icon: <Clock className="h-6 w-6 text-purple-500" />,
+      message: 'Confirming Payment',
+      color: 'text-purple-500'
+    }
+  };
+
+  return configs[status] || configs.pending;
+};
+
+export default function PaymentStatus({ 
+  status,
+  amount,
+  currency,
+  reference,
+  transactionId,
+  isLoading,
+  error,
+  onRetry
+}: PaymentStatusProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [status, setStatus] = useState<'pending' | 'completed' | 'failed'>('pending');
-  const [isPolling, setIsPolling] = useState(true);
-
-  useEffect(() => {
-    const pollStatus = async () => {
-      try {
-        const status = await QuidaxService.getTransactionStatus(reference);
-        setStatus(status.status);
-
-        if (status.status !== 'pending') {
-          setIsPolling(false);
-          
-          // Update transaction status in database
-          await QuidaxService.updateTransactionStatus(transactionId, status);
-
-          if (status.status === 'completed') {
-            toast({
-              title: "Success",
-              description: "Your transaction has been completed successfully.",
-              variant: "default",
-            });
-            setTimeout(() => router.push('/dashboard'), 2000);
-          }
-        }
-      } catch (error) {
-        console.error('Error polling status:', error);
-        setIsPolling(false);
-      }
-    };
-
-    if (isPolling) {
-      const interval = setInterval(pollStatus, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [reference, transactionId, isPolling, router, toast]);
+  const config = getStatusConfig(status);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Transaction Status</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {status === 'pending' && (
-          <Alert>
-            <TransactionStatusBadge status="pending" />
-            <AlertDescription>
-              Processing your payment. Please wait...
-            </AlertDescription>
-          </Alert>
-        )}
+    <Card className="w-full max-w-md mx-auto bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+      <CardContent className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <TrustBankLogo className="h-8 w-auto" />
+          <span className="text-sm opacity-75">Secure Payment</span>
+        </div>
 
-        {status === 'completed' && (
-          <Alert className="bg-green-50 border-green-200">
-            <TransactionStatusBadge status="completed" />
-            <AlertDescription className="text-green-700">
-              Payment completed successfully!
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {status === 'failed' && (
-          <Alert variant="destructive">
-            <TransactionStatusBadge status="failed" />
-            <AlertDescription>
-              Payment failed. Please try again.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <Button 
-          onClick={() => router.push('/dashboard')}
-          variant="outline" 
-          className="w-full"
-        >
-          Return to Dashboard
-        </Button>
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold text-center">
+            {formatCurrency(amount, currency)}
+          </h3>
+          <Progress 
+            value={status === 'completed' ? 100 : status === 'pending' ? 50 : 0}
+            className="h-2"
+          />
+          <div className="flex items-center justify-center space-x-2">
+            {config.icon}
+            <span className={config.color}>{config.message}</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

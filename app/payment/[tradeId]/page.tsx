@@ -1,8 +1,9 @@
+//app/payment/[tradeId]/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { PaymentProcessor } from '@/app/components/trade/PaymentProcessor';
+import { PaymentProcessor } from '@/app/trade/components/PaymentProcessor';
 import { UnifiedTradeService } from '@/app/lib/services/unifiedTrade';
 import { useToast } from '@/hooks/use-toast';
 import { TradeDetails } from '@/app/types/trade';

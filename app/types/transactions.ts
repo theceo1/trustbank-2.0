@@ -1,40 +1,18 @@
-export type TransactionType = 'deposit' | 'withdrawal' | 'trade' | 'transfer' | 'buy' | 'sell';
-export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'PENDING' | 'COMPLETED' | 'FAILED';
-export type TransactionCurrency = 'NGN' | 'BTC' | 'ETH' | 'USDT';
+export type TransactionStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
-export interface BaseTransaction {
+export interface Transaction {
   id: string;
   user_id: string;
+  type: 'buy' | 'sell';
   amount: number;
+  currency: string;
   status: TransactionStatus;
   created_at: string;
-  currency?: TransactionCurrency;
-  payment_reference?: string;
+  updated_at: string;
 }
 
-export interface FiatTransaction extends BaseTransaction {
-  type: 'deposit' | 'withdrawal';
-  wallet_id: string;
-}
-
-export interface CryptoTransaction extends BaseTransaction {
-  type: 'buy' | 'sell';
-  crypto_amount: number;
-  crypto_currency: TransactionCurrency;
-  rate: number;
-}
-
-export interface ReferralTransaction extends BaseTransaction {
+export interface ReferralTransaction extends Transaction {
   referrer_id: string;
-  referred_id: string;
-  referrer: {
-    full_name: string;
-    email: string;
-  };
-  referred: {
-    full_name: string;
-    email: string;
-  };
+  commission: number;
+  commission_currency: string;
 }
-
-export type Transaction = FiatTransaction | CryptoTransaction;

@@ -73,6 +73,7 @@ export default function ProfileHeader() {
       } catch (error) {
         console.error('Error:', error);
         toast({
+          id: "profile-load-error",
           title: "Error",
           description: "Failed to load profile data",
           variant: "destructive",
@@ -91,11 +92,13 @@ export default function ProfileHeader() {
     try {
       await navigator.clipboard.writeText(profile.referral_code);
       toast({
+        id: "referral-code-copied",
         title: "Copied!",
         description: "Referral code copied to clipboard",
       });
     } catch (err) {
       toast({
+        id: "referral-code-copy-error",
         title: "Error",
         description: "Failed to copy referral code",
         variant: "destructive",

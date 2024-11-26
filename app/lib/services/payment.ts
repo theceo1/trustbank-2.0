@@ -1,85 +1,76 @@
-import supabase from '@/lib/supabase/client';
-
-interface PaymentStatus {
-  status: 'pending' | 'completed' | 'failed';
-  transaction_reference?: string;
-  payment_reference?: string;
-}
-
-export type PaymentMethod = {
-  id: string;
-  name: string;
-  type: 'bank_transfer' | 'card' | 'ussd' | 'crypto';
-  icon: string;
-  fees: {
-    percentage: number;
-    fixed: number;
-  };
-  limits: {
-    min: number;
-    max: number;
-  };
-  enabled: boolean;
-};
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Database } from '@/app/types/database';
+import { PaymentMethod, PaymentMethodType, PaymentStatus } from '@/app/types/payment';
+import { TradeDetails } from '@/app/types/trade';
+import { WalletPaymentProcessor } from './payment/WalletPaymentProcessor';
+import { BankTransferProcessor } from './payment/BankTransferProcessor';
+import { CardPaymentProcessor } from './payment/CardPaymentProcessor';
 
 export class PaymentService {
-  static async verifyPayment(reference: string): Promise<PaymentStatus> {
-    try {
-      const response = await fetch(`/api/payments/verify/${reference}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  private static supabase = createClientComponentClient<Database>();
 
-      if (!response.ok) {
-        throw new Error('Payment verification failed');
-      }
+  static async getPaymentMethod(methodType: PaymentMethodType): Promise<PaymentMethod> {
+    const { data, error } = await this.supabase
+      .from('payment_methods')
+      .select('*')
+      .eq('type', methodType)
+      .single();
 
-      return response.json();
-    } catch (error) {
-      console.error('Error verifying payment:', error);
-      throw new Error('Payment verification failed');
-    }
-  }
-
-  static async updateTransactionStatus(transactionId: string, status: PaymentStatus) {
-    try {
-      const { error } = await supabase
-        .from('transactions')
-        .update({
-          status: status.status,
-          payment_reference: status.payment_reference,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', transactionId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error updating transaction status:', error);
-      throw new Error('Failed to update transaction status');
-    }
-  }
-
-  static async getAvailablePaymentMethods(amount: number): Promise<PaymentMethod[]> {
-    try {
-      const { data, error } = await supabase
-        .from('payment_methods')
-        .select('*')
-        .eq('enabled', true)
-        .lte('limits->min', amount)
-        .gte('limits->max', amount);
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching payment methods:', error);
-      throw new Error('Failed to fetch payment methods');
-    }
+    if (error) throw error;
+    return data;
   }
 
   static calculateFees(amount: number, method: PaymentMethod): number {
-    const percentageFee = (amount * method.fees.percentage) / 100;
-    return percentageFee + method.fees.fixed;
+    const baseFee = amount * 0.01; // 1% base fee
+    const methodFee = amount * this.getMethodFeeRate(method.type);
+    return baseFee + methodFee;
+  }
+
+  private static getMethodFeeRate(methodType: PaymentMethodType): number {
+    const feeRates = {
+      wallet: 0.005, // 0.5%
+      bank: 0.015,   // 1.5%
+      card: 0.025    // 2.5%
+    };
+    return feeRates[methodType as keyof typeof feeRates] || 0;
+  }
+
+  static async processPayment(trade: TradeDetails) {
+    try {
+      const paymentProcessor = await this.getPaymentProcessor(trade.paymentMethod);
+      return await paymentProcessor.process(trade);
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      throw error;
+    }
+  }
+
+  static async getPaymentProcessor(method: PaymentMethodType) {
+    switch (method) {
+      case 'wallet':
+        return new WalletPaymentProcessor();
+      case 'bank_transfer':
+        return new BankTransferProcessor();
+      case 'card':
+        return new CardPaymentProcessor();
+      default:
+        throw new Error('Unsupported payment method');
+    }
+  }
+
+  static async getPaymentStatus(tradeId: string): Promise<PaymentStatus> {
+    try {
+      const { data, error } = await this.supabase
+        .from('trades')
+        .select('payment_status')
+        .eq('id', tradeId)
+        .single();
+
+      if (error) throw error;
+      return data.payment_status as PaymentStatus;
+    } catch (error) {
+      console.error('Failed to get payment status:', error);
+      throw error;
+    }
   }
 }

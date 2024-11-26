@@ -19,7 +19,7 @@ export const formatCurrency = (
   };
   
   export const formatPercentage = (value: number): string => {
-    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+    return `${(value * 100).toFixed(2)}%`;
   };
   
   export const formatDate = (dateString: string): string => {
@@ -30,5 +30,12 @@ export const formatCurrency = (
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+    });
+  };
+  
+  export const formatCryptoAmount = (amount: number): string => {
+    return amount.toLocaleString(undefined, {
+      minimumFractionDigits: 8,
+      maximumFractionDigits: 8
     });
   };

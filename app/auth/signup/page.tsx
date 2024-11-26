@@ -37,37 +37,95 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!acceptedTerms) {
+      toast({
+        id: "terms-required",
+        title: "Terms Required",
+        description: "Please accept the terms and conditions to continue",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
+    setError('');
     
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: name,
-            kyc_level: 0,
-            is_verified: true,
-            wallet: {
-              balance: 1000000, // 1M NGN for testing
-              currency: 'NGN'
-            }
-          }
-        }
-      });
+      // First, sign up with Supabase Auth
+      const { user: newUser, error: signUpError } = await signUp(email, password);
+      
+      if (signUpError) {
+        throw signUpError;
+      }
 
-      if (error) throw error;
+      if (!newUser) {
+        throw new Error('Failed to create user account');
+      }
+
+      // Create initial profile in profiles table
+      const newReferralCode = `REF${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: newUser.id,
+          full_name: name,
+          email: email,
+          referral_code: newReferralCode,
+          referred_by: referralCode || null,
+          is_verified: false,
+          kyc_tier: 'unverified',
+          kyc_status: 'pending',
+          withdrawal_limit: {
+            daily: 0,
+            monthly: 0
+          }
+        });
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Create default account settings
+      const { error: settingsError } = await supabase
+        .from('account_settings')
+        .insert({
+          user_id: newUser.id,
+          two_factor_enabled: false,
+          language: 'en',
+          currency: 'NGN',
+          notifications: {
+            email: true,
+            push: true,
+            trades: true,
+            marketing: false,
+          },
+          privacy: {
+            profile_visible: true,
+            show_balance: false,
+            activity_status: true,
+          }
+        });
+
+      if (settingsError) {
+        console.error('Settings creation error:', settingsError);
+        // Don't throw here as it's not critical
+      }
 
       router.push('/dashboard');
       
       toast({
+        id: "account-created",
         title: "Account created",
         description: "Welcome! Complete your ID verification to start trading.",
       });
     } catch (error) {
+      console.error('Signup error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create account');
       toast({
+        id: "account-creation-error",
         title: "Error",
-        description: "Failed to create account",
+        description: error instanceof Error ? error.message : "Failed to create account",
         variant: "destructive",
       });
     } finally {

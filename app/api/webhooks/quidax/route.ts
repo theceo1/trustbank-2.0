@@ -1,47 +1,33 @@
+//app/api/webhooks/quidax/route.ts
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { QuidaxService } from '@/app/lib/services/quidax';
-import supabase from '@/lib/supabase/client';
+import { WalletService } from '@/app/lib/services/wallet';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const payload = await request.json();
     const signature = request.headers.get('x-quidax-signature');
 
-    if (!QuidaxService.verifyWebhookSignature(body, signature)) {
+    if (!QuidaxService.verifyWebhookSignature(payload, signature)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    const { event, data } = body;
+    const supabase = createRouteHandlerClient({ cookies });
 
-    if (event === 'order.done') {
-      const tradeId = data.metadata?.trade_id;
-      if (!tradeId) {
-        console.error('No trade_id in webhook metadata');
-        return NextResponse.json({ error: 'No trade ID found' }, { status: 400 });
-      }
+    const { error } = await supabase.rpc('handle_quidax_webhook', {
+      reference: payload.reference,
+      status: QuidaxService.mapQuidaxStatus(payload.status),
+      webhook_data: payload
+    });
 
-      const status = data.status === 'done' ? 'completed' : 'failed';
-      
-      const { error } = await supabase
-        .from('trades')
-        .update({
-          status,
-          quidax_reference: data.id,
-          executed_amount: data.executed_volume.amount,
-          executed_price: data.avg_price.amount,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', tradeId);
-
-      if (error) {
-        console.error('Error updating trade:', error);
-        return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
-      }
-    }
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Webhook error:', error);
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

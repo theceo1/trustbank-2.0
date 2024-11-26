@@ -1,36 +1,41 @@
+//app/api/trades/create/route.ts
 import { NextResponse } from 'next/server';
-import { QuidaxService } from '@/app/lib/services/quidax';
-import { KYCService } from '@/app/lib/services/kyc';
-import { TransactionLimitService } from '@/app/lib/services/transactionLimits';
+import { UnifiedTradeService } from '@/app/lib/services/unifiedTrade';
+import { getCurrentUser } from '@/app/lib/session';
+import { TradeParams, TradeType } from '@/app/types/trade';
+import { TradeErrorHandler } from '@/app/lib/services/tradeErrorHandler';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { userId, type, currency, amount, rate, paymentMethod } = body;
-
-    // 1. Validate transaction limits
-    const limitCheck = await TransactionLimitService.validateTransaction(userId, amount);
-    if (!limitCheck.valid) {
-      return NextResponse.json(
-        { message: limitCheck.reason },
-        { status: 400 }
-      );
+    const user = await getCurrentUser();
+    if (!user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Create Quidax trade
-    const trade = await QuidaxService.createTrade({
-      amount,
-      currency,
-      type,
-      payment_method: paymentMethod,
-      trade_id: crypto.randomUUID()
-    });
+    const body = await request.json();
+    const reference = `TRX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    const tradeParams: TradeParams = {
+      user_id: user.email,
+      type: body.type as TradeType,
+      currency: body.currency,
+      amount: body.amount,
+      rate: body.rate,
+      total: body.amount * body.rate,
+      fees: {
+        service: body.amount * 0.01,
+        network: 0.001
+      },
+      reference,
+      paymentMethod: body.paymentMethod
+    };
 
+    const trade = await UnifiedTradeService.createTrade(tradeParams);
     return NextResponse.json(trade);
   } catch (error: any) {
-    console.error('Trade creation error:', error);
+    TradeErrorHandler.handleError(error, 'Trade creation');
     return NextResponse.json(
-      { message: error.message || 'Failed to create trade' },
+      { error: error.message || 'Failed to create trade' },
       { status: 500 }
     );
   }

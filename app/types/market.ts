@@ -37,10 +37,11 @@ export interface CryptoHistoricalData {
 }
 
 export interface MarketStats {
-  total_market_cap: number;
-  total_volume: number;
-  btc_dominance: number;
-  market_cap_change_percentage_24h: number;
+  high24h: number;
+  low24h: number;
+  volume24h: number;
+  lastPrice: number;
+  change24h: number;
 }
 
 export interface CryptoPriceData {
@@ -73,20 +74,7 @@ export interface MarketOverview {
 }
 
 export interface MarketData {
-  market?: {
-    id: string;
-    base_unit: string;
-    quote_unit: string;
-  };
-  ticker: {
-    buy: string;
-    sell: string;
-    low: string;
-    high: string;
-    last: string;
-    vol: string;
-    change: string;
-  }
+  [pair: string]: MarketStats;
 }
 
 export interface WalletBalance {
@@ -94,4 +82,24 @@ export interface WalletBalance {
   available: number;
   pending: number;
   id?: string; 
+}
+
+export interface RateResponse {
+  buyRate: number;
+  sellRate: number;
+  timestamp: number;
+}
+
+export interface MarketRate {
+  currency: string;
+  buy_rate: number;
+  sell_rate: number;
+  last_price: number;
+  high_24h: number;
+  low_24h: number;
+  volume_24h: number;
+}
+
+export interface MarketStatsProps {
+  currency: string;
 }

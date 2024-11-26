@@ -1,13 +1,11 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/app/lib/utils";
-import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PaymentMethodType } from "@/app/types/payment";
+import { formatCurrency } from "@/app/lib/utils";
 
 interface TradeDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onProceed: () => Promise<void>;
+  onProceed: () => void;
   tradeDetails: {
     type: 'buy' | 'sell';
     currency: string;
@@ -22,63 +20,33 @@ interface TradeDetailsModalProps {
   };
 }
 
-export function TradeDetailsModal({
-  isOpen,
-  onClose,
-  onProceed,
-  tradeDetails
-}: TradeDetailsModalProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleProceed = async () => {
-    setIsProcessing(true);
-    try {
-      await onProceed();
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
+export function TradeDetailsModal({ isOpen, onClose, onProceed, tradeDetails }: TradeDetailsModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Trade Details</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-sm text-muted-foreground">Type</div>
-            <div className="text-sm font-medium">{tradeDetails.type.toUpperCase()}</div>
-            
-            <div className="text-sm text-muted-foreground">Currency</div>
-            <div className="text-sm font-medium">{tradeDetails.currency}</div>
-            
-            <div className="text-sm text-muted-foreground">Amount</div>
-            <div className="text-sm font-medium">{formatCurrency(tradeDetails.amount)}</div>
-            
-            <div className="text-sm text-muted-foreground">Rate</div>
-            <div className="text-sm font-medium">{formatCurrency(tradeDetails.rate)}</div>
-            
-            <div className="text-sm text-muted-foreground">Service Fee</div>
-            <div className="text-sm font-medium">{formatCurrency(tradeDetails.fees.service)}</div>
-            
-            <div className="text-sm text-muted-foreground">Network Fee</div>
-            <div className="text-sm font-medium">{formatCurrency(tradeDetails.fees.network)}</div>
-            
-            <div className="text-sm text-muted-foreground">Total</div>
-            <div className="text-sm font-medium">{formatCurrency(tradeDetails.total)}</div>
-            
-            <div className="text-sm text-muted-foreground">Payment Method</div>
-            <div className="text-sm font-medium">{tradeDetails.paymentMethod}</div>
+          <div className="grid grid-cols-2 gap-2">
+            <span>Type:</span>
+            <span className="text-right capitalize">{tradeDetails.type}</span>
+            <span>Currency:</span>
+            <span className="text-right">{tradeDetails.currency.toUpperCase()}</span>
+            <span>Amount:</span>
+            <span className="text-right">{formatCurrency(tradeDetails.amount)}</span>
+            <span>Rate:</span>
+            <span className="text-right">{formatCurrency(tradeDetails.rate)}</span>
+            <span>Service Fee:</span>
+            <span className="text-right">{formatCurrency(tradeDetails.fees.service)}</span>
+            <span>Network Fee:</span>
+            <span className="text-right">{formatCurrency(tradeDetails.fees.network)}</span>
+            <span className="font-bold">Total:</span>
+            <span className="text-right font-bold">{formatCurrency(tradeDetails.total)}</span>
           </div>
-          
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onClose} disabled={isProcessing}>
-              Cancel
-            </Button>
-            <Button onClick={handleProceed} disabled={isProcessing}>
-              {isProcessing ? 'Processing...' : 'Confirm Trade'}
-            </Button>
+          <div className="flex justify-end space-x-2 mt-4">
+            <button onClick={onClose}>Cancel</button>
+            <button onClick={onProceed}>Proceed</button>
           </div>
         </div>
       </DialogContent>

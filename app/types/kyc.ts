@@ -37,7 +37,12 @@ export interface KYCLevel {
 export type KYCTier = 'unverified' | 'tier1' | 'tier2' | 'tier3';
 
 export interface KYCInfo {
-  currentTier: KYCTier;
+  currentTier: 'unverified' | 'tier1' | 'tier2' | 'tier3';
   status: 'pending' | 'approved' | 'rejected';
-  updatedAt: string;
+  documents?: {
+    nin?: string;
+    bvn?: string;
+    international_passport?: string;
+    drivers_license?: string;
+  };
 }
