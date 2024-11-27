@@ -105,18 +105,20 @@ export default function ProfilePage() {
         if (user) {
           setUserData(user as ExtendedUser);
           
-          // Fetch profile data including referral info
+          // Fetch only existing columns
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('referral_code, referral_count')
             .eq('user_id', user.id)
             .single();
 
-          if (profileError) throw profileError;
+          if (profileError) {
+            console.error('Profile fetch error:', profileError);
+            return;
+          }
           
           if (profileData) {
             setReferralCount(profileData.referral_count || 0);
-            // Update user metadata with referral code
             setUserData(prev => ({
               ...prev!,
               user_metadata: {

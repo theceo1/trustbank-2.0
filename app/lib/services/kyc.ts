@@ -48,18 +48,36 @@ export class KYCService {
   }
 
   static async getKYCInfo(userId: string): Promise<KYCInfo> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('kyc_tier, kyc_status, kyc_documents')
-      .eq('user_id', userId)
-      .single();
+    try {
+      // First check if the columns exist
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-    if (error) throw error;
+      if (profileError) {
+        console.error('KYC fetch error:', profileError);
+        return {
+          currentTier: 'unverified',
+          status: 'pending',
+          documents: {}
+        };
+      }
 
-    return {
-      currentTier: data.kyc_tier || 'unverified',
-      status: data.kyc_status || 'pending',
-      documents: data.kyc_documents || {}
-    };
+      // Return default values if columns don't exist
+      return {
+        currentTier: profileData?.kyc_tier || 'unverified',
+        status: profileData?.kyc_status || 'pending',
+        documents: profileData?.kyc_documents || {}
+      };
+    } catch (error) {
+      console.error('KYC service error:', error);
+      return {
+        currentTier: 'unverified',
+        status: 'pending',
+        documents: {}
+      };
+    }
   }
 }
