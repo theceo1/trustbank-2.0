@@ -1,4 +1,4 @@
-import { BasePaymentProcessor, PaymentProcessorResult } from './BasePaymentProcessor';
+import { BasePaymentProcessor, PaymentProcessorResult, PaymentInitDetails } from './BasePaymentProcessor';
 import { TradeDetails } from '@/app/types/trade';
 import { QuidaxService } from '../quidax';
 
@@ -7,9 +7,9 @@ export class BankTransferProcessor extends BasePaymentProcessor {
     try {
       const quidaxResult = await QuidaxService.processPayment({
         ...trade,
-        paymentMethod: 'bank_transfer'
+        payment_method: 'bank_transfer'
       });
-
+ 
       return {
         success: true,
         reference: quidaxResult.reference,
@@ -34,6 +34,26 @@ export class BankTransferProcessor extends BasePaymentProcessor {
       metadata: {
         payment_proof: paymentDetails.payment_proof,
         bank_reference: paymentDetails.bank_reference
+      }
+    };
+  }
+
+  async validatePayment(details: TradeDetails): Promise<void> {
+    // Bank transfer doesn't need pre-validation
+    return Promise.resolve();
+  }
+
+  async initializePayment(details: PaymentInitDetails): Promise<PaymentProcessorResult> {
+    const bankDetails = await QuidaxService.getBankDetails();
+    return {
+      success: true,
+      reference: details.quidax_reference,
+      status: 'pending',
+      metadata: {
+        bank_name: bankDetails.bank_name,
+        account_number: bankDetails.account_number,
+        account_name: 'TrustBank Limited',
+        amount: details.amount
       }
     };
   }

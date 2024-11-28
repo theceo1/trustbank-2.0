@@ -216,7 +216,7 @@ export default function ProfilePage() {
                       Verify Account
                     </Button>
                   </Link>
-                  <Link href="/profile/personal-info">
+                  <Link href="/profile/account-settings">
                     <Button variant="outline" className="w-full sm:w-auto">
                       <Settings className="w-4 h-4 mr-2" />
                       Settings

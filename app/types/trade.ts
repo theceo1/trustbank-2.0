@@ -1,9 +1,6 @@
-import { PaymentMethodType } from "./payment";
+import { PaymentMethodType } from './payment';
 
-export enum TradeType {
-  BUY = 'buy',
-  SELL = 'sell'
-}
+export type TradeType = 'buy' | 'sell' | 'send' | 'receive' | 'swap';
 
 export enum TradeStatus {
   PENDING = 'PENDING',
@@ -27,25 +24,49 @@ export interface TradeParams {
   paymentMethod: PaymentMethodType;
 }
 
-export interface TradeDetails extends TradeParams {
-  id: string;
-  status: TradeStatus;
-  quidax_reference: string;
-  created_at: string;
-  updated_at: string;
-  walletBalance?: number;
+export interface SwapDetails {
+  fromCurrency: string;
+  toCurrency: string;
+  amount: number;
+  estimatedReceived: number;
+  rate: number;
+}
+
+export interface TradeDetails {
+  id?: string;
+  user_id: string;
+  type: TradeType;
+  currency: string;
+  amount: number;
+  rate: number;
+  total: number;
+  fees: {
+    quidax: number;
+    platform: number;
+    processing: number;
+  };
+  payment_method: PaymentMethodType;
+  status: string;
+  quidax_reference?: string;
 }
 
 export interface TradeRateRequest {
   amount: number;
   currency_pair: string;
   type: 'buy' | 'sell';
+  bid?: string;
+  ask?: string;
+  unit?: string;
 }
 
 export interface TradeRateResponse {
   rate: number;
   total: number;
-  timestamp: number;
+  fees: {
+    quidax: number;    // 1.4%
+    platform: number;   // 1.6%
+    processing: number; // Payment method specific
+  };
 }
 
 export interface QuidaxTradeResponse {
@@ -57,12 +78,15 @@ export interface QuidaxTradeResponse {
 
 export interface CreateTradeParams extends Omit<TradeParams, 'reference'> {
   rateTimestamp?: number;
+  external_reference?: string;
 }
+
+export type TradeActionType = 'buy' | 'sell' | 'send' | 'receive' | 'swap';
 
 export interface QuidaxRateParams {
   amount: number;
   currency_pair: string;
-  type: 'buy' | 'sell';
+  type: TradeType;
 }
 
 export interface OrderStatus {
@@ -87,4 +111,10 @@ export interface AutomatedTradeRule {
   status: 'active' | 'completed' | 'expired' | 'cancelled';
   created_at: string;
   updated_at: string;
+}
+
+export interface TradeRate {
+  rate: number;
+  total: number;
+  expiresAt?: number;
 }

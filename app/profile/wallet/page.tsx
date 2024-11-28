@@ -23,7 +23,7 @@ import WalletPageSkeleton from "@/app/components/skeletons/WalletPageSkeleton";
 import { Badge } from "@/components/ui/badge";
 import BackButton from "@/components/ui/back-button";
 import { TransactionService } from '@/app/lib/services/transaction';
-import { Transaction } from "@/app/types/transactions";
+import { Transaction, TransactionFilters } from "@/app/types/transactions";
 import { WalletService } from '@/app/lib/services/wallet';
 import { WalletBalance } from '@/app/types/market';
 
@@ -91,7 +91,7 @@ export default function WalletPage() {
     if (!user) return;
     
     try {
-      const balances: WalletBalance[] = await WalletService.getWalletBalance(user.id);
+      const balances = await WalletService.getWalletBalance(user.id);
       const formattedBalances: Wallet[] = balances.map(balance => ({
         id: balance.currency,
         balance: balance.available
@@ -106,7 +106,13 @@ export default function WalletPage() {
     if (!user || !wallet?.id) return;
 
     try {
-      const data = await TransactionService.getUserTransactions(user.id, wallet.id, 5);
+      const filters: TransactionFilters = {
+        currency: wallet.id,
+        limit: 5,
+        status: 'all',
+        dateRange: '30d'
+      };
+      const data = await TransactionService.getUserTransactions(user.id, filters);
       setTransactions(data || []);
     } catch (err) {
       console.error('Transaction fetch error:', err);
@@ -170,15 +176,16 @@ export default function WalletPage() {
       setIsDepositModalOpen(false);
       setDepositAmount("");
       toast({
+        id: `deposit-${Date.now()}`,
         title: "Deposit Initiated",
         description: "Your deposit is being processed.",
-        duration: 5000,
       });
 
       await Promise.all([fetchWalletData(), fetchTransactions()]);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to process deposit';
       toast({
+        id: `error-${Date.now()}`,
         title: "Error",
         description: errorMessage,
         variant: "destructive",

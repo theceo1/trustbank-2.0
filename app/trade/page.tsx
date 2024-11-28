@@ -1,36 +1,47 @@
 "use client";
 
-import { useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MarketStats } from "./components/MarketStats";
-import { TradeForm } from "./components/TradeForm";
-import { TradeHistory } from "./components/TradeHistory";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TradeForm } from './components/TradeForm';
+import { MarketStats } from './components/MarketStats';
+import { TradeHistory } from './components/TradeHistory';
+import { useAuth } from '@/context/AuthContext';
+import { Tabs, TabsTrigger } from "@/components/ui/tabs"
 
 export default function TradePage() {
-  // Reference existing state and auth logic
+  const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
+  const { user } = useAuth();
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <MarketStats currency="btc" />
+    <div className="container mx-auto py-8 px-4 space-y-6 mt-12">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Trade Form */}
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle>Trade Crypto</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TradeForm />
+          </CardContent>
+        </Card>
+
+        {/* Market Stats */}
+        <div className="md:col-span-2">
+          <MarketStats />
+        </div>
       </div>
 
-      <Tabs defaultValue="trade" className="flex-1">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="trade">Trade</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="trade" className="mt-4 space-y-4">
-          <Card className="p-4 sm:p-6">
-            <TradeForm />
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="history" className="mt-4">
-          <TradeHistory trades={[]} />
-        </TabsContent>
-      </Tabs>
+      {/* Trade History */}
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Trade History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TradeHistory trades={[]} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

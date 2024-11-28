@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { PaymentService } from '@/app/lib/services/payment';
 import { QuidaxService } from '@/app/lib/services/quidax';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const cookieStore = cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });

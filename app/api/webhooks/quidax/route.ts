@@ -1,29 +1,39 @@
 //app/api/webhooks/quidax/route.ts
-import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+import { TradeTransaction } from '@/app/lib/services/tradeTransaction';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { QuidaxService } from '@/app/lib/services/quidax';
-import { WalletService } from '@/app/lib/services/wallet';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const supabase = createRouteHandlerClient({ cookies });
+  const payload = await request.json();
+
   try {
-    const payload = await request.json();
-    const signature = request.headers.get('x-quidax-signature');
+    const { reference, status, event } = payload;
 
-    if (!QuidaxService.verifyWebhookSignature(payload, signature)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    // 1. Get trade details
+    const { data: trade } = await supabase
+      .from('trades')
+      .select('*')
+      .eq('quidax_reference', reference)
+      .single();
+
+    if (!trade) {
+      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
     }
 
-    const supabase = createRouteHandlerClient({ cookies });
-
-    const { error } = await supabase.rpc('handle_quidax_webhook', {
-      reference: payload.reference,
-      status: QuidaxService.mapQuidaxStatus(payload.status),
-      webhook_data: payload
-    });
-
-    if (error) throw error;
+    // 2. Update trade status
+    if (event === 'instant_swap.completed') {
+      await supabase
+        .from('trades')
+        .update({
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', trade.id);
+    } else if (event === 'instant_swap.failed') {
+      await TradeTransaction.revertTradeOnFailure(trade.id);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

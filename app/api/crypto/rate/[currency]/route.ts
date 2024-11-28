@@ -3,9 +3,12 @@ import { currencyIds } from '@/app/lib/constants/crypto';
 
 type SupportedCurrency = keyof typeof currencyIds;
 
-export async function GET(request: Request) {
-  const currency = request.url.split('/').pop()?.toUpperCase() as SupportedCurrency;
-  const ngnRate = 1250; // Fixed rate for now
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { currency: string } }
+) {
+  const currency = params.currency.toUpperCase() as SupportedCurrency;
+  const ngnRate = 1350; // Fixed rate for now
   
   try {
     if (!(currency in currencyIds)) {

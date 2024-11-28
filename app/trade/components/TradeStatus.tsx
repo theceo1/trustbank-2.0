@@ -38,6 +38,27 @@ export function TradeStatus({ tradeId, initialStatus, onStatusChange }: TradeSta
     return () => clearInterval(interval);
   }, [tradeId, onStatusChange]);
 
+  const subscribeToTradeUpdates = (tradeId: string) => {
+    const ws = new WebSocket('wss://ws.quidax.com');
+    ws.onmessage = (event) => {
+      const update = JSON.parse(event.data);
+      // Update trade status
+    };
+  };
+
+  const getStatusIcon = (status: TStatus) => {
+    switch (status) {
+      case TStatus.COMPLETED:
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case TStatus.FAILED:
+        return <XCircle className="h-5 w-5 text-red-500" />;
+      case TStatus.PENDING:
+      case TStatus.PROCESSING:
+      default:
+        return <Clock className="h-5 w-5 text-yellow-500" />;
+    }
+  };
+
   if (loading) return <Spinner />;
 
   return (
@@ -47,11 +68,7 @@ export function TradeStatus({ tradeId, initialStatus, onStatusChange }: TradeSta
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-2">
-          {status === 'completed' && <CheckCircle className="h-6 w-6 text-green-500" />}
-          {status === 'failed' && <XCircle className="h-6 w-6 text-red-500" />}
-          {(status === 'pending' || status === 'processing') && (
-            <Clock className="h-6 w-6 text-yellow-500" />
-          )}
+          {getStatusIcon(status)}
           <span className="capitalize">{status}</span>
         </div>
       </CardContent>

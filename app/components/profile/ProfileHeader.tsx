@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { validateReferralCode } from '@/utils/referral';
 import { Badge } from "@/components/ui/badge";
+import { ProfileService } from '@/app/lib/services/profile';
 
 interface Profile {
   user_id: string;
@@ -35,38 +36,15 @@ export default function ProfileHeader() {
       if (!user?.id) return;
 
       try {
-        const { data: existingProfile, error: fetchError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (!existingProfile) {
-          // Profile doesn't exist, create one with referral code
-          const newReferralCode = `REF${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
-          
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .upsert({
-              user_id: user.id,
-              full_name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-              email: user.email,
-              referral_code: newReferralCode,
-              is_verified: false
-            })
-            .select()
-            .single();
-
-          if (insertError) throw insertError;
-          setProfile(newProfile);
-        } else {
-          setProfile(existingProfile);
-          
-          // Fetch referral count
+        const profile = await ProfileService.getProfile(user.id);
+        setProfile(profile);
+        
+        // Fetch referral count if needed
+        if (profile.referral_code) {
           const { count } = await supabase
-            .from('profiles')
+            .from('user_profiles')
             .select('*', { count: 'exact' })
-            .eq('referred_by', existingProfile.referral_code);
+            .eq('referred_by', profile.referral_code);
             
           setReferralCount(count || 0);
         }

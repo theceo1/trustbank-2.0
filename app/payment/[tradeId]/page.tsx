@@ -22,6 +22,7 @@ export default function PaymentPage() {
         setTrade(tradeData);
       } catch (error) {
         toast({
+          id: 'trade-error',
           title: 'Error',
           description: 'Failed to load trade details',
           variant: 'destructive',

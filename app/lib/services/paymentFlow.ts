@@ -4,10 +4,10 @@ import { WalletService } from './wallet';
 
 export class PaymentFlow {
   static async handlePayment(trade: TradeDetails) {
-    switch (trade.paymentMethod) {
+    switch (trade.payment_method) {
       case 'wallet':
         return this.handleWalletPayment(trade);
-      case 'bank':
+      case 'bank_transfer':
       case 'card':
         return this.handleExternalPayment(trade);
       default:
@@ -16,7 +16,7 @@ export class PaymentFlow {
   }
 
   private static async handleWalletPayment(trade: TradeDetails) {
-    const balance = await WalletService.getBalance(trade.user_id);
+    const balance = await WalletService.getUserBalance(trade.user_id);
     if (balance < trade.total) {
       throw new Error('Insufficient wallet balance');
     }

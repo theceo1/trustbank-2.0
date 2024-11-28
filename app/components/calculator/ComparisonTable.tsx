@@ -28,8 +28,8 @@ export default function ComparisonTable({ competitorRates, ourRate, type }: Comp
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow className="bg-green-50 dark:bg-green-900/20">
-            <TableCell className="font-medium">TrustBank</TableCell>
+         <TableRow className="bg-green-50 dark:bg-green-900/20">
+            <TableCell className="font-medium">trustBank</TableCell>
             <TableCell className="text-right">
               <AnimatedNumber value={ourRate} prefix="₦" />
             </TableCell>

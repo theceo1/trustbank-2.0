@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { TradeDetails, TradeType, TradeRateResponse } from '@/app/types/trade';
+import { TradeDetails, TradeType, TradeRateResponse, TradeParams } from '@/app/types/trade';
 import { UnifiedTradeService } from '@/app/lib/services/unifiedTrade';
 import { KYCService } from '@/app/lib/services/kyc';
 import { TradeErrorHandler } from '@/app/lib/services/tradeErrorHandler';
@@ -22,7 +22,7 @@ export function useTrade() {
     amount: '',
     cryptoCurrency: 'btc',
     tradeType: 'buy' as TradeType,
-    paymentMethod: 'bank' as PaymentMethodType,
+    paymentMethod: 'bank_transfer' as PaymentMethodType,
     isLoading: false,
     rate: null as TradeRateResponse | null,
     rateExpiry: null as number | null,
@@ -85,7 +85,7 @@ export function useTrade() {
         return null;
       }
 
-      const tradeDetails = {
+      const tradeDetails: TradeParams = {
         user_id: user.id,
         type: tradeState.tradeType,
         currency: tradeState.cryptoCurrency,
@@ -93,14 +93,11 @@ export function useTrade() {
         rate: tradeState.rate.rate,
         total: tradeState.rate.total,
         fees: {
-          service: Number(tradeState.amount) * 0.01,
-          network: 0.0005
+          service: tradeState.rate.fees.quidax + tradeState.rate.fees.platform,
+          network: tradeState.rate.fees.processing
         },
         paymentMethod: tradeState.paymentMethod,
-        reference: `TRX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        quidax_reference: '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        reference: `TRX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       };
 
       return await UnifiedTradeService.createTrade(tradeDetails);

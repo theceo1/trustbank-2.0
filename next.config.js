@@ -14,7 +14,9 @@ const nextConfig = {
   experimental: {
     serverActions: {
       enabled: true
-    }
+    },
+    serverComponentsExternalPackages: [],
+    typedRoutes: true
   },
 };
 

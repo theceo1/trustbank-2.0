@@ -6,7 +6,7 @@ export const PLATFORM_FEES = {
   total: 0.03 // 3% Total fee
 };
 
-export type PaymentMethodType = 'wallet' | 'bank_transfer' | 'card';
+export type PaymentMethodType = 'bank_transfer' | 'card' | 'wallet';
 
 export interface PaymentMethod {
   id: string;

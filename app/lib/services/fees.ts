@@ -1,33 +1,38 @@
-import { FEES } from '../constants/fees';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { PaymentMethodType } from '@/app/types/payment';
+import { FEES } from '@/app/lib/constants/fees';
+import { Database } from '@/app/types/database';
 
 export class FeeService {
-  static calculateTradeFees(amount: number, paymentMethod: PaymentMethodType) {
-    const quidaxFee = amount * FEES.platform.quidax;
-    const platformFee = amount * FEES.platform.service;
-    const paymentFees = FEES.payment[paymentMethod as keyof typeof FEES.payment];
-    const processingFee = paymentFees.fixed + (amount * paymentFees.percentage);
+  private static supabase = createClientComponentClient<Database>();
 
+  static async calculateFees(params: { 
+    user_id: string; 
+    currency: string; 
+    amount: number 
+  }): Promise<{
+    quidax: number;
+    platform: number;
+    processing: number;
+  }> {
+    const { amount } = params;
     return {
-      quidax: quidaxFee,
-      platform: platformFee,
-      processing: processingFee,
-      total: quidaxFee + platformFee + processingFee,
-      breakdown: {
-        quidaxPercentage: FEES.platform.quidax * 100,
-        platformPercentage: FEES.platform.service * 100,
-        processingPercentage: paymentFees.percentage * 100,
-        processingFixed: paymentFees.fixed
-      }
+      quidax: amount * FEES.QUIDAX_RATE,
+      platform: amount * FEES.PLATFORM_RATE,
+      processing: this.getProcessingFees('bank_transfer', amount)
     };
   }
 
-  static formatFeeBreakdown(fees: ReturnType<typeof this.calculateTradeFees>) {
+  private static getProcessingFees(method: PaymentMethodType, amount: number): number {
+    const fees = FEES.PAYMENT_METHODS[method];
+    return fees.fixed + (amount * fees.percentage);
+  }
+
+  private static getProcessingFeeDetails(method: PaymentMethodType) {
+    const fees = FEES.PAYMENT_METHODS[method];
     return {
-      quidax: `${fees.breakdown.quidaxPercentage}% (₦${fees.quidax.toLocaleString()})`,
-      platform: `${fees.breakdown.platformPercentage}% (₦${fees.platform.toLocaleString()})`,
-      processing: `${fees.breakdown.processingPercentage}% + ₦${fees.breakdown.processingFixed} (₦${fees.processing.toLocaleString()})`,
-      total: `₦${fees.total.toLocaleString()}`
+      percentage: fees.percentage * 100,
+      fixed: fees.fixed
     };
   }
 }

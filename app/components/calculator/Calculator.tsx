@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DollarSign, ArrowRight, RefreshCcw, AlertCircle } from "lucide-react";
+import { DollarSign, RefreshCcw, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarketComparisonService } from "@/app/lib/services/marketComparison";
 import { ExchangeRate } from "@/app/lib/services/marketComparison";
 import AnimatedNumber from "@/app/components/calculator/AnimatedNumber";
 import ComparisonTable from "@/app/components/calculator/ComparisonTable";
+import { CryptoRateService } from '@/app/lib/services/cryptoRates';
 
 const CRYPTO_OPTIONS = [
   { value: "BTC", label: "Bitcoin", icon: "₿", color: "bg-orange-500" },
@@ -24,6 +25,7 @@ const CRYPTO_OPTIONS = [
 interface CalculatedResult {
   ngnAmount: number;
   cryptoAmount: number;
+  usdAmount: number;
   rate: number;
   competitorRates: ExchangeRate[];
   feesByMethod: any[];
@@ -51,39 +53,28 @@ export default function Calculator() {
       setError(null);
       setRefreshing(true);
       
+      const usdAmount = parseFloat(amount);
+      const cryptoPrice = await CryptoRateService.getCryptoUSDPrice(selectedCurrency);
+      const cryptoAmount = usdAmount / cryptoPrice;
+
       const [rateResponse, competitorRates] = await Promise.all([
-        fetch('/api/crypto/quidax/rates', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currency: selectedCurrency,
-            type: transactionType,
-            amount: parseFloat(amount)
-          })
+        CryptoRateService.getRate({
+          amount: usdAmount,
+          currency: selectedCurrency,
+          type: transactionType
         }),
         MarketComparisonService.getCompetitorRates(selectedCurrency)
       ]);
 
-      if (!rateResponse.ok) {
-        throw new Error('Failed to fetch TrustBank rate');
-      }
-
-      const { buyRate, sellRate, feesByMethod } = await rateResponse.json();
-
-      const cryptoAmount = parseFloat(amount);
-      const rate = transactionType === 'buy' ? buyRate : sellRate;
-      const ngnAmount = cryptoAmount * rate;
-
-      if (competitorRates.length === 0) {
-        console.warn('No competitor rates available');
-      }
+      const ngnAmount = usdAmount * rateResponse.rate;
 
       setCalculatedValue({
         ngnAmount,
         cryptoAmount,
-        rate,
-        competitorRates,
-        feesByMethod,
+        usdAmount,
+        rate: rateResponse.rate,
+        competitorRates: competitorRates.filter(rate => rate.exchange !== 'trustBank'),
+        feesByMethod: [rateResponse.fees],
         lastUpdated: new Date().toLocaleTimeString()
       });
     } catch (error) {
@@ -183,7 +174,9 @@ export default function Calculator() {
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                      <p className="text-sm text-muted-foreground mb-1">You Pay (NGN)</p>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        You {transactionType === 'buy' ? 'Pay' : 'Get'} (NGN)
+                      </p>
                       <AnimatedNumber 
                         value={calculatedValue.ngnAmount}
                         prefix="₦"

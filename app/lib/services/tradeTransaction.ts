@@ -1,71 +1,28 @@
-import supabase from '@/lib/supabase/client';
-import { TradeDetails, TradeStatus } from '@/app/types/trade';
+import { createClient } from '@supabase/supabase-js';
 
 export class TradeTransaction {
-  private static async beginTransaction() {
-    await supabase.rpc('begin_transaction');
-  }
+  private static supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-  private static async commitTransaction() {
-    await supabase.rpc('commit_transaction');
-  }
+  static async revertTradeOnFailure(tradeId: string) {
+    const { data: trade } = await this.supabase
+      .from('trades')
+      .select('*')
+      .eq('id', tradeId)
+      .single();
 
-  private static async rollbackTransaction() {
-    await supabase.rpc('rollback_transaction');
-  }
+    if (!trade) return;
 
-  static async executeTradeWithRollback(
-    tradeDetails: TradeDetails,
-    operations: Array<() => Promise<void>>
-  ): Promise<void> {
-    try {
-      await this.beginTransaction();
+    // Start transaction to revert trade
+    const { error } = await this.supabase.rpc('revert_failed_trade', {
+      p_trade_id: tradeId,
+      p_user_id: trade.user_id,
+      p_amount: trade.amount
+    });
 
-      for (const operation of operations) {
-        await operation();
-      }
-
-      await this.commitTransaction();
-    } catch (error) {
-      await this.rollbackTransaction();
-      throw error;
-    }
-  }
-
-  static async revertTradeOnFailure(tradeId: string): Promise<void> {
-    try {
-      const { data: trade } = await supabase
-        .from('trades')
-        .select('*')
-        .eq('id', tradeId)
-        .single();
-
-      if (!trade) return;
-
-      await this.executeTradeWithRollback(trade as TradeDetails, [
-        async () => {
-          // Revert wallet balance if necessary
-          if (trade.payment_method === 'wallet') {
-            await supabase.rpc('revert_wallet_transaction', {
-              trade_id: trade.id
-            });
-          }
-
-          // Update trade status
-          await supabase
-            .from('trades')
-            .update({ status: 'failed' as TradeStatus })
-            .eq('id', trade.id);
-
-          // Log the reversion
-          await supabase.from('trade_logs').insert({
-            trade_id: trade.id,
-            action: 'revert',
-            details: 'Trade reverted due to failure'
-          });
-        }
-      ]);
-    } catch (error) {
+    if (error) {
       console.error('Failed to revert trade:', error);
       throw error;
     }

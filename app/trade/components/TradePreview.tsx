@@ -11,10 +11,10 @@ import { formatCryptoAmount } from '@/app/lib/utils';
 
 interface TradePreviewProps {
   tradeDetails: TradeDetails;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
   onCancel: () => void;
-  isLoading: boolean;
-  isOpen: boolean;
+  isLoading?: boolean;
+  isOpen?: boolean;
 }
 
 export function TradePreview({

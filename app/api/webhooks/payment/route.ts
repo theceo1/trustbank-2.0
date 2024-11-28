@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { QuidaxService } from '@/app/lib/services/quidax';
 import { TradeTransaction } from '@/app/lib/services/tradeTransaction';
 import { PaymentProcessorFactory } from '@/app/lib/services/payment/PaymentProcessorFactory';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const payload = await request.json();
     const signature = request.headers.get('x-quidax-signature');

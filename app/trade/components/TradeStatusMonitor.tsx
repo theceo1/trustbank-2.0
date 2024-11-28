@@ -15,32 +15,32 @@ interface TradeStatusMonitorProps {
 }
 
 const STATUS_STEPS = {
-  pending: 25,
-  processing: 75,
-  completed: 100,
-  failed: 100
+  [TradeStatus.PENDING]: 25,
+  [TradeStatus.PROCESSING]: 75,
+  [TradeStatus.COMPLETED]: 100,
+  [TradeStatus.FAILED]: 100
 };
 
 const STATUS_CONFIG = {
-  pending: {
+  [TradeStatus.PENDING]: {
     icon: Clock,
     color: "text-yellow-500",
     bgColor: "bg-yellow-500/10",
     message: "Awaiting confirmation..."
   },
-  processing: {
+  [TradeStatus.PROCESSING]: {
     icon: Loader2,
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
     message: "Processing your trade..."
   },
-  completed: {
+  [TradeStatus.COMPLETED]: {
     icon: CheckCircle2,
     color: "text-green-500",
     bgColor: "bg-green-500/10",
     message: "Trade completed successfully!"
   },
-  failed: {
+  [TradeStatus.FAILED]: {
     icon: AlertCircle,
     color: "text-red-500",
     bgColor: "bg-red-500/10",
@@ -107,7 +107,7 @@ export function TradeStatusMonitor({ tradeId, initialStatus, onStatusChange }: T
             className={`flex items-center gap-4 p-4 rounded-xl ${statusConfig.bgColor}`}
           >
             <div className={`${statusConfig.color}`}>
-              {status === 'processing' ? (
+              {status === TradeStatus.PROCESSING ? (
                 <statusConfig.icon className="h-6 w-6 animate-spin" />
               ) : (
                 <statusConfig.icon className="h-6 w-6" />
@@ -128,10 +128,10 @@ export function TradeStatusMonitor({ tradeId, initialStatus, onStatusChange }: T
 
         {/* Estimated Time */}
         <div className="text-center text-sm text-muted-foreground">
-          {status === 'pending' && "Estimated completion time: 5-15 minutes"}
-          {status === 'processing' && "Processing... Please wait"}
-          {status === 'completed' && "Trade completed successfully"}
-          {status === 'failed' && "Please contact support if you need assistance"}
+          {status === TradeStatus.PENDING && "Estimated completion time: 5-15 minutes"}
+          {status === TradeStatus.PROCESSING && "Processing... Please wait"}
+          {status === TradeStatus.COMPLETED && "Trade completed successfully"}
+          {status === TradeStatus.FAILED && "Please contact support if you need assistance"}
         </div>
       </motion.div>
     </Card>

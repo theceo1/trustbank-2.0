@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { QuidaxService } from '@/app/lib/services/quidax';
-import { TradeRateRequest } from '@/app/types/trade';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const cookieStore = cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
@@ -14,11 +13,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body: TradeRateRequest = await request.json();
-    const rate = await QuidaxService.getRate({
+    const body = await request.json();
+    const rate = await QuidaxService.getSwapRate({
       amount: body.amount,
-      currency_pair: `${body.currency}_ngn`,
-      type: body.type
+      from_currency: body.type === 'buy' ? 'ngn' : body.currency.toLowerCase(),
+      to_currency: body.type === 'buy' ? body.currency.toLowerCase() : 'ngn'
     });
 
     return NextResponse.json(rate);

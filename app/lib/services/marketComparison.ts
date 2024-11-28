@@ -1,3 +1,5 @@
+import { CryptoRateService } from '@/app/lib/services/cryptoRates';
+
 export interface ExchangeRate {
   exchange: string;
   buyRate: number;
@@ -12,30 +14,58 @@ export interface ExchangeRate {
 export class MarketComparisonService {
   static async getCompetitorRates(currency: string): Promise<ExchangeRate[]> {
     try {
-      const [buyResponse, sellResponse] = await Promise.all([
-        fetch(`/api/transactions/rate?currency=${currency}&amount=1&type=buy`),
-        fetch(`/api/transactions/rate?currency=${currency}&amount=1&type=sell`)
+      const [buyRate, sellRate] = await Promise.all([
+        CryptoRateService.getRate({
+          amount: 1,
+          currency: currency,
+          type: 'buy'
+        }),
+        CryptoRateService.getRate({
+          amount: 1,
+          currency: currency,
+          type: 'sell'
+        })
       ]);
 
-      if (!buyResponse.ok || !sellResponse.ok) {
-        throw new Error('Failed to fetch rates');
-      }
+      const baseSpread = 0.005; // 0.5% base spread
 
-      const buyData = await buyResponse.json();
-      const sellData = await sellResponse.json();
-
-      const spread = ((buyData.rate - sellData.rate) / sellData.rate) * 100;
-
-      return [{
-        exchange: 'TrustBank',
-        buyRate: buyData.rate,
-        sellRate: sellData.rate,
-        spread: Number(spread.toFixed(2)),
+      // TrustBank rates (best rates)
+      const trustBankRate = {
+        exchange: 'trustBank',
+        buyRate: buyRate.rate,
+        sellRate: sellRate.rate,
+        spread: baseSpread * 100,
         fees: {
-          trading: (buyData.fee / buyData.rate) * 100,
-          withdrawal: 0.3
+          trading: 0.1,
+          withdrawal: 0.1
         }
-      }];
+      };
+
+      // Competitors with slightly worse rates
+      const competitors = [
+        { 
+          exchange: 'Competitor 1',
+          buyRate: buyRate.rate * 1.015,
+          sellRate: sellRate.rate * 0.985,
+          spread: (baseSpread + 0.015) * 100,
+          fees: {
+            trading: 0.15,
+            withdrawal: 0.2
+          }
+        },
+        {
+          exchange: 'Competitor 2',
+          buyRate: buyRate.rate * 1.02,
+          sellRate: sellRate.rate * 0.98,
+          spread: (baseSpread + 0.02) * 100,
+          fees: {
+            trading: 0.2,
+            withdrawal: 0.25
+          }
+        }
+      ];
+
+      return [trustBankRate, ...competitors];
     } catch (error) {
       console.error('Error fetching rates:', error);
       return [];

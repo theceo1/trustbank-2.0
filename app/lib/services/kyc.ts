@@ -34,17 +34,24 @@ export class KYCService {
     }
   }
 
-  static async getKYCStatus(userId: string) {
-    const { data, error } = await this.supabase
-      .from('kyc_status_tracking')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+  static async getKYCStatus(userId: string): Promise<{ isVerified: boolean }> {
+    try {
+      const { data, error } = await supabase
+        .from('kyc_verifications')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return data;
+      if (error) {
+        console.error('KYC fetch error:', error);
+        return { isVerified: false };
+      }
+
+      return { isVerified: !!data?.verified_at };
+    } catch (error) {
+      console.error('KYC fetch error:', error);
+      return { isVerified: false };
+    }
   }
 
   static async getKYCInfo(userId: string): Promise<KYCInfo> {

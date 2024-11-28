@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "create-admin": "cross-env NODE_OPTIONS='--loader ts-node/esm' ts-node --project scripts/tsconfig.json scripts/create-admin.ts"
+    "create-admin": "cross-env NODE_OPTIONS='--loader ts-node/esm' ts-node --project scripts/tsconfig.json scripts/create-admin.ts",
+    "test:trade": "ts-node scripts/test-trade.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.5",
