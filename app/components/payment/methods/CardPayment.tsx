@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { PaymentProcessorProps } from '@/app/types/payment';
 import { QuidaxService } from '@/app/lib/services/quidax';
 import { useToast } from '@/hooks/use-toast';

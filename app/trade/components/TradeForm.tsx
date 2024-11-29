@@ -168,7 +168,8 @@ export function TradeForm({ initialType = 'buy' }: TradeFormProps) {
   const SUPPORTED_CURRENCIES = [
     { value: 'btc', label: 'Bitcoin (BTC)' },
     { value: 'eth', label: 'Ethereum (ETH)' },
-    { value: 'usdt', label: 'Tether (USDT)' }
+    { value: 'usdt', label: 'Tether (USDT)' },
+    { value: 'usdc', label: 'USD Coin (USDC)' }
   ];
 
   const PAYMENT_METHODS = {

@@ -21,6 +21,7 @@ export default function WithdrawalPage() {
         setIsVerified(true);
       } else {
         toast({
+          id: "verification-required",
           title: "Verification Required",
           description: "You need to complete KYC verification to make withdrawals.",
           variant: "destructive",
@@ -34,6 +35,7 @@ export default function WithdrawalPage() {
   const handleWithdrawal = async () => {
     // Implement withdrawal logic here
     toast({
+      id: "withdrawal-success",
       title: "Withdrawal Successful",
       description: `You have withdrawn ${amount} successfully.`,
       variant: "default",

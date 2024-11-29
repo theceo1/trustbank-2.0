@@ -45,6 +45,7 @@ export default function ContactPage() {
     } catch (error: any) {
       setError('An error occurred while sending your message. Please try again.');
       toast({
+        id: 'contact-error',
         variant: "destructive",
         title: "Error",
         description: "Failed to send message. Please try again.",

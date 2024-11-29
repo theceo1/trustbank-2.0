@@ -18,6 +18,7 @@ export default function BasicVerificationPage() {
       // Redirect if user has already completed this tier or higher
       if (["basic", "intermediate", "advanced"].includes(kycInfo.currentTier)) {
         toast({
+          id: "tier-already-verified",
           title: "Already Verified",
           description: "You have already completed basic verification",
           variant: "default",

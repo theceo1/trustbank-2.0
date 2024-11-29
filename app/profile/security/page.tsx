@@ -30,6 +30,7 @@ export default function SecurityPage() {
             onCheckedChange={(checked) => {
               setIs2FAEnabled(checked);
               toast({
+                id: "2fa-success",
                 title: checked ? "2FA Enabled" : "2FA Disabled",
                 description: checked 
                   ? "Two-factor authentication has been enabled"
@@ -47,6 +48,7 @@ export default function SecurityPage() {
       icon: <Key className="w-6 h-6 text-green-500" />,
       action: (
         <Button variant="outline" onClick={() => toast({
+          id: "password-settings-coming-soon",
           title: "Coming Soon",
           description: "This feature will be available soon!"
         })}>
@@ -60,6 +62,7 @@ export default function SecurityPage() {
       icon: <Smartphone className="w-6 h-6 text-purple-500" />,
       action: (
         <Button variant="outline" onClick={() => toast({
+          id: "device-management-coming-soon",
           title: "Coming Soon",
           description: "Device management will be available soon!"
         })}>

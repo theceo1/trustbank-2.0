@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
+import { User } from '@supabase/supabase-js';
 
 // Load environment variables from .env.local file
 dotenv.config({ path: resolve(process.cwd(), '.env.local') });
@@ -35,8 +36,8 @@ async function createAdmin(email: string, password: string) {
       throw listError;
     }
 
-    let userId;
-    const existingUser = users.find(user => user.email === email);
+    let userId: string;
+    const existingUser = (users as User[]).find(user => user.email === email);
 
     if (existingUser) {
       userId = existingUser.id;

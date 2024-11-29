@@ -54,6 +54,27 @@ export interface Database {
           Insert: Omit<Database['public']['Tables']['account_settings']['Row'], 'id' | 'created_at' | 'updated_at'>;
           Update: Partial<Omit<Database['public']['Tables']['account_settings']['Row'], 'id'>>;
         };
+        trades: {
+          Row: {
+            id: string;
+            user_id: string;
+            type: 'buy' | 'sell';
+            currency: string;
+            amount: number;
+            rate: number;
+            total: number;
+            quidax_fee: number;
+            platform_fee: number;
+            status: 'pending' | 'processing' | 'completed' | 'failed';
+            payment_method: string;
+            payment_url: string | null;
+            quidax_reference: string | null;
+            created_at: string;
+            updated_at: string;
+          };
+          Insert: Omit<Database['public']['Tables']['trades']['Row'], 'id' | 'created_at' | 'updated_at'>;
+          Update: Partial<Database['public']['Tables']['trades']['Insert']>;
+        };
       };
     };
   }

@@ -8,7 +8,7 @@ interface UseRateUpdatesProps {
 }
 
 interface RateParams {
-  pair: string;
+  currency_pair: string;
   amount?: number;
   type?: 'buy' | 'sell';
 }
@@ -28,9 +28,8 @@ export function useRateUpdates({ cryptoCurrency, onRateExpired }: UseRateUpdates
     try {
       const rateResponse = await QuidaxService.getRate({
         amount: 1,
-        currency: cryptoCurrency.toLowerCase(),
-        type: 'buy',
-        pair: `${cryptoCurrency.toLowerCase()}_ngn`
+        currency_pair: `${cryptoCurrency.toLowerCase()}_ngn`,
+        type: 'buy'
       });
       setRate(rateResponse.rate);
       setLastUpdateTime(Date.now());

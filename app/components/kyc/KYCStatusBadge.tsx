@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, Shield, ShieldAlert, ShieldQuestion } from "lucide-react";
-import { KYCStatusType } from "@/app/lib/services/kyc";
+import { ShieldCheck, Shield, ShieldAlert, ShieldQuestion } from "lucide-react"; 
+import { KYCStatusType } from "@/app/types/kyc";
 
 interface KYCStatusBadgeProps {
   status: KYCStatusType;

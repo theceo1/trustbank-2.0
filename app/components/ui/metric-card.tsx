@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUpIcon, ArrowDownIcon, TrendingUpIcon, DollarSignIcon, ChartIcon } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MetricCardProps {
   title: string;
-  value: string;
+  value?: string;
   trend?: number;
-  icon?: 'chart-up' | 'dollar-sign' | 'trending-up';
+  icon: string;
+  loading?: boolean;
 }
 
 const icons = {
@@ -14,7 +16,17 @@ const icons = {
   'trending-up': TrendingUpIcon,
 };
 
-export function MetricCard({ title, value, trend, icon }: MetricCardProps) {
+export function MetricCard({ title, value, trend, icon, loading }: MetricCardProps) {
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <Skeleton className="h-20 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+  
   const Icon = icon ? icons[icon] : null;
   
   return (

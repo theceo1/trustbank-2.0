@@ -18,6 +18,7 @@ export default function IntermediateVerificationPage() {
       // Check if user has completed basic tier
       if (kycInfo.currentTier === "unverified") {
         toast({
+          id: "tier1-required",
           title: "Complete Basic First",
           description: "Please complete basic verification before proceeding",
           variant: "destructive",
@@ -29,6 +30,7 @@ export default function IntermediateVerificationPage() {
       // Prevent re-verification if already completed this tier or higher
       if (["intermediate", "advanced"].includes(kycInfo.currentTier)) {
         toast({
+          id: "tier-already-verified",
           title: "Already Verified",
           description: "You have already completed intermediate verification",
           variant: "default",

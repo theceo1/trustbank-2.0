@@ -7,6 +7,6 @@ export class ValidationService {
   }
 
   static validateTradeDetails(trade: TradeDetails): boolean {
-    return !!(trade.amount && trade.currency && trade.paymentMethod);
+    return !!(trade.amount && trade.currency && trade.payment_method);
   }
 }

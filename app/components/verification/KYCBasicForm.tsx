@@ -50,12 +50,13 @@ export function KYCBasicForm() {
     
     setIsSubmitting(true);
     try {
-      await KYCService.submitBasicVerification(user.id, {
+      await KYCService.submitVerification(user.id, 'basic', {
         ...data,
-        tier: "basic",
+        tier: "tier1"
       });
 
       toast({
+        id: "basic-verification-submitted",
         title: "Verification Submitted",
         description: "Your basic verification has been completed successfully.",
       });
@@ -63,6 +64,7 @@ export function KYCBasicForm() {
       router.push("/profile/verification");
     } catch (error) {
       toast({
+        id: "basic-verification-error",
         title: "Submission Failed",
         description: "There was an error submitting your verification. Please try again.",
         variant: "destructive",

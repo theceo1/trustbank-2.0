@@ -11,12 +11,14 @@ export class TransactionLimitService {
   static async validateTradeAmount(userId: string, totalAmount: number) {
     try {
       // Get user's KYC tier
-      const kycStatus = await KYCService.getUserKYCStatus(userId);
+      const kycStatus = await KYCService.getKYCStatus(userId);
       if (!kycStatus) {
         return { valid: false, reason: 'KYC status not found' };
       }
 
-      const tierLimits = KYC_TIERS[kycStatus.currentTier];
+      // If user is not verified, use the lowest tier limits
+      const tier = kycStatus.isVerified ? 'verified' : 'unverified';
+      const tierLimits = KYC_TIERS[tier];
       
       // Calculate daily volume
       const dailyVolume = await this.getDailyTradeVolume(userId);

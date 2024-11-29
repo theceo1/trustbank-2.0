@@ -1,9 +1,15 @@
-export type KYCStatus = 'pending' | 'verified' | 'rejected' | 'unverified';
+export type KYCStatusType = 'verified' | 'pending' | 'rejected' | 'unverified';
+
+export interface KYCEligibility {
+  eligible: boolean;
+  status: KYCStatusType;
+  reason?: string;
+}
 
 export interface KYCVerification {
   id: string;
   user_id: string | null;
-  status: KYCStatus | null;
+  status: KYCStatusType | null;
   level: number | null;
   verification_type: string | null;
   verification_id: string | null;
@@ -18,7 +24,7 @@ export interface KYCDocument {
   user_id: string;
   document_type: string;
   document_number: string;
-  status: KYCStatus;
+  status: KYCStatusType;
   verification_data: Record<string, any> | null;
   created_at: string;
   updated_at: string;

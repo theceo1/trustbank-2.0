@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { KYCService, type KYCStatusType } from '@/app/lib/services/kyc';
-import { Badge } from '@/components/ui/badge';
+import { KYCService } from '@/app/lib/services/kyc';
+import { KYCStatusType } from '@/app/types/kyc';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { Shield, ShieldAlert, ShieldCheck, ShieldQuestion } from 'lucide-react';
+import { KYCStatusBadge } from '@/app/components/kyc/KYCStatusBadge';
+import { useToast } from '@/hooks/use-toast';
 
 interface KYCStatusProps {
   userId: string;
@@ -12,57 +13,35 @@ interface KYCStatusProps {
 
 export default function KYCStatus({ userId, showAction = true }: KYCStatusProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [status, setStatus] = useState<KYCStatusType>('unverified');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchStatus = async () => {
-      const eligibility = await KYCService.isEligibleForTrade(userId);
-      setStatus(eligibility.eligible ? 'verified' : 'unverified');
-      setIsLoading(false);
+      try {
+        const eligibility = await KYCService.isEligibleForTrade(userId);
+        setStatus(eligibility.eligible ? 'verified' : 'unverified');
+      } catch (error) {
+        toast({
+          id: 'kyc-status-error',
+          title: 'Error',
+          description: 'Failed to fetch KYC status',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchStatus();
-  }, [userId]);
-
-  const getStatusBadge = () => {
-    switch (status) {
-      case 'verified':
-        return (
-          <Badge className="bg-green-100 text-green-800">
-            <ShieldCheck className="w-4 h-4 mr-1" />
-            Verified
-          </Badge>
-        );
-      case 'pending':
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800">
-            <Shield className="w-4 h-4 mr-1" />
-            Pending
-          </Badge>
-        );
-      case 'rejected':
-        return (
-          <Badge className="bg-red-100 text-red-800">
-            <ShieldAlert className="w-4 h-4 mr-1" />
-            Rejected
-          </Badge>
-        );
-      default:
-        return (
-          <Badge className="bg-gray-100 text-gray-800">
-            <ShieldQuestion className="w-4 h-4 mr-1" />
-            Unverified
-          </Badge>
-        );
-    }
-  };
+  }, [userId, toast]);
 
   if (isLoading) return null;
 
   return (
     <div className="flex items-center gap-4">
-      {getStatusBadge()}
+      <KYCStatusBadge status={status} />
       {showAction && status !== 'verified' && (
         <Button 
           variant="outline" 

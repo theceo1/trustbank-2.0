@@ -22,7 +22,7 @@ import { useAdminAuth } from '@/app/admin/context/AdminAuthContext';
 
 export default function Header() {
   const pathname = usePathname();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -72,9 +72,10 @@ export default function Header() {
 
   const handleSignOut = async () => {
     try {
-      await logout();
+      await signOut();
       setIsMenuOpen(false); // Close mobile menu if open
       toast({
+        id: "signout-success",
         title: "Signed out successfully",
         description: "You have been signed out of your account",
       });
@@ -82,6 +83,7 @@ export default function Header() {
     } catch (error) {
       console.error('Error signing out:', error);
       toast({
+        id: "signout-error",
         title: "Error",
         description: "Failed to sign out. Please try again.",
         variant: "destructive",

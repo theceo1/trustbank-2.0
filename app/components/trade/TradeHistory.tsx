@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate, formatCurrency } from "@/app/lib/utils";
-import { TradeDetails, UnifiedTradeService } from '@/app/lib/services/unifiedTrade';
+import { UnifiedTradeService } from '@/app/lib/services/unifiedTrade';
+import { TradeDetails, TradeStatus } from '@/app/types/trade';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
-const statusColors = {
-  pending: 'text-yellow-500',
-  completed: 'text-green-500',
-  failed: 'text-red-500'
+const statusColors: Record<TradeStatus, string> = {
+  PENDING: 'text-yellow-500',
+  PROCESSING: 'text-yellow-500',
+  COMPLETED: 'text-green-500',
+  FAILED: 'text-red-500'
 } as const;
 
 export function TradeHistory() {
@@ -22,10 +24,11 @@ export function TradeHistory() {
       if (!user) return;
       
       try {
-        const userTrades = await UnifiedTradeService.getUserTrades(user.id);
+        const userTrades = await UnifiedTradeService.getTradeHistory(user.id);
         setTrades(userTrades);
       } catch (error) {
         toast({
+          id: "trade-history-error",
           title: 'Error',
           description: 'Failed to load trade history',
           variant: 'destructive'

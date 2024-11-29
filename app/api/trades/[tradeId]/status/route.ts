@@ -3,20 +3,17 @@ import { UnifiedTradeService } from '@/app/lib/services/unifiedTrade';
 import { getCurrentUser } from '@/app/lib/session';
 import { TradeStatus } from '@/app/types/trade';
 
-type Params = {
-  params: {
-    tradeId: string;
-  };
-};
-
-export async function GET(request: Request, { params }: Params) {
+export async function GET(request: Request) {
+  const segments = request.url.split('/');
+  const tradeId = segments[segments.length - 2]; // -2 because of /status at the end
+  
   try {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
     }
 
-    const { status } = await UnifiedTradeService.getTradeStatus(params.tradeId);
+    const { status } = await UnifiedTradeService.getTradeStatus(tradeId);
     return NextResponse.json({ status });
   } catch (error) {
     console.error('Trade status check error:', error);
@@ -27,7 +24,10 @@ export async function GET(request: Request, { params }: Params) {
   }
 }
 
-export async function PATCH(request: Request, { params }: Params) {
+export async function PATCH(request: Request) {
+  const segments = request.url.split('/');
+  const tradeId = segments[segments.length - 2];
+  
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     await UnifiedTradeService.updateTradeStatus(
-      params.tradeId,
+      tradeId,
       status as TradeStatus,
       metadata
     );
@@ -50,7 +50,7 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ 
       success: true,
       status,
-      tradeId: params.tradeId 
+      tradeId 
     });
   } catch (error) {
     console.error('Trade status update error:', error);

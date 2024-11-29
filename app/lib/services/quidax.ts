@@ -5,6 +5,7 @@ import { CONFIG } from './config';
 import { FEES } from '../constants/fees';
 import { PaymentMethodType } from '@/app/types/payment';
 import crypto from 'crypto';
+import { MarketStats } from '@/app/types/market';
 
 export class QuidaxError extends Error {
   constructor(
@@ -225,12 +226,14 @@ export class QuidaxService {
 
   static mapQuidaxStatus(status: string): string {
     const statusMap: Record<string, string> = {
-      'pending': 'pending',
-      'processing': 'processing',
+      'success': 'completed',
       'completed': 'completed',
-      'failed': 'failed'
+      'failed': 'failed',
+      'cancelled': 'failed',
+      'pending': 'pending',
+      'processing': 'processing'
     };
-    return statusMap[status] || 'pending';
+    return statusMap[status.toLowerCase()] || 'pending';
   }
 
   static async processPayment(trade: TradeDetails) {
@@ -300,28 +303,26 @@ export class QuidaxService {
     }
   }
 
-  static async getMarketStats(pair: string) {
-    try {
-      const response = await fetch(`${this.baseUrl}/markets/${pair}/stats`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  static async getMarketStats(pair: string): Promise<MarketStats> {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_QUIDAX_API_URL}/markets/${pair}/stats`);
+    const data = await response.json();
+    
+    // Transform the Quidax response into our MarketStats shape
+    return {
+      market: {
+        id: pair,
+        name: data.market_name || pair,
+        base_unit: data.base_unit || pair.split('_')[0],
+        quote_unit: data.quote_unit || pair.split('_')[1]
+      },
+      ticker: {
+        last: data.last_price?.toString() || '0',
+        high: data.high_24h?.toString() || '0',
+        low: data.low_24h?.toString() || '0',
+        vol: data.volume_24h?.toString() || '0',
+        change: data.price_change_24h?.toString() || '0'
       }
-
-      const data = await response.json();
-      return {
-        last_price: data.last_price,
-        price_change_24h: data.price_change_24h
-      };
-    } catch (error) {
-      console.error('QuidaxService getMarketStats error:', error);
-      throw error;
-    }
+    };
   }
 
   static async getDepositAddress(userId: string, currency: string) {
@@ -520,5 +521,26 @@ export class QuidaxService {
     });
 
     return response.json();
+  }
+
+  static async checkPaymentStatus(reference: string): Promise<string> {
+    try {
+      const response = await fetch(`${process.env.QUIDAX_API_URL}/payments/${reference}`, {
+        headers: {
+          'Authorization': `Bearer ${process.env.QUIDAX_SECRET_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch payment status');
+      }
+
+      const data = await response.json();
+      return this.mapQuidaxStatus(data.status);
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      throw error;
+    }
   }
 }

@@ -1,14 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { currencyIds } from '@/app/lib/constants/crypto';
 
 type SupportedCurrency = keyof typeof currencyIds;
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { currency: string } }
-) {
-  const currency = params.currency.toUpperCase() as SupportedCurrency;
-  const ngnRate = 1350; // Fixed rate for now
+export async function GET(request: Request) {
+  const segments = request.url.split('/');
+  const currency = segments[segments.length - 1].toUpperCase() as SupportedCurrency;
+  const ngnRate = 1350;
   
   try {
     if (!(currency in currencyIds)) {
@@ -38,7 +36,6 @@ export async function GET(
     const rate = usdPrice * ngnRate;
 
     return NextResponse.json({ rate, usdPrice });
-
   } catch (error) {
     console.error('Price fetch error:', error);
     return NextResponse.json(

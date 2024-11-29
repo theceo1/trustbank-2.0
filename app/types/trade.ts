@@ -45,9 +45,13 @@ export interface TradeDetails {
     platform: number;
     processing: number;
   };
-  payment_method: PaymentMethodType;
+  payment_method: string;
   status: string;
+  walletBalance?: number;
+  reference?: string;
   quidax_reference?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface TradeRateRequest {

@@ -29,6 +29,7 @@ export function useRealtimeTransactions(userId: string | undefined) {
       } catch (error) {
         console.error('Error fetching transactions:', error);
         toast({
+          id: "fetch-transactions-error",
           title: "Error",
           description: "Failed to load transactions",
           variant: "destructive",
@@ -62,6 +63,7 @@ export function useRealtimeTransactions(userId: string | undefined) {
               case 'INSERT':
                 setTransactions(prev => [payload.new as Transaction, ...prev]);
                 toast({
+                  id: "new-transaction",
                   title: "New Transaction",
                   description: `${payload.new.type} of ${payload.new.currency} ${payload.new.amount} initiated`,
                 });
@@ -75,11 +77,13 @@ export function useRealtimeTransactions(userId: string | undefined) {
                 );
                 if (payload.new.status === 'completed') {
                   toast({
+                    id: "transaction-completed",
                     title: "Transaction Completed",
                     description: `Your ${payload.new.type} has been completed successfully`,
                   });
                 } else if (payload.new.status === 'failed') {
                   toast({
+                    id: "transaction-failed",
                     title: "Transaction Failed",
                     description: `Your ${payload.new.type} could not be completed`,
                     variant: "destructive",

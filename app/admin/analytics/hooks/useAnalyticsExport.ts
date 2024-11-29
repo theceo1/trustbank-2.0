@@ -20,12 +20,14 @@ export function useAnalyticsExport() {
       await reportGenerator.generateReport(options);
       
       toast({
+        id: 'export-success',
         title: "Success",
         description: "Report exported successfully",
       });
     } catch (error) {
       console.error('Error exporting report:', error);
       toast({
+        id: 'export-error',
         title: "Error",
         description: "Failed to export report",
         variant: "destructive",

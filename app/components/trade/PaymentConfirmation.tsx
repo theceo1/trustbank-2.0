@@ -29,6 +29,7 @@ export function PaymentConfirmation({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast({
+      id: "copy-success",
       title: "Copied!",
       description: "Account details copied to clipboard",
     });

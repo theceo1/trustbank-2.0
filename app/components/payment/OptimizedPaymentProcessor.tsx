@@ -3,7 +3,6 @@ import { usePaymentOptimization } from '@/app/hooks/usePaymentOptimization';
 import { PaymentLoadingState } from '../ui/loading/PaymentLoadingState';
 import { PaymentProcessorProps } from '@/app/types/payment';
 
-// Lazy load payment method components
 const WalletPayment = lazy(() => import('./methods/WalletPayment'));
 const CardPayment = lazy(() => import('./methods/CardPayment'));
 const BankTransferPayment = lazy(() => import('./methods/BankTransferPayment'));
@@ -13,18 +12,20 @@ export function OptimizedPaymentProcessor({
   onComplete
 }: PaymentProcessorProps) {
   const { isOptimized, avgProcessingTime } = usePaymentOptimization(
-    trade.paymentMethod
+    trade.payment_method
   );
 
   const PaymentComponent = {
     wallet: WalletPayment,
     card: CardPayment,
     bank_transfer: BankTransferPayment
-  }[trade.paymentMethod] as React.ComponentType<any>;
+  }[trade.payment_method] as React.ComponentType<any>;
 
-    function formatTime(avgProcessingTime: number): import("react").ReactNode {
-        throw new Error('Function not implemented.');
-    }
+  const formatTime = (time: number): string => {
+    return time < 60 
+      ? `${time} seconds`
+      : `${Math.round(time / 60)} minutes`;
+  };
 
   return (
     <div className="space-y-4">

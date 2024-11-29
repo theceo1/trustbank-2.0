@@ -10,13 +10,10 @@ export type PaymentMethodType = 'bank_transfer' | 'card' | 'wallet';
 
 export interface PaymentMethod {
   id: string;
-  type: PaymentMethodType;
-  name: string;
+  type: 'wallet' | 'card' | 'bank_transfer';
+  title: string;
+  description: string;
   enabled: boolean;
-  fees: {
-    fixed: number;
-    percentage: number;
-  };
 }
 
 export interface PaymentDetails {

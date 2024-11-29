@@ -1,14 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-type Context = {
-  params: { currency: string }
-};
-
-export async function GET(
-  request: NextRequest,
-  context: Context
-) {
-  const { currency } = context.params;
+export async function GET(request: Request) {
+  const segments = request.url.split('/');
+  const currency = segments[segments.length - 1];
   
   try {
     const response = await fetch(

@@ -7,7 +7,7 @@ interface UseToast {
 
 export function useToast(): UseToast {
   const toast = React.useCallback((props: Toast) => {
-    // Implementation of toast notification
+    // Implementation of toast notification 
     console.log('Toast:', props);
   }, []);
 

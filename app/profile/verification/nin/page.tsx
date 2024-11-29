@@ -36,6 +36,7 @@ export default function NINVerificationPage() {
     e.preventDefault();
     if (!selfieImage) {
       toast({
+        id: "nin-selfie-error",
         title: "Error",
         description: "Please take a selfie to complete verification",
         variant: "destructive",
@@ -48,12 +49,14 @@ export default function NINVerificationPage() {
     try {
       await KYCService.verifyNIN(user?.id as string, nin, selfieImage);
       toast({
+        id: "nin-success",
         title: "Success",
         description: "NIN verification submitted successfully. Please wait for verification.",
       });
       router.push("/profile");
     } catch (error) {
       toast({
+        id: "nin-error",
         title: "Error",
         description: "Failed to verify NIN. Please try again.",
         variant: "destructive",

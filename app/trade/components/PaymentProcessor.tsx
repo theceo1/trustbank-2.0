@@ -4,8 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { StatusStep } from './StatusStep';
-import { TradeDetails } from '@/app/types/trade';
-import { PaymentStatus } from '@/app/types/payment';
+import { TradeDetails, TradeStatus } from '@/app/types/trade';
 import { useToast } from '@/hooks/use-toast';
 import { TradeStatusService } from '@/app/lib/services/tradeStatus';
 
@@ -15,17 +14,15 @@ interface PaymentProcessorProps {
 }
 
 export function PaymentProcessor({ trade, onComplete }: PaymentProcessorProps) {
-  const [status, setStatus] = useState<PaymentStatus>('pending');
+  const [status, setStatus] = useState<TradeStatus>(TradeStatus.PENDING);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
 
   const statusToProgress = useMemo(() => ({
-    initiated: 0,
-    pending: 25,
-    processing: 50,
-    confirming: 75,
-    completed: 100,
-    failed: 0
+    [TradeStatus.PENDING]: 25,
+    [TradeStatus.PROCESSING]: 50,
+    [TradeStatus.COMPLETED]: 100,
+    [TradeStatus.FAILED]: 0
   }), []);
 
   useEffect(() => {
@@ -36,20 +33,20 @@ export function PaymentProcessor({ trade, onComplete }: PaymentProcessorProps) {
     const initWatchStatus = async () => {
       cleanupFn = await TradeStatusService.watchStatus(
         trade.id,
-        (newStatus) => {
+        (newStatus: TradeStatus) => {
           if (!statusToProgress.hasOwnProperty(newStatus)) return;
           
           setStatus(newStatus);
           setProgress(statusToProgress[newStatus]);
 
-          if (newStatus === 'completed') {
+          if (newStatus === TradeStatus.COMPLETED) {
             toast({
               id: "trade-completed",
               title: "Success",
               description: "Your trade has been processed successfully",
             });
             onComplete();
-          } else if (newStatus === 'failed') {
+          } else if (newStatus === TradeStatus.FAILED) {
             toast({
               id: "trade-failed",
               title: "Failed",
@@ -82,17 +79,17 @@ export function PaymentProcessor({ trade, onComplete }: PaymentProcessorProps) {
           <StatusStep
             step={1}
             title="Payment Initiated"
-            isComplete={status !== 'pending'}
+            isComplete={status !== TradeStatus.PENDING}
           />
           <StatusStep
             step={2}
             title="Processing Payment"
-            isComplete={['completed', 'processing', 'confirming'].includes(status)}
+            isComplete={[TradeStatus.COMPLETED, TradeStatus.PROCESSING].includes(status)}
           />
           <StatusStep
             step={3}
             title="Trade Complete"
-            isComplete={status === 'completed'}
+            isComplete={status === TradeStatus.COMPLETED}
           />
         </div>
       </CardContent>

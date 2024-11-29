@@ -34,12 +34,14 @@ export function Trade({ initialTrade }: TradeProps) {
     try {
       // Trade submission logic here
       toast({
+        id: "trade-submitted",
         title: "Trade submitted",
         description: "Your trade has been submitted successfully"
       });
       router.push(`/trades/${trade.id}`);
     } catch (error) {
       toast({
+        id: "trade-error",
         title: "Error",
         description: "Failed to submit trade",
         variant: "destructive"

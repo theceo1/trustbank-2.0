@@ -1,34 +1,35 @@
 'use client';
 
-import * as React from "react";
-import * as ToastPrimitives from "@radix-ui/react-toast";
-import { useToast } from "@/hooks/use-toast";
+import { useTheme } from 'next-themes';
+import { Toaster as Sonner } from 'sonner';
+import { cn } from "@/lib/utils";
 
-interface ToastProps {
-  id: string;
-  title?: string;
-  description?: string;
-  action?: React.ReactNode;
-  variant?: 'default' | 'destructive' | 'warning';
-}
-export function Toaster() {
-  const { toasts } = useToast();
+type ToasterProps = React.ComponentProps<typeof Sonner>;
+
+export function Toaster({ ...props }: ToasterProps) {
+  const { theme = 'system' } = useTheme();
 
   return (
-    <ToastPrimitives.Provider>
-      {toasts?.map(({ id, title, description, action, ...props }: ToastProps) => (
-        <ToastPrimitives.Root key={id} {...props}>
-          <div className="grid gap-1">
-            {title && <ToastPrimitives.Title>{title}</ToastPrimitives.Title>}
-            {description && (
-              <ToastPrimitives.Description>{description}</ToastPrimitives.Description>
-            )}
-          </div>
-          {action}
-          <ToastPrimitives.Close />
-        </ToastPrimitives.Root>
-      ))}
-      <ToastPrimitives.Viewport />
-    </ToastPrimitives.Provider>
+    <Sonner
+      theme={theme as ToasterProps['theme']}
+      className={cn(
+        "toaster group",
+        "fixed bottom-4 right-4 z-50 w-full max-w-sm"
+      )}
+      toastOptions={{
+        classNames: {
+          toast: cn(
+            "group toast",
+            "bg-background text-foreground border-border shadow-lg",
+            "data-[variant=destructive]:bg-destructive data-[variant=destructive]:text-destructive-foreground",
+            "data-[variant=warning]:bg-warning data-[variant=warning]:text-warning-foreground"
+          ),
+          description: "group-[.toast]:text-muted-foreground",
+          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+        },
+      }}
+      {...props}
+    />
   );
-}
+} 

@@ -20,11 +20,17 @@ export default function TransactionStatusView({ transactionId }: Props) {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const transaction = await QuidaxService.checkPaymentStatus(transactionId);
-        setStatus(transaction.status);
+        const response = await fetch(`/api/transactions/${transactionId}/status`);
+        const data = await response.json();
+        
+        if (!response.ok) throw new Error(data.error);
+        
+        const status = QuidaxService.mapQuidaxStatus(data.status);
+        setStatus(status as TxStatus);
 
-        if (transaction.status === 'completed') {
+        if (status === 'completed') {
           toast({
+            id: "transaction-completed",
             title: "Success",
             description: "Transaction completed successfully"
           });

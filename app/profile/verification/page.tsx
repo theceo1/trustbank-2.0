@@ -51,6 +51,7 @@ export default function VerificationPage() {
     // Check if user can proceed to this tier
     if (tier.key === 'tier2' && (!kycInfo || kycInfo.currentTier === 'unverified')) {
       toast({
+        id: "tier1-required",
         title: "Complete Tier 1 First",
         description: "Please complete basic verification before proceeding to intermediate",
         variant: "destructive"
@@ -60,6 +61,7 @@ export default function VerificationPage() {
 
     if (tier.key === 'tier3' && (!kycInfo || kycInfo.currentTier !== 'tier2')) {
       toast({
+        id: "tier2-required",
         title: "Complete Tier 2 First",
         description: "Please complete intermediate verification before proceeding to advanced",
         variant: "destructive"
@@ -70,6 +72,7 @@ export default function VerificationPage() {
     // If already verified this tier
     if (kycInfo?.currentTier === tier.key) {
       toast({
+        id: "tier-already-verified",
         title: "Already Verified",
         description: "You have already completed this verification level",
         variant: "default"

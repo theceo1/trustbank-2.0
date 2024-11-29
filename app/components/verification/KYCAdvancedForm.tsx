@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -20,14 +19,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const advancedFormSchema = z.object({
-  occupation: z.string().min(2, "Please enter your occupation"),
-  employerName: z.string().min(2, "Please enter your employer's name"),
-  annualIncome: z.string().min(1, "Please enter your annual income"),
-  sourceOfFunds: z.string().min(10, "Please describe your source of funds"),
-  bankStatement: z.instanceof(File, { message: "Please upload your bank statement" }),
-  employmentLetter: z.instanceof(File, { message: "Please upload your employment letter" }),
+  idType: z.enum(["drivers_license", "international_passport"], {
+    required_error: "Please select an ID type",
+  }),
+  idNumber: z.string().min(1, "Please enter your ID number"),
+  idDocument: z.instanceof(File, { message: "Please upload your ID document" }),
 });
 
 type AdvancedFormValues = z.infer<typeof advancedFormSchema>;
@@ -47,18 +52,17 @@ export function KYCAdvancedForm() {
     
     setIsSubmitting(true);
     try {
-      // Handle file uploads
-      const bankStatementUrl = await KYCService.uploadDocument(data.bankStatement);
-      const employmentLetterUrl = await KYCService.uploadDocument(data.employmentLetter);
+      const idDocumentUrl = await KYCService.uploadDocument(data.idDocument);
 
-      await KYCService.submitAdvancedVerification(user.id, {
-        ...data,
-        bankStatementUrl,
-        employmentLetterUrl,
-        tier: "advanced",
+      await KYCService.submitVerification(user.id, 'advanced', {
+        idType: data.idType,
+        idNumber: data.idNumber,
+        idDocumentUrl,
+        tier: "tier3",
       });
 
       toast({
+        id: "advanced-verification-submitted",
         title: "Verification Submitted",
         description: "Your advanced verification is being processed.",
       });
@@ -66,6 +70,7 @@ export function KYCAdvancedForm() {
       router.push("/profile/verification");
     } catch (error) {
       toast({
+        id: "advanced-verification-error",
         title: "Submission Failed",
         description: "There was an error submitting your verification. Please try again.",
         variant: "destructive",
@@ -80,12 +85,34 @@ export function KYCAdvancedForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="occupation"
+          name="idType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Occupation</FormLabel>
+              <FormLabel>ID Type</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select ID type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="drivers_license">Driver&apos;s License</SelectItem>
+                  <SelectItem value="international_passport">International Passport</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="idNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>ID Number</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Enter your occupation" />
+                <Input {...field} placeholder="Enter your ID number" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -94,86 +121,15 @@ export function KYCAdvancedForm() {
 
         <FormField
           control={form.control}
-          name="employerName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Employer Name</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Enter your employer's name" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="annualIncome"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Annual Income</FormLabel>
-              <FormControl>
-                <Input {...field} type="number" placeholder="Enter your annual income" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="sourceOfFunds"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Source of Funds</FormLabel>
-              <FormControl>
-                <Textarea 
-                  {...field} 
-                  placeholder="Please describe your source of funds"
-                  className="min-h-[100px]"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="bankStatement"
+          name="idDocument"
           render={({ field: { onChange, value, ...field } }) => (
             <FormItem>
-              <FormLabel>Upload Bank Statement (Last 3 months)</FormLabel>
+              <FormLabel>Upload ID Document</FormLabel>
               <FormControl>
                 <div className="flex items-center gap-4">
                   <Input
                     type="file"
-                    accept=".pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) onChange(file);
-                    }}
-                    {...field}
-                  />
-                  <Upload className="h-4 w-4" />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="employmentLetter"
-          render={({ field: { onChange, value, ...field } }) => (
-            <FormItem>
-              <FormLabel>Upload Employment Letter</FormLabel>
-              <FormControl>
-                <div className="flex items-center gap-4">
-                  <Input
-                    type="file"
-                    accept=".pdf"
+                    accept=".pdf,.jpg,.jpeg,.png"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) onChange(file);

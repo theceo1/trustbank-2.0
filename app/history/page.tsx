@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Transaction, TransactionType } from "@/app/types/transactions";
+import { Transaction } from "@/app/types/transactions";
 import TransactionList from "@/app/components/transactions/TransactionList";
 import TransactionFilters from "@/app/components/transactions/TransactionFilters";
 import LoadingHistory from "@/app/components/skeletons/LoadingHistory";
@@ -11,7 +11,7 @@ import { useRealtimeTransactions } from "@/app/hooks/useRealtimeTransactions";
 const ITEMS_PER_PAGE = 10;
 
 interface TransactionFilters {
-  type?: TransactionType;
+  type?: Transaction['type'];
   startDate?: Date;
   endDate?: Date;
 }

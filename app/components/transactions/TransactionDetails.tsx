@@ -16,7 +16,7 @@ interface TransactionDetailsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
+ 
 export default function TransactionDetails({ transaction, open, onOpenChange }: TransactionDetailsProps) {
   if (!transaction) return null;
   

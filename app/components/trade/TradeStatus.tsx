@@ -12,7 +12,7 @@ interface TradeStatusProps {
 }
 
 export function TradeStatus({ tradeId, onStatusChange }: TradeStatusProps) {
-  const [status, setStatus] = useState<TStatus>("pending");
+  const [status, setStatus] = useState<TStatus>(TStatus.PENDING);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -20,10 +20,11 @@ export function TradeStatus({ tradeId, onStatusChange }: TradeStatusProps) {
     const checkStatus = async () => {
       try {
         const { status: newStatus } = await UnifiedTradeService.getTradeStatus(tradeId);
-        setStatus(newStatus as TStatus);
-        onStatusChange?.(newStatus as TStatus);
+        setStatus(newStatus);
+        onStatusChange?.(newStatus);
       } catch (error) {
         toast({
+          id: "trade-status-error",
           title: "Error",
           description: "Failed to fetch trade status",
           variant: "destructive",
@@ -65,9 +66,9 @@ export function TradeStatus({ tradeId, onStatusChange }: TradeStatusProps) {
 
 function getStatusIcon(status: TStatus) {
   switch (status) {
-    case "completed":
+    case TStatus.COMPLETED:
       return <CheckCircle className="h-6 w-6 text-green-500" />;
-    case "failed":
+    case TStatus.FAILED:
       return <XCircle className="h-6 w-6 text-red-500" />;
     default:
       return <Clock className="h-6 w-6 text-yellow-500" />;

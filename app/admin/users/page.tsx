@@ -60,6 +60,7 @@ export default function UsersPage() {
   const handleVerifyUser = async (userId: string) => {
     if (!hasPermission('users', 'write')) {
       toast({
+        id: 'verify-error',
         title: "Access Denied",
         description: "You don't have permission to perform this action",
         variant: "destructive",
@@ -76,6 +77,7 @@ export default function UsersPage() {
       if (error) throw error;
 
       toast({
+        id: 'verify-success',
         title: "Success",
         description: "User verified successfully",
       });
@@ -84,6 +86,7 @@ export default function UsersPage() {
     } catch (error) {
       console.error('Error verifying user:', error);
       toast({
+        id: 'verify-error',
         title: "Error",
         description: "Failed to verify user",
         variant: "destructive",
@@ -94,6 +97,7 @@ export default function UsersPage() {
   const handleDeleteUser = async (userId: string) => {
     if (!hasPermission('users', 'delete')) {
       toast({
+        id: 'delete-error',
         title: "Access Denied",
         description: "You don't have permission to perform this action",
         variant: "destructive",
@@ -108,6 +112,7 @@ export default function UsersPage() {
       if (error) throw error;
 
       toast({
+        id: 'delete-success',
         title: "Success",
         description: "User deleted successfully",
       });
@@ -116,6 +121,7 @@ export default function UsersPage() {
     } catch (error) {
       console.error('Error deleting user:', error);
       toast({
+        id: 'delete-error',
         title: "Error",
         description: "Failed to delete user",
         variant: "destructive",
@@ -177,7 +183,7 @@ export default function UsersPage() {
                   <TableCell>{user.full_name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant={user.is_verified ? "success" : "warning"}>
+                    <Badge variant={user.is_verified ? "default" : "secondary"}>
                       {user.is_verified ? "Verified" : "Unverified"}
                     </Badge>
                   </TableCell>

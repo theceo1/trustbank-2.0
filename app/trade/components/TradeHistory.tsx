@@ -108,15 +108,15 @@ export function TradeHistory({ trades }: TradeHistoryProps) {
                             </div>
                             <div>
                               <p className="text-muted-foreground">Payment Method</p>
-                              <p className="font-medium capitalize">{trade.paymentMethod}</p>
+                              <p className="font-medium capitalize">{trade.payment_method}</p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Service Fee</p>
-                              <p className="font-medium">{formatCurrency(trade.fees.service)}</p>
+                              <p className="font-medium">{formatCurrency(trade.fees.quidax)}</p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Network Fee</p>
-                              <p className="font-medium">{formatCurrency(trade.fees.network)}</p>
+                              <p className="font-medium">{formatCurrency(trade.fees.platform)}</p>
                             </div>
                           </div>
                         </motion.div>

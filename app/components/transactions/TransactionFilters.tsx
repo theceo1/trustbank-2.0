@@ -1,6 +1,6 @@
 "use client";
 
-import { TransactionType } from "@/app/types/transactions";
+import { Transaction } from "@/app/types/transactions";
 import {
   Select,
   SelectContent,
@@ -21,7 +21,7 @@ import { useState } from "react";
 import { DateRange } from "react-day-picker";
 
 interface TransactionFilters {
-  type?: TransactionType;
+  type?: Transaction['type'];
   startDate?: Date;
   endDate?: Date;
 }
@@ -31,7 +31,7 @@ interface TransactionFiltersProps {
 }
 
 export default function TransactionFilters({ onFilterChange }: TransactionFiltersProps) {
-  const [type, setType] = useState<TransactionType | undefined>();
+  const [type, setType] = useState<Transaction['type'] | undefined>();
   const [dateRange, setDateRange] = useState<{
     from?: Date;
     to?: Date;
@@ -49,7 +49,7 @@ export default function TransactionFilters({ onFilterChange }: TransactionFilter
     <div className="flex gap-4 mb-6">
       <Select
         value={type}
-        onValueChange={(value: TransactionType) => {
+        onValueChange={(value: Transaction['type']) => {
           setType(value);
           handleFilterChange();
         }}

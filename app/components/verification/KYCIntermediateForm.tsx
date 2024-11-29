@@ -57,13 +57,16 @@ export function KYCIntermediateForm() {
       const proofOfAddressUrl = await KYCService.uploadDocument(data.proofOfAddress);
 
       await KYCService.submitIntermediateVerification(user.id, {
-        ...data,
+        idType: data.idType,
+        idNumber: data.idNumber,
+        address: data.address,
         idDocumentUrl,
         proofOfAddressUrl,
-        tier: "intermediate",
+        tier: "tier2"
       });
 
       toast({
+        id: "intermediate-verification-submitted",
         title: "Verification Submitted",
         description: "Your intermediate verification is being processed.",
       });
@@ -71,6 +74,7 @@ export function KYCIntermediateForm() {
       router.push("/profile/verification");
     } catch (error) {
       toast({
+        id: "intermediate-verification-error",
         title: "Submission Failed",
         description: "There was an error submitting your verification. Please try again.",
         variant: "destructive",

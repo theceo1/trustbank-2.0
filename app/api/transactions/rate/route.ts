@@ -21,9 +21,8 @@ export async function GET(request: Request) {
   try {
     const rate = await QuidaxService.getRate({
       amount,
-      pair: `${currency.toLowerCase()}_ngn`,
-      type,
-      currency
+      currency_pair: `${currency.toLowerCase()}_ngn`,
+      type
     });
     return NextResponse.json(rate);
   } catch (error) {

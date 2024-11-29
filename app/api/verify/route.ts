@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
-    const { verificationType, data } = await request.json();
+    const { nin, selfieImage } = await request.json();
     
     if (!process.env.DOJAH_API_KEY || !process.env.DOJAH_APP_ID) {
       throw new Error('Missing Dojah API credentials');
@@ -13,14 +13,14 @@ export async function POST(request: Request) {
 
     const endpoint = 'https://api.dojah.io/api/v1/kyc/nin/verify';
     const requestBody = {
-      nin: data.nin,
-      selfie_image: data.selfie_image
+      nin,
+      selfie_image: selfieImage.replace(/^data:image\/jpeg;base64,/, '')
     };
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': process.env.DOJAH_API_KEY,
+        'Authorization': `Bearer ${process.env.DOJAH_API_KEY}`,
         'AppId': process.env.DOJAH_APP_ID,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
@@ -30,57 +30,16 @@ export async function POST(request: Request) {
 
     const responseData = await response.json();
     
-    // Store verification attempt in Supabase
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const isVerified = responseData.entity?.selfie_verification?.match === true && 
+                       responseData.entity?.selfie_verification?.confidence_value >= 90;
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const isVerified = responseData.entity && Object.keys(responseData.entity).length > 0;
-    const verificationStatus = isVerified ? 'verified' as const : 'failed' as const;
-
-    try {
-      // First, store the verification attempt
-      await supabase
-        .from('verification_attempts')
-        .insert({
-          user_id: user.id,
-          verification_type: 'nin',
-          status: verificationStatus,
-          response_data: responseData
-        });
-
-      // Then, update KYC verification
-      const { error: verificationError } = await supabase
-        .from('kyc_verifications')
-        .upsert({
-          user_id: user.id,
-          level: 1,
-          status: verificationStatus,
-          verification_type: 'nin',
-          verification_data: responseData,
-          verified_at: isVerified ? new Date().toISOString() : null
-        });
-
-      if (verificationError) {
-        console.error('Error updating KYC verification:', verificationError);
-        throw verificationError;
-      }
-
-    } catch (error) {
-      console.error('Database operation error:', error);
-      return NextResponse.json({ error: 'Database operation failed' }, { status: 500 });
-    }
-
-    return NextResponse.json(responseData);
+    return NextResponse.json({ 
+      success: isVerified,
+      data: responseData.entity 
+    });
 
   } catch (error) {
-    console.error('Verification error:', error);
-    return NextResponse.json({ 
-      error: error instanceof Error ? error.message : 'Internal server error' 
-    }, { status: 500 });
+    console.error('NIN verification error:', error);
+    return NextResponse.json({ error: 'Verification failed' }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -25,35 +25,36 @@ interface TransactionTableProps {
   transactions: Transaction[];
   onViewDetails: (transaction: Transaction) => void;
 }
-
+ 
 export default function TransactionTable({ transactions, onViewDetails }: TransactionTableProps) {
   const [sortField, setSortField] = useState<keyof Transaction>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filter, setFilter] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  const sortedAndFilteredTransactions = transactions
-    .filter(tx => {
-      const searchTerm = filter.toLowerCase();
-      if (isCryptoTransaction(tx)) {
-        return tx.crypto_currency.toLowerCase().includes(searchTerm) ||
-               tx.status.toLowerCase().includes(searchTerm) ||
-               tx.type.toLowerCase().includes(searchTerm);
-      }
-      return tx.status.toLowerCase().includes(searchTerm) ||
-             tx.type.toLowerCase().includes(searchTerm);
-    })
-    .sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-      
-      if (aValue === undefined || bValue === undefined) return 0;
-      
-      if (sortDirection === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      }
-      return aValue < bValue ? 1 : -1;
-    });
+  const isCryptoTransaction = (tx: Transaction): tx is CryptoTransaction => {
+    return tx.type === 'buy' || tx.type === 'sell';
+  };
+
+  const sortedAndFilteredTransactions = useMemo(() => {
+    return transactions
+      .filter(tx => {
+        if (!filter) return true;
+        return (
+          tx.type.includes(filter.toLowerCase()) ||
+          tx.status.includes(filter.toLowerCase()) ||
+          tx.payment_reference.includes(filter)
+        );
+      })
+      .sort((a, b) => {
+        if (sortField === 'created_at') {
+          return sortDirection === 'asc'
+            ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            : new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        return 0;
+      });
+  }, [transactions, filter, sortField, sortDirection]);
 
   const handleSort = (field: keyof Transaction) => {
     if (field === sortField) {
@@ -62,11 +63,6 @@ export default function TransactionTable({ transactions, onViewDetails }: Transa
       setSortField(field);
       setSortDirection('desc');
     }
-  };
-
-  // Helper function to check transaction type
-  const isCryptoTransaction = (tx: Transaction): tx is CryptoTransaction => {
-    return tx.type === 'buy' || tx.type === 'sell';
   };
 
   return (

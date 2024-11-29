@@ -3,12 +3,26 @@
 import { useState } from 'react';
 import { Check, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { PaymentMethod } from '@/app/lib/services/payment';
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
 
+interface PaymentMethodDetails {
+  id: string;
+  name: string;
+  icon: string;
+  enabled: boolean;
+  limits: {
+    min: number;
+    max: number;
+  };
+  fees: {
+    percentage: number;
+    fixed: number;
+  };
+}
+
 interface PaymentMethodSelectorProps {
-  methods: PaymentMethod[];
+  methods: PaymentMethodDetails[];
   selectedMethod: string;
   onSelect: (method: string) => void;
   amount: number;
@@ -22,7 +36,7 @@ export function PaymentMethodSelector({
 }: PaymentMethodSelectorProps) {
   const [error, setError] = useState<string | null>(null);
 
-  const handleSelect = (method: PaymentMethod) => {
+  const handleSelect = (method: PaymentMethodDetails) => {
     if (amount < method.limits.min) {
       setError(`Minimum amount for ${method.name} is ${method.limits.min}`);
       return;

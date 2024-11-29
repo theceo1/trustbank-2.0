@@ -37,11 +37,19 @@ export interface CryptoHistoricalData {
 }
 
 export interface MarketStats {
-  high24h: number;
-  low24h: number;
-  volume24h: number;
-  lastPrice: number;
-  change24h: number;
+  market: {
+    id: string;
+    name: string;
+    base_unit: string;
+    quote_unit: string;
+  };
+  ticker: {
+    last: string;
+    high: string;
+    low: string;
+    vol: string;
+    change: string;
+  };
 }
 
 export interface CryptoPriceData {

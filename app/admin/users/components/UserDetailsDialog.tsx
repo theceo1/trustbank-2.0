@@ -53,12 +53,14 @@ export default function UserDetailsDialog({ user, onClose }: UserDetailsProps) {
       if (error) throw error;
 
       toast({
+        id: 'suspend-success',
         title: "Success",
         description: "User has been suspended",
       });
     } catch (error) {
       console.error('Error suspending user:', error);
       toast({
+        id: 'suspend-error',
         title: "Error",
         description: "Failed to suspend user",
         variant: "destructive",
@@ -97,7 +99,7 @@ export default function UserDetailsDialog({ user, onClose }: UserDetailsProps) {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-500">Status</h3>
-                    <Badge variant={user.is_verified ? "success" : "warning"}>
+                    <Badge variant={user.is_verified ? "default" : "destructive"}>
                       {user.is_verified ? "Verified" : "Unverified"}
                     </Badge>
                   </div>
@@ -225,7 +227,7 @@ function UserReferrals({ userId }: { userId: string }) {
                   {new Date(referral.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={referral.is_verified ? "success" : "warning"}>
+                  <Badge variant={referral.is_verified ? "default" : "destructive"}>
                     {referral.is_verified ? "Verified" : "Unverified"}
                   </Badge>
                 </TableCell>
@@ -293,7 +295,7 @@ function UserTransactions({ userId }: { userId: string }) {
                   ₦{transaction.amount.toLocaleString()}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={getStatusVariant(transaction.status)}>
+                  <Badge variant={getStatusVariant(transaction.status) as "default" | "destructive"}>
                     {transaction.status}
                   </Badge>
                 </TableCell>

@@ -50,6 +50,7 @@ export default function ReferralSettings() {
       setTiers(data || []);
     } catch (error) {
       toast({
+        id: 'fetch-error',
         title: "Error",
         description: "Failed to fetch referral tiers",
         variant: "destructive"
@@ -77,6 +78,7 @@ export default function ReferralSettings() {
       if (error) throw error;
 
       toast({
+        id: 'save-success',
         title: "Success",
         description: "Referral tier saved successfully",
       });
@@ -87,6 +89,7 @@ export default function ReferralSettings() {
     } catch (error) {
       console.error('Error saving tier:', error);
       toast({
+        id: 'save-error',
         title: "Error",
         description: "Failed to save referral tier",
         variant: "destructive",
@@ -106,6 +109,7 @@ export default function ReferralSettings() {
       if (error) throw error;
 
       toast({
+        id: 'delete-success',
         title: "Success",
         description: "Referral tier deleted successfully",
       });
@@ -114,6 +118,7 @@ export default function ReferralSettings() {
     } catch (error) {
       console.error('Error deleting tier:', error);
       toast({
+        id: 'delete-error',
         title: "Error",
         description: "Failed to delete referral tier",
         variant: "destructive",

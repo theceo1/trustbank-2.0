@@ -39,12 +39,12 @@ export class UnifiedTradeService {
         rate: params.rate,
         total: params.amount * params.rate,
         fees: {
-          service: params.amount * 0.01,
-          network: 0.0005
+          quidax: params.amount * 0.01,
+          platform: 0,
+          processing: 0.0005
         },
-        paymentMethod: params.paymentMethod,
-        quidax_reference: quidaxTrade.reference,
-        reference: params.reference,
+        payment_method: params.paymentMethod,
+        reference: quidaxTrade.reference,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         user_id: params.user_id
@@ -155,12 +155,12 @@ export class UnifiedTradeService {
       rate: parseFloat(quidaxTrade.rate),
       total: parseFloat(quidaxTrade.total),
       fees: {
-        service: parseFloat(quidaxTrade.quidax_fee),
-        network: parseFloat(quidaxTrade.network_fee)
+        quidax: parseFloat(quidaxTrade.quidax_fee),
+        platform: 0,
+        processing: parseFloat(quidaxTrade.network_fee)
       },
-      paymentMethod: quidaxTrade.payment_method,
-      quidax_reference: quidaxTrade.reference,
-      reference: quidaxTrade.internal_reference,
+      payment_method: quidaxTrade.payment_method,
+      reference: quidaxTrade.reference,
       created_at: quidaxTrade.created_at,
       updated_at: quidaxTrade.updated_at,
       user_id: quidaxTrade.user_id

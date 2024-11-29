@@ -22,7 +22,7 @@ export function TransactionSummary({ trade, isLoading }: TransactionSummaryProps
         </div>
         <div className="flex justify-between">
           <span>Payment Method</span>
-          <span className="capitalize">{trade.paymentMethod}</span>
+          <span className="capitalize">{trade.payment_method}</span>
         </div>
         <div className="flex justify-between">
           <span>Reference</span>

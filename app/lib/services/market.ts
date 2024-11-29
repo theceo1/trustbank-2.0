@@ -1,6 +1,6 @@
 import supabase from '@/lib/supabase/client';
 import { QuidaxService } from './quidax';
-import { MarketData as ImportedMarketData } from '@/app/types/market';
+import { MarketStats, MarketOverview } from '@/app/types/market';
 
 interface LocalMarketData {
   pair: string;
@@ -12,27 +12,23 @@ interface LocalMarketData {
   price_change_percentage_24h: number;
 }
 
-interface MarketOverview {
-  totalMarketCap: number;
-  totalVolume24h: number;
-  btcDominance: number;
-  marketCapChange24h: number;
-}
-
 export class MarketService {
   private static cache: Map<string, { data: LocalMarketData; timestamp: number }> = new Map();
   private static CACHE_DURATION = 60 * 1000; // 1 minute
 
-  private static transformMarketData(data: ImportedMarketData): LocalMarketData {
-    const ticker = data.ticker;
+  private static transformMarketData(rawData: MarketStats): LocalMarketData {
+    if (!rawData.market || !rawData.ticker) {
+      throw new Error('Invalid market data format');
+    }
+
     return {
-      pair: data.market?.id || '',
-      last_price: Number(ticker.last || 0),
-      high_24h: Number(ticker.high || 0),
-      low_24h: Number(ticker.low || 0),
-      volume_24h: Number(ticker.vol || 0),
-      price_change_24h: Number(ticker.change || 0),
-      price_change_percentage_24h: Number(ticker.change || 0) * 100
+      pair: rawData.market.id,
+      last_price: Number(rawData.ticker.last || 0),
+      high_24h: Number(rawData.ticker.high || 0),
+      low_24h: Number(rawData.ticker.low || 0),
+      volume_24h: Number(rawData.ticker.vol || 0),
+      price_change_24h: Number(rawData.ticker.change || 0),
+      price_change_percentage_24h: Number(rawData.ticker.change || 0) * 100
     };
   }
 
@@ -43,17 +39,33 @@ export class MarketService {
     }
 
     try {
-      const rawData = await QuidaxService.getMarketData(pair);
-      const data = this.transformMarketData(rawData);
+      const marketStats = await QuidaxService.getMarketStats(pair);
+      const data = this.transformMarketData(marketStats);
       
       this.cache.set(pair, { data, timestamp: Date.now() });
-      
-      // Store in database for historical tracking
       await this.storeMarketData(data);
       
       return data;
     } catch (error) {
       console.error('Error fetching market data:', error);
+      throw error;
+    }
+  }
+
+  static async getMarketOverview(): Promise<MarketOverview> {
+    try {
+      const btcData = await this.getMarketData('btc_usd');
+      const totalMarketData = await fetch('https://api.coingecko.com/api/v3/global');
+      const globalData = await totalMarketData.json();
+
+      return {
+        totalMarketCap: globalData.data.total_market_cap.usd,
+        totalVolume24h: globalData.data.total_volume.usd,
+        btcDominance: globalData.data.market_cap_percentage.btc,
+        marketCapChange24h: globalData.data.market_cap_change_percentage_24h_usd
+      };
+    } catch (error) {
+      console.error('Error fetching market overview:', error);
       throw error;
     }
   }
@@ -83,13 +95,5 @@ export class MarketService {
 
     if (error) throw error;
     return data;
-  }
-
-  static async getMarketOverview(): Promise<MarketOverview> {
-    const response = await fetch('https://api.example.com/market-overview');
-    if (!response.ok) {
-      throw new Error('Failed to fetch market overview');
-    }
-    return response.json();
   }
 }

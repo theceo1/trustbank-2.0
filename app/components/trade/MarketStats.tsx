@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { QuidaxService } from '@/app/lib/services/quidax';
+import { MarketStats as MarketStatsType } from '@/app/types/market';
 
-interface MarketData {
+interface DisplayMarketData {
   last_price: string;
   price_change_24h: number;
 }
 
 export default function MarketStats() {
-  const [marketData, setMarketData] = useState<MarketData | null>(null);
+  const [marketData, setMarketData] = useState<DisplayMarketData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -17,7 +18,14 @@ export default function MarketStats() {
         if (!data) {
           throw new Error('No market data received');
         }
-        setMarketData(data);
+        
+        // Transform the MarketStats data into DisplayMarketData
+        const displayData: DisplayMarketData = {
+          last_price: data.ticker.last,
+          price_change_24h: Number(data.ticker.change)
+        };
+        
+        setMarketData(displayData);
         setError(null);
       } catch (err) {
         setError('Failed to load market data');

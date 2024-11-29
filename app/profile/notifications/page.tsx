@@ -37,6 +37,7 @@ export default function NotificationsPage() {
     if (changedKey) {
       const isEnabled = notifications[changedKey];
       toast({
+        id: "notifications-success",
         title: `${changedKey.charAt(0).toUpperCase() + changedKey.slice(1)} notifications ${isEnabled ? 'enabled' : 'disabled'}`,
         description: `You will ${isEnabled ? 'now' : 'no longer'} receive ${changedKey} notifications`,
       });

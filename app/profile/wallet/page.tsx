@@ -164,13 +164,14 @@ export default function WalletPage() {
         throw new Error('Please enter a valid amount');
       }
 
-      await TransactionService.createFiatTransaction({
+      await TransactionService.createFiatTransaction({  
         user_id: user.id,
-        wallet_id: wallet.id,
         amount,
         type: 'deposit',
         status: 'pending',
-        currency: 'NGN'
+        currency: 'NGN',
+        updated_at: new Date().toISOString(),
+        payment_reference: `DEP-${Date.now()}`
       });
 
       setIsDepositModalOpen(false);

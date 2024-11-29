@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { PaymentMethodType, PAYMENT_METHODS, PLATFORM_FEES } from '@/app/types/payment';
+import { PaymentMethodType } from '@/app/types/payment';
 import { formatCurrency } from '@/app/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { FeeService } from '@/app/lib/services/fees';
@@ -26,6 +26,13 @@ interface TransactionPreviewProps {
   isLoading?: boolean;
 }
 
+interface Fees {
+  quidax: number;
+  platform: number;
+  processing: number;
+  total: number;
+}
+
 export default function TransactionPreview({
   amount,
   cryptoAmount,
@@ -37,15 +44,31 @@ export default function TransactionPreview({
   onCancel,
   isLoading = false,
 }: TransactionPreviewProps) {
-  const fees = useMemo(() => 
-    FeeService.calculateTradeFees(amount, paymentMethod),
-    [amount, paymentMethod]
-  );
+  const [fees, setFees] = useState<Fees>({
+    quidax: 0,
+    platform: 0,
+    processing: 0,
+    total: 0
+  });
 
-  const formattedFees = useMemo(() => 
-    FeeService.formatFeeBreakdown(fees),
-    [fees]
-  );
+  useEffect(() => {
+    const loadFees = async () => {
+      const calculatedFees = await FeeService.calculateFees({
+        user_id: 'current_user',
+        currency: cryptoCurrency,
+        amount: amount
+      });
+      const total = calculatedFees.quidax + calculatedFees.platform + calculatedFees.processing;
+      setFees({ ...calculatedFees, total });
+    };
+    loadFees();
+  }, [amount, cryptoCurrency]);
+
+  const formattedFees = useMemo(() => ({
+    quidax: formatCurrency(fees.quidax),
+    platform: formatCurrency(fees.platform),
+    processing: formatCurrency(fees.processing)
+  }), [fees]);
 
   const total = useMemo(() => {
     return type === 'buy' ? amount + fees.total : amount - fees.total;

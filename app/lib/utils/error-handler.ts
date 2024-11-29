@@ -14,11 +14,14 @@ export class TransactionError extends Error {
 
 export function handleTransactionError(error: unknown): TransactionError {
   if (error instanceof QuidaxError) {
+    const statusCode = error.statusCode || (error.code?.startsWith('5') ? 500 : 400);
+    const shouldRetry = error.statusCode === 503 || error.code === 'SERVICE_UNAVAILABLE';
+    
     return new TransactionError(
       error.message,
       error.code || 'QUIDAX_ERROR',
-      error.status || 500,
-      error.status === 503 // Allow retry for service unavailable
+      statusCode,
+      shouldRetry
     );
   }
 

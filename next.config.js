@@ -11,13 +11,6 @@ const nextConfig = {
     return config;
   },
   output: 'standalone',
-  experimental: {
-    serverActions: {
-      enabled: true
-    },
-    serverComponentsExternalPackages: [],
-    typedRoutes: true
-  },
 };
 
 module.exports = nextConfig;

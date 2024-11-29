@@ -3,6 +3,7 @@ import { TradeDetails, TradeStatus } from '@/app/types/trade';
 import { QuidaxService } from './quidax';
 import { PaymentService } from './payment';
 import { PaymentProcessorFactory } from './payment/PaymentProcessorFactory';
+import { PaymentMethodType } from '@/app/types/payment';
 
 export class TradeStatusService {
   static async watchStatus(
@@ -43,7 +44,7 @@ export class TradeStatusService {
 
   static async verifyPayment(trade: TradeDetails): Promise<TradeStatus> {
     try {
-      const processor = PaymentProcessorFactory.getProcessor(trade.paymentMethod);
+      const processor = PaymentProcessorFactory.getProcessor(trade.payment_method as PaymentMethodType);
       const result = await processor.verifyPayment(trade.quidax_reference!);
       
       return TradeStatus.PENDING;

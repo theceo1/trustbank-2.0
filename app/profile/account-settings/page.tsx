@@ -108,6 +108,7 @@ export default function AccountSettingsPage() {
       } catch (error) {
         console.error('Error loading settings:', error);
         toast({
+          id: "settings-error",
           title: "Error",
           description: "Failed to load account settings",
           variant: "destructive",
@@ -122,6 +123,7 @@ export default function AccountSettingsPage() {
     e.preventDefault();
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
+        id: "password-error",
         title: "Error",
         description: "New passwords do not match",
         variant: "destructive",
@@ -137,6 +139,7 @@ export default function AccountSettingsPage() {
       if (error) throw error;
 
       toast({
+        id: "password-success",
         title: "Success",
         description: "Your password has been updated successfully.",
       });
@@ -149,6 +152,7 @@ export default function AccountSettingsPage() {
     } catch (error) {
       console.error('Error updating password:', error);
       toast({
+        id: "password-error",
         title: "Error",
         description: "Failed to update password",
         variant: "destructive",
@@ -176,12 +180,14 @@ export default function AccountSettingsPage() {
       setSettings(updatedSettings);
       
       toast({
+        id: "settings-success",
         title: "Success",
         description: "Settings updated successfully",
       });
     } catch (error) {
       console.error('Error updating settings:', error);
       toast({
+        id: "settings-error",
         title: "Error",
         description: "Failed to update settings",
         variant: "destructive",
@@ -213,6 +219,7 @@ export default function AccountSettingsPage() {
       }
     });
     toast({
+      id: "settings-success",
       title: "Settings updated",
       description: "Your notification settings have been updated.",
     });

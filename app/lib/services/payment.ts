@@ -37,7 +37,7 @@ export class PaymentService {
 
   static async processPayment(trade: TradeDetails) {
     try {
-      const paymentProcessor = await this.getPaymentProcessor(trade.paymentMethod);
+      const paymentProcessor = await this.getPaymentProcessor(trade.payment_method as PaymentMethodType);
       return await paymentProcessor.process(trade);
     } catch (error) {
       console.error('Payment processing error:', error);

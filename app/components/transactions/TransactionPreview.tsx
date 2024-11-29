@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/app/lib/utils";
-import { TransactionType } from "@/app/types/transactions";
+import { Transaction } from "@/app/types/transactions";
 
 interface TransactionPreviewProps {
   type: 'buy' | 'sell';

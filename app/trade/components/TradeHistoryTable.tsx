@@ -37,6 +37,7 @@ export function TradeHistoryTable({ trades }: TradeHistoryTableProps) {
       <TableBody>
         {trades.map((trade) => {
           const fees = TradeUtils.calculateFees(trade.amount, trade.rate);
+          const totalFees = fees.serviceFee + fees.networkFee;
           return (
             <TableRow key={trade.id}>
               <TableCell>
@@ -47,7 +48,7 @@ export function TradeHistoryTable({ trades }: TradeHistoryTableProps) {
                 {TradeUtils.formatAmount(trade.amount, trade.currency)}
               </TableCell>
               <TableCell>{TradeUtils.formatAmount(fees.total)}</TableCell>
-              <TableCell>{TradeUtils.formatAmount(fees.totalFees)}</TableCell>
+              <TableCell>{TradeUtils.formatAmount(totalFees)}</TableCell>
               <TableCell>
                 <Badge className={getStatusColor(trade.status)}>
                   {trade.status}

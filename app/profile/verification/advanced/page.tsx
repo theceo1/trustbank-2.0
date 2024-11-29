@@ -19,6 +19,7 @@ export default function AdvancedVerificationPage() {
       // Check if user has completed tier2 (intermediate)
       if (kycInfo.currentTier as KYCTier !== 'tier2') {
         toast({
+          id: "tier2-required",
           title: "Complete Previous Tiers",
           description: "Please complete intermediate verification before proceeding",
           variant: "destructive",
@@ -30,6 +31,7 @@ export default function AdvancedVerificationPage() {
       // Prevent re-verification if already at tier3
       if ((kycInfo.currentTier as KYCTier) === 'tier3') {
         toast({
+          id: "tier-already-verified",
           title: "Already Verified",
           description: "You have already completed advanced verification",
           variant: "default",

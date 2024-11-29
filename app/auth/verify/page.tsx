@@ -28,6 +28,7 @@ function VerifyContent() {
         });
         
         toast({
+          id: "verify-success",
           title: "Verified",
           description: "Your account has been verified",
         });

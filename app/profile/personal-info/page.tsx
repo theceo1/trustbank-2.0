@@ -94,6 +94,7 @@ export default function PersonalInfoPage() {
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast({
+          id: "personal-info-error",
           title: "Error",
           description: "Failed to load your information",
           variant: "destructive",
@@ -123,6 +124,7 @@ export default function PersonalInfoPage() {
       if (error) throw error;
 
       toast({
+        id: "personal-info-success",
         title: "Success",
         description: "Your personal information has been updated.",
         variant: "default",
@@ -131,6 +133,7 @@ export default function PersonalInfoPage() {
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
+        id: "personal-info-error",
         title: "Error",
         description: "Failed to update your information",
         variant: "destructive",

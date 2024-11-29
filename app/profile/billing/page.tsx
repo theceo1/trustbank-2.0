@@ -78,6 +78,7 @@ export default function BillingPage() {
     } catch (error) {
       console.error('Error loading payment methods:', error);
       toast({
+        id: "payment-methods-error",
         title: "Error",
         description: "Failed to load payment methods",
         variant: "destructive",
@@ -101,6 +102,7 @@ export default function BillingPage() {
     } catch (error) {
       console.error('Error loading billing history:', error);
       toast({
+        id: "billing-history-error",
         title: "Error",
         description: "Failed to load billing history",
         variant: "destructive",
@@ -123,6 +125,7 @@ export default function BillingPage() {
       }))
     );
     toast({
+      id: "payment-methods-success",
       title: "Default payment method updated",
       description: "Your default payment method has been updated successfully.",
     });
@@ -131,6 +134,7 @@ export default function BillingPage() {
   const handleDelete = (id: string) => {
     setPaymentMethods(methods => methods.filter(method => method.id !== id));
     toast({
+      id: "payment-methods-success",
       title: "Payment method removed",
       description: "The payment method has been removed successfully.",
     });
@@ -180,6 +184,7 @@ export default function BillingPage() {
                         className="w-full bg-green-600 hover:bg-green-700"
                         onClick={() => {
                           toast({
+                            id: "payment-methods-success",
                             title: "Payment method added",
                             description: "Your new payment method has been added successfully.",
                           });

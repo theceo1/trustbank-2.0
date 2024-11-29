@@ -33,10 +33,10 @@ export function TradePreviewModal({ isOpen, onClose, onConfirm, trade }: TradePr
             <div className="font-medium">{formatCurrency(trade.rate)}</div>
             
             <div className="text-muted-foreground">Service Fee</div>
-            <div className="font-medium">{formatCurrency(trade.fees.service)}</div>
+            <div className="font-medium">{formatCurrency(trade.fees.quidax)}</div>
             
             <div className="text-muted-foreground">Network Fee</div>
-            <div className="font-medium">{formatCurrency(trade.fees.network)}</div>
+            <div className="font-medium">{formatCurrency(trade.fees.platform)}</div>
             
             <div className="text-muted-foreground font-medium">Total</div>
             <div className="font-medium">{formatCurrency(trade.total)}</div>

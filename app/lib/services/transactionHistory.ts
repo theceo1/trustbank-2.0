@@ -62,15 +62,15 @@ export class TransactionHistoryService {
       rate: Number(dbTrade.rate),
       total: Number(dbTrade.total),
       fees: {
-        service: Number(dbTrade.quidax_fee),
-        network: Number(dbTrade.platform_fee)
+        quidax: Number(dbTrade.quidax_fee),
+        platform: Number(dbTrade.platform_fee),
+        processing: 0
       },
       status: dbTrade.status,
-      paymentMethod: dbTrade.payment_method,
-      payment_url: dbTrade.payment_url,
-      quidax_reference: dbTrade.quidax_reference,
-      createdAt: dbTrade.created_at,
-      updatedAt: dbTrade.updated_at
+      payment_method: dbTrade.payment_method,
+      reference: dbTrade.quidax_reference,
+      created_at: dbTrade.created_at,
+      updated_at: dbTrade.updated_at
     };
   }
 }
