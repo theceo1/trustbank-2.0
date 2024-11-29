@@ -80,59 +80,62 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // First check admin_access_cache
-        const { data: accessData, error: accessError } = await supabase
-          .from('admin_access_cache')
-          .select('is_admin')
+        // Get admin details with role in a single query
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_users')
+          .select(`
+            id,
+            user_id,
+            is_active,
+            role:admin_roles (
+              name,
+              permissions
+            )
+          `)
           .eq('user_id', session.user.id)
-          .single();
+          .single() as { data: AdminDataResponse | null, error: any };
 
-        if (!accessError && accessData?.is_admin) {
-          // If cached as admin, get full admin details
-          const { data: adminData, error: adminError } = await supabase
-            .from('admin_users')
-            .select(`
-              id,
-              user_id,
-              is_active,
-              role:admin_roles (
-                name,
-                permissions
-              )
-            `)
-            .eq('user_id', session.user.id)
-            .single() as { data: AdminDataResponse | null, error: any };
-
-          if (!adminError && adminData && adminData.is_active) {
-            // Fix: Handle the role data structure correctly
-            const roleData: AdminRole = Array.isArray(adminData.role) 
+        if (!adminError && adminData && adminData.is_active) {
+          // Fix: Type guard to handle different role data structures
+          const roleData: AdminRole = 
+            Array.isArray(adminData.role) && adminData.role.length > 0
               ? {
-                  name: adminData.role[0]?.name || '',
-                  permissions: adminData.role[0]?.permissions || {}
+                  name: adminData.role[0].name,
+                  permissions: adminData.role[0].permissions
                 }
-              : adminData.role 
+              : !Array.isArray(adminData.role) && adminData.role
                 ? {
-                    name: adminData.role.name || '',
-                    permissions: adminData.role.permissions || {}
+                    name: adminData.role.name,
+                    permissions: adminData.role.permissions
                   }
                 : {
                     name: '',
                     permissions: {}
                   };
-            
-            setIsAdmin(true);
-            setAdminUser({
-              id: adminData.id,
-              user_id: adminData.user_id,
-              is_active: adminData.is_active,
-              role: roleData
+          
+          setIsAdmin(true);
+          setAdminUser({
+            id: adminData.id,
+            user_id: adminData.user_id,
+            is_active: adminData.is_active,
+            role: roleData
+          });
+
+          // Update cache after successful check
+          await supabase
+            .from('admin_access_cache')
+            .upsert({
+              user_id: session.user.id,
+              is_admin: true,
+              last_checked: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
             });
-            
-            if (window.location.pathname === '/' || window.location.pathname === '/dashboard') {
-              router.push('/admin/dashboard');
-            }
-            return;
+          
+          if (window.location.pathname === '/' || window.location.pathname === '/dashboard') {
+            router.push('/admin/dashboard');
           }
+          return;
         }
 
         setIsAdmin(false);

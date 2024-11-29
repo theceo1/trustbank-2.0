@@ -15,6 +15,17 @@ export function KYCTierInfo({ currentTier, verificationStatus, completedRequirem
   const tier = KYC_TIERS[currentTier as keyof typeof KYC_TIERS];
   const nextTier = getNextTier(currentTier);
   
+  const getVerificationRoute = () => {
+    // Map current tier to next required verification route
+    const tierRoutes = {
+      unverified: '/profile/verification/nin',  // Basic/Tier1 verification
+      tier1: '/profile/verification/bvn',       // Intermediate/Tier2 verification
+      tier2: '/profile/verification/id'         // Advanced/Tier3 verification
+    };
+
+    return tierRoutes[currentTier as keyof typeof tierRoutes] || '/profile/verification';
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -42,13 +53,13 @@ export function KYCTierInfo({ currentTier, verificationStatus, completedRequirem
                   ))}
                 </ul>
                 {nextTier.key !== "unverified" && (
-                  <Link href={`/profile/verification/${nextTier.key.toLowerCase()}`}>
+                  <Link href={getVerificationRoute()}>
                     <Button 
                       className="w-full"
                       disabled={
-                        currentTier === nextTier.key || // Disable if already on this tier
-                        (nextTier.key === "intermediate" && currentTier === "unverified") || // Disable intermediate if not basic
-                        (nextTier.key === "advanced" && currentTier !== "intermediate") // Disable advanced if not intermediate
+                        currentTier === nextTier.key ||
+                        (nextTier.key === "tier2" && currentTier === "unverified") ||
+                        (nextTier.key === "tier3" && currentTier !== "tier2")
                       }
                     >
                       {currentTier === nextTier.key ? "Already Verified" : "Upgrade to " + nextTier.name}

@@ -1,39 +1,46 @@
-import { useState } from 'react';
-import { useToast } from '@/app/components/ui/use-toast';
+import { useEffect, useState } from 'react';
+import supabase from '@/lib/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 export function useKYC() {
-  const { toast } = useToast();
-  const [isVerifying, setIsVerifying] = useState(false);
+  const { user } = useAuth();
+  const [kycInfo, setKycInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const checkKYCStatus = async () => {
-    try {
-      setIsVerifying(true);
-      const response = await fetch('/api/kyc/status');
-      const data = await response.json();
-
-      if (!data.verified) {
-        toast({ 
-          id: 'kyc-required',
-          title: "KYC Required",
-          description: "Please complete your KYC verification to proceed",
-          variant: "destructive"
-        });
-        return false;
+  useEffect(() => {
+    async function fetchKYCInfo() {
+      if (!user?.id) {
+        setLoading(false);
+        return;
       }
 
-      return true;
-    } catch (error) {
-      toast({
-        id: 'kyc-error',
-        title: "Error",
-        description: "Failed to verify KYC status",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setIsVerifying(false);
-    }
-  };
+      try {
+        const { data, error } = await supabase
+          .from('kyc_verifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-  return { checkKYCStatus, isVerifying };
+        if (error) throw error;
+
+        // Set default KYC info if no data exists
+        setKycInfo(data || {
+          user_id: user.id,
+          currentTier: 'unverified',
+          completedRequirements: [],
+          verificationStatus: 'pending'
+        });
+      } catch (error) {
+        console.error('KYC fetch error:', error);
+        setError(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchKYCInfo();
+  }, [user]);
+
+  return { kycInfo, loading, error };
 }

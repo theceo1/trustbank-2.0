@@ -20,6 +20,20 @@ export function ProfileDashboard({ user, kycInfo, recentTransactions = [] }: Pro
     return (completed / totalRequirements) * 100;
   };
 
+  const getVerificationRoute = () => {
+    if (kycInfo?.currentTier === 'tier3') {
+      return '/profile/verification';
+    }
+
+    const tierRoutes = {
+      unverified: '/profile/verification/nin',  // Basic/Tier1 verification
+      tier1: '/profile/verification/bvn',       // Intermediate/Tier2 verification
+      tier2: '/profile/verification/id'         // Advanced/Tier3 verification
+    };
+
+    return tierRoutes[kycInfo?.currentTier as keyof typeof tierRoutes] || '/profile/verification/nin';
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -43,7 +57,7 @@ export function ProfileDashboard({ user, kycInfo, recentTransactions = [] }: Pro
                 </div>
                 <Progress value={getVerificationProgress()} className="h-2" />
                 <Link 
-                  href="/profile/verification"
+                  href={getVerificationRoute()}
                   className="text-sm text-primary hover:underline flex items-center"
                 >
                   Complete Verification <ArrowUpRight className="ml-1 h-3 w-3" />
@@ -52,8 +66,6 @@ export function ProfileDashboard({ user, kycInfo, recentTransactions = [] }: Pro
             </CardContent>
           </Card>
         </motion.div>
-
-        {/* Add more dashboard cards here */}
       </div>
     </div>
   );
