@@ -45,14 +45,18 @@ export class CryptoRateService {
   }
 
   public static async getCryptoUSDPrice(currency: string): Promise<number> {
-    const response = await fetch(`/api/crypto/price/${currency}`);
+    const response = await fetch(`/api/crypto/prices?currency=${currency}`);
 
     if (!response.ok) {
       throw new Error('Failed to fetch crypto price');
     }
 
-    const data = await response.json();
-    return data.price;
+    const price = await response.json();
+    if (price === null) {
+      throw new Error(`No price found for ${currency}`);
+    }
+
+    return price;
   }
 
   private static getCoinId(currency: string): string {
