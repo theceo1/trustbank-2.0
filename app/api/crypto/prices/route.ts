@@ -1,14 +1,26 @@
 import { NextResponse } from 'next/server';
 
-const COINGECKO_API_URL = 'https://api.coingecko.com/api/v3';
+let cachedData: any = null;
+let lastFetch = 0;
+const CACHE_DURATION = 10000; // 10 seconds
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const currency = searchParams.get('currency') || 'BTC';
-
+export async function GET() {
   try {
+    const now = Date.now();
+    
+    if (cachedData && (now - lastFetch) < CACHE_DURATION) {
+      return NextResponse.json(cachedData);
+    }
+
     const response = await fetch(
-      `${COINGECKO_API_URL}/simple/price?ids=bitcoin,ethereum,tether,usd-coin&vs_currencies=usd`
+      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether,usd-coin&vs_currencies=usd',
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        next: { revalidate: 10 }
+      }
     );
 
     if (!response.ok) {
@@ -17,16 +29,28 @@ export async function GET(request: Request) {
 
     const data = await response.json();
     
-    const priceMap = {
-      'BTC': data.bitcoin?.usd,
-      'ETH': data.ethereum?.usd,
-      'USDT': data.tether?.usd,
-      'USDC': data['usd-coin']?.usd
+    const prices = {
+      'BTCUSDT': data.bitcoin?.usd || 0,
+      'ETHUSDT': data.ethereum?.usd || 0,
+      'USDTUSDT': data.tether?.usd || 1,
+      'USDCUSDT': data['usd-coin']?.usd || 1
     };
 
-    return NextResponse.json(priceMap[currency as keyof typeof priceMap] || null);
+    cachedData = prices;
+    lastFetch = now;
+
+    return NextResponse.json(prices);
   } catch (error) {
-    console.error('Error fetching crypto price:', error);
-    return NextResponse.json({ error: 'Failed to fetch crypto price' }, { status: 500 });
+    console.error('Error fetching crypto prices:', error);
+    
+    // Return cached data if available, otherwise return error
+    if (cachedData) {
+      return NextResponse.json(cachedData);
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to fetch crypto prices' },
+      { status: 500 }
+    );
   }
 }

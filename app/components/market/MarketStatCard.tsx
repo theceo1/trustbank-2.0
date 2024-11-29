@@ -1,42 +1,43 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
 
-interface MarketStatCardProps {
-  title: string;
-  value: string;
-  change: number;
+export function MarketStatCard({ icon, title, value }: {
   icon: React.ReactNode;
-  description?: string;
-}
+  title: string;
+  value: string | number;
+}) {
+  const [currentTime, setCurrentTime] = useState<string>('');
 
-export function MarketStatCard({
-  title,
-  value,
-  change,
-  icon,
-  description
-}: MarketStatCardProps) {
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      }));
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <Card>
-      <CardHeader className="space-y-0 pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+    <Card className="p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
           {icon}
+          <h3 className="text-sm font-medium">{title}</h3>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <div className="text-2xl font-bold">{value}</div>
-          {change !== 0 && (
-            <div className={`text-sm ${change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)}%
-            </div>
-          )}
-          {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
-          )}
-        </div>
-      </CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+      </div>
+      {currentTime && (
+        <p className="text-sm text-muted-foreground mt-2">
+          Last updated: {currentTime}
+        </p>
+      )}
     </Card>
   );
 }

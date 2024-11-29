@@ -1,39 +1,29 @@
 // app/hooks/use-crypto-websocket.ts
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { cryptoWebSocket } from '@/app/lib/websocket';
-import { WebSocketState } from '@/app/types/websocket';
+import { useState, useEffect, useCallback } from 'react';
+import { CryptoData } from '@/app/types/market';
 
-export function useCryptoWebSocket(symbols: string[] = []) {
-  const [state, setState] = useState<WebSocketState>({
-    isConnected: false,
-    prices: {},
-    lastUpdate: Date.now(),
-    error: null
-  });
+export function useCryptoWebSocket() {
+  const [prices, setPrices] = useState<Record<string, number>>({});
+  const [isConnected, setIsConnected] = useState(false);
 
-  const symbolsKey = useMemo(() => symbols.join(','), [symbols]);
-
-  const handleSubscribe = useCallback(() => {
-    if (symbols.length > 0) {
-      cryptoWebSocket.subscribe(symbols);
+  const fetchPrices = useCallback(async () => {
+    try {
+      const response = await fetch('/api/crypto/prices');
+      if (!response.ok) throw new Error('Failed to fetch prices');
+      const data = await response.json();
+      setPrices(data);
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Error fetching prices:', error);
+      setIsConnected(false);
     }
-  }, [symbols]);
-
-  const handleUnsubscribe = useCallback(() => {
-    if (symbols.length > 0) {
-      cryptoWebSocket.unsubscribe(symbols);
-    }
-  }, [symbols]);
+  }, []);
 
   useEffect(() => {
-    const unsubscribe = cryptoWebSocket.onStateChange(setState);
-    handleSubscribe();
+    fetchPrices();
+    const interval = setInterval(fetchPrices, 10000);
+    return () => clearInterval(interval);
+  }, [fetchPrices]);
 
-    return () => {
-      handleUnsubscribe();
-      unsubscribe();
-    };
-  }, [symbolsKey, handleSubscribe, handleUnsubscribe]);
-
-  return state;
+  return { prices, isConnected };
 }

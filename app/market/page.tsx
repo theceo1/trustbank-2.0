@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Activity, BarChart2, DollarSign, Coins } from "lucide-react";
 import { useCryptoWebSocket } from "@/hooks/use-crypto-websocket";
 import { MarketStatCard } from "@/app/components/market/MarketStatCard";
@@ -10,7 +10,6 @@ import { CurrencySelector } from "@/app/components/market/CurrencySelector";
 import { CryptoData } from "@/app/types/market";
 import { Card } from "@/components/ui/card";
 
-// Define available currencies
 const AVAILABLE_CURRENCIES = [
   { id: 'BTC', name: 'Bitcoin', symbol: 'BTC' },
   { id: 'ETH', name: 'Ethereum', symbol: 'ETH' },
@@ -18,7 +17,6 @@ const AVAILABLE_CURRENCIES = [
   { id: 'USDC', name: 'USD Coin', symbol: 'USDC' },
 ];
 
-// Define available timeframes
 const TIMEFRAMES = ['1H', '24H', '7D', '30D', 'ALL'];
 
 interface MarketStats {
@@ -29,7 +27,6 @@ interface MarketStats {
 }
 
 export default function MarketPage() {
-  // State variables
   const [marketStats, setMarketStats] = useState<MarketStats>({
     totalMarketCap: 0,
     totalVolume: 0,
@@ -43,10 +40,10 @@ export default function MarketPage() {
   const [cryptoData, setCryptoData] = useState<CryptoData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingCryptoList, setIsLoadingCryptoList] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
   const { prices, isConnected } = useCryptoWebSocket();
 
-  // Fetch crypto list data
   useEffect(() => {
     const fetchCryptoData = async () => {
       setIsLoadingCryptoList(true);
@@ -70,7 +67,6 @@ export default function MarketPage() {
     fetchCryptoData();
   }, []);
 
-  // Fetch market stats
   useEffect(() => {
     const fetchMarketStats = async () => {
       try {
@@ -94,18 +90,22 @@ export default function MarketPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Update current price from websocket
   useEffect(() => {
     if (prices[`${selectedCrypto}USDT`]) {
       const newPrice = prices[`${selectedCrypto}USDT`];
       setCurrentPrice(newPrice);
+      const now = new Date();
+      setLastUpdated(now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }));
       setIsLoading(false);
     }
   }, [prices, selectedCrypto]);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12 mt-16">
-      {/* Market Overview Section */}
       <section>
         <div className="mb-6">
           <h2 className="text-2xl font-bold mb-2">Market Overview</h2>
@@ -115,28 +115,21 @@ export default function MarketPage() {
           <MarketStatCard
             title="Total Market Cap"
             value={marketStats.totalMarketCap ? `$${(marketStats.totalMarketCap / 1e12).toFixed(2)}T` : 'Loading...'}
-            change={marketStats.marketCapChange}
             icon={<Activity className="h-4 w-4" />}
-            description="Total value of all cryptocurrencies"
           />
           <MarketStatCard
             title="24h Trading Volume"
             value={marketStats.totalVolume ? `$${(marketStats.totalVolume / 1e9).toFixed(2)}B` : 'Loading...'}
-            change={marketStats.marketCapChange}
             icon={<BarChart2 className="h-4 w-4" />}
-            description="Total trading volume across all markets"
           />
           <MarketStatCard
             title="Active Markets"
             value="500+"
-            change={0}
             icon={<Coins className="h-4 w-4" />}
-            description="Number of actively traded cryptocurrencies"
           />
         </div>
       </section>
 
-      {/* Price Tracker Section */}
       <section>
         <div className="mb-6">
           <h2 className="text-2xl font-bold mb-2">Price Tracker</h2>
@@ -177,14 +170,13 @@ export default function MarketPage() {
                 })}`}
               </p>
               <p className="text-sm text-muted-foreground">
-                Last updated: {new Date().toLocaleTimeString()}
+                {lastUpdated ? `Last updated: ${lastUpdated}` : 'Not available'}
               </p>
             </div>
           </Card>
         </div>
       </section>
 
-      {/* Market List Section */}
       <section>
         <div className="mb-6">
           <h2 className="text-2xl font-bold mb-2">Top Cryptocurrencies</h2>
