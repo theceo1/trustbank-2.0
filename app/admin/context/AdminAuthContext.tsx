@@ -19,16 +19,16 @@ interface AdminUser {
   is_active: boolean;
 }
 
-interface AdminRoleResponse {
+interface AdminRoleData {
   name: string;
   permissions: Record<string, string[]>;
 }
 
-interface AdminUserResponse {
+interface AdminDataResponse {
   id: string;
   user_id: string;
   is_active: boolean;
-  role: AdminRoleResponse[] | null;
+  role: AdminRoleData[] | AdminRoleData | null;
 }
 
 interface AdminAuthContextType {
@@ -80,51 +80,65 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select(`
-            id,
-            user_id,
-            is_active,
-            role:admin_roles(name, permissions)
-          `)
+        // First check admin_access_cache
+        const { data: accessData, error: accessError } = await supabase
+          .from('admin_access_cache')
+          .select('is_admin')
           .eq('user_id', session.user.id)
-          .maybeSingle();
+          .single();
 
-        if (error) {
-          console.error('Admin check error:', error);
-          setIsAdmin(false);
-          setAdminUser(null);
-        } else if (!data || !data.is_active) {
-          console.log('User is not an active admin');
-          setIsAdmin(false);
-          setAdminUser(null);
-        } else {
-          const roleData = data.role && Array.isArray(data.role) && data.role.length > 0 
-            ? data.role[0] 
-            : { name: '', permissions: {} };
+        if (!accessError && accessData?.is_admin) {
+          // If cached as admin, get full admin details
+          const { data: adminData, error: adminError } = await supabase
+            .from('admin_users')
+            .select(`
+              id,
+              user_id,
+              is_active,
+              role:admin_roles (
+                name,
+                permissions
+              )
+            `)
+            .eq('user_id', session.user.id)
+            .single() as { data: AdminDataResponse | null, error: any };
 
-          const adminData: AdminUser = {
-            id: data.id,
-            user_id: data.user_id,
-            is_active: data.is_active,
-            role: {
-              name: roleData.name,
-              permissions: roleData.permissions
+          if (!adminError && adminData && adminData.is_active) {
+            // Fix: Handle the role data structure correctly
+            const roleData: AdminRole = Array.isArray(adminData.role) 
+              ? {
+                  name: adminData.role[0]?.name || '',
+                  permissions: adminData.role[0]?.permissions || {}
+                }
+              : adminData.role 
+                ? {
+                    name: adminData.role.name || '',
+                    permissions: adminData.role.permissions || {}
+                  }
+                : {
+                    name: '',
+                    permissions: {}
+                  };
+            
+            setIsAdmin(true);
+            setAdminUser({
+              id: adminData.id,
+              user_id: adminData.user_id,
+              is_active: adminData.is_active,
+              role: roleData
+            });
+            
+            if (window.location.pathname === '/' || window.location.pathname === '/dashboard') {
+              router.push('/admin/dashboard');
             }
-          };
-          
-          console.log('Admin data:', adminData);
-          setIsAdmin(true);
-          setAdminUser(adminData);
-          
-          const currentPath = window.location.pathname;
-          if (currentPath === '/' || currentPath === '/dashboard') {
-            router.push('/admin/dashboard');
+            return;
           }
         }
+
+        setIsAdmin(false);
+        setAdminUser(null);
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error('Admin check error:', error);
         setIsAdmin(false);
         setAdminUser(null);
       } finally {
